@@ -114,6 +114,8 @@ function applyConfigSnapshot(snapshot: Record<string, any> | undefined, options:
                 (next.automation as any)[k] = normalizeFertilizerLandTypes(v, next.automation.fertilizer_land_types);
             } else if (k === 'fertilizer_smart_seconds') {
                 (next.automation as any)[k] = Math.max(30, Math.min(3600, Number(v) || 300));
+            } else if (k === 'friend_auto_accept_min_level') {
+                (next.automation as any)[k] = Math.max(0, Number.parseInt(v as string, 10) || 0);
             } else {
                 (next.automation as any)[k] = !!v;
             }
@@ -386,6 +388,23 @@ function getDefaultAccountConfig(): AccountConfig {
     return cloneAccountConfig(sharedState.DEFAULT_ACCOUNT_CONFIG);
 }
 
+function getFriendAutoAccept(accountId?: unknown): { enabled: boolean; minLevel: number } {
+    const cfg = getAccountConfigSnapshot(accountId).automation;
+    return {
+        enabled: !!cfg.friend_auto_accept,
+        minLevel: Math.max(0, Number.parseInt(String(cfg.friend_auto_accept_min_level), 10) || 0),
+    };
+}
+
+function setFriendAutoAccept(accountId: unknown, enabled: boolean, minLevel?: number): ReturnType<typeof applyConfigSnapshot> {
+    return applyConfigSnapshot({
+        automation: {
+            friend_auto_accept: enabled,
+            friend_auto_accept_min_level: minLevel === undefined ? undefined : Math.max(0, Number.parseInt(String(minLevel), 10) || 0),
+        },
+    }, { accountId });
+}
+
 module.exports = {
     getAccountConfigSnapshot,
     setAccountConfigSnapshot,
@@ -422,4 +441,6 @@ module.exports = {
     getPlantBlacklist,
     setPlantBlacklist,
     getDefaultAccountConfig,
+    getFriendAutoAccept,
+    setFriendAutoAccept,
 };

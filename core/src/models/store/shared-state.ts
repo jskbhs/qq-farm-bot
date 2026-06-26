@@ -55,6 +55,8 @@ const DEFAULT_ACCOUNT_CONFIG: AccountConfig = {
         friend_steal: true,
         friend_help: true,
         friend_bad: true,
+        friend_auto_accept: false,
+        friend_auto_accept_min_level: 0,
         task: true,
         fertilizer_gift: false,
         fertilizer_buy_organic: false,

@@ -23,6 +23,8 @@ export interface AutomationConfig {
   friend_steal: boolean;
   friend_help: boolean;
   friend_bad: boolean;
+  friend_auto_accept: boolean;
+  friend_auto_accept_min_level: number;
   task: boolean;
   fertilizer_gift: boolean;
   fertilizer_buy_organic: boolean;

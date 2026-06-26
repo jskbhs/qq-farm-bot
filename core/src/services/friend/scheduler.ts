@@ -10,6 +10,7 @@ const { setOperationLimitsCallback } = require('../farm');
 const {
     isAutomationOn,
     getFriendBlacklist,
+    getFriendAutoAccept,
 } = require('../../models/store');
 const { sellAllFruits } = require('../warehouse');
 const {
@@ -459,12 +460,41 @@ export function refreshFriendCheckLoop(delayMs: number = 200): void {
 /**
  * 处理服务器推送的好友申请
  */
+function getAccountIdForScheduler(): string {
+    return process.env.FARM_ACCOUNT_ID || '';
+}
+
+function filterApplicationsByLevel(applications: any[]): { accepted: any[]; ignored: any[] } {
+    const accountId = getAccountIdForScheduler();
+    const { enabled, minLevel } = getFriendAutoAccept(accountId);
+    if (!enabled) {
+        return { accepted: [], ignored: applications };
+    }
+
+    const accepted: any[] = [];
+    const ignored: any[] = [];
+    for (const app of applications) {
+        const level = toNum(app.level);
+        if (level >= minLevel) {
+            accepted.push(app);
+        } else {
+            ignored.push(app);
+        }
+    }
+    return { accepted, ignored };
+}
+
 export function onFriendApplicationReceived(applications: any[]): void {
     const names: string = applications.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
     log('申请', `收到 ${applications.length} 个好友申请: ${names}`);
 
-    // 自动同意
-    const gids: number[] = applications.map((a: any) => toNum(a.gid));
+    const { accepted, ignored } = filterApplicationsByLevel(applications);
+    if (ignored.length > 0) {
+        const ignoredNames: string = ignored.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
+        log('申请', `因等级不足忽略 ${ignored.length} 人: ${ignoredNames}`);
+    }
+
+    const gids: number[] = accepted.map((a: any) => toNum(a.gid));
     acceptFriendsWithRetry(gids);
 }
 
@@ -477,10 +507,19 @@ async function checkAndAcceptApplications(): Promise<void> {
         const applications: any[] = reply.applications || [];
         if (applications.length === 0) return;
 
-        const names: string = applications.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
-        log('申请', `发现 ${applications.length} 个待处理申请: ${names}`);
+        const { accepted, ignored } = filterApplicationsByLevel(applications);
+        if (accepted.length === 0) {
+            if (ignored.length > 0) {
+                const ignoredNames: string = ignored.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
+                log('申请', `发现 ${ignored.length} 个待处理申请，因等级不足全部忽略: ${ignoredNames}`);
+            }
+            return;
+        }
 
-        const gids: number[] = applications.map((a: any) => toNum(a.gid));
+        const names: string = accepted.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
+        log('申请', `发现 ${accepted.length} 个待处理申请: ${names}`);
+
+        const gids: number[] = accepted.map((a: any) => toNum(a.gid));
         await acceptFriendsWithRetry(gids);
     } catch {
         // 静默失败，可能是 QQ 平台不支持

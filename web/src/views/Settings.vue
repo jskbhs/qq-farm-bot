@@ -540,6 +540,8 @@ const localAutomationSettings = ref({
     friend_help: false,
     friend_bad: true,
     friend_help_exp_limit: false,
+    friend_auto_accept: false,
+    friend_auto_accept_min_level: 0,
     fertilizer_gift: false,
     fertilizer_buy_organic: false,
     fertilizer_buy_normal: false,
@@ -578,6 +580,8 @@ function syncLocalAutomationSettings() {
         friend_help: false,
         friend_bad: false,
         friend_help_exp_limit: false,
+        friend_auto_accept: false,
+        friend_auto_accept_min_level: 0,
         fertilizer_gift: false,
         fertilizer_buy_organic: false,
         fertilizer_buy_normal: false,
@@ -600,6 +604,8 @@ function syncLocalAutomationSettings() {
         friend_help: false,
         friend_bad: false,
         friend_help_exp_limit: false,
+        friend_auto_accept: false,
+        friend_auto_accept_min_level: 0,
         fertilizer_gift: false,
         fertilizer_buy_organic: false,
         fertilizer_buy_normal: false,
@@ -1412,11 +1418,27 @@ async function handleTestOffline() {
               </p>
             </div>
 
-            <div v-if="localAutomationSettings.automation.friend" class="flex flex-wrap gap-4 rounded bg-blue-50 p-3 text-sm dark:bg-blue-900/20">
-              <BaseSwitch v-model="localAutomationSettings.automation.friend_steal" label="自动偷菜" />
-              <BaseSwitch v-model="localAutomationSettings.automation.friend_help" label="自动帮忙" />
-              <BaseSwitch v-model="localAutomationSettings.automation.friend_bad" label="自动捣乱" />
-              <BaseSwitch v-model="localAutomationSettings.automation.friend_help_exp_limit" label="经验满不帮忙" />
+            <div v-if="localAutomationSettings.automation.friend" class="space-y-3 rounded bg-blue-50 p-3 text-sm dark:bg-blue-900/20">
+              <div class="flex flex-wrap gap-4">
+                <BaseSwitch v-model="localAutomationSettings.automation.friend_steal" label="自动偷菜" />
+                <BaseSwitch v-model="localAutomationSettings.automation.friend_help" label="自动帮忙" />
+                <BaseSwitch v-model="localAutomationSettings.automation.friend_bad" label="自动捣乱" />
+                <BaseSwitch v-model="localAutomationSettings.automation.friend_help_exp_limit" label="经验满不帮忙" />
+              </div>
+              <div class="flex flex-wrap items-center gap-4 border-t border-blue-200/60 pt-3 dark:border-blue-800/40">
+                <BaseSwitch v-model="localAutomationSettings.automation.friend_auto_accept" label="自动同意好友申请" />
+                <div v-if="localAutomationSettings.automation.friend_auto_accept" class="flex items-center gap-2">
+                  <span class="text-xs text-gray-600 dark:text-gray-300">最低等级门槛</span>
+                  <input
+                    v-model.number="localAutomationSettings.automation.friend_auto_accept_min_level"
+                    type="number"
+                    min="0"
+                    class="w-20 rounded-lg border border-gray-300 px-2 py-1 text-center text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    placeholder="0"
+                  >
+                  <span class="text-xs text-gray-500">低于该等级自动忽略，高于或等于自动同意</span>
+                </div>
+              </div>
             </div>
 
             <div class="space-y-3">
