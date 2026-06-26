@@ -10,6 +10,9 @@ export interface Account {
   uin?: number
   platform?: string
   running?: boolean
+  level?: number
+  openid?: string
+  loginType?: string
   // Add other fields as discovered
 }
 

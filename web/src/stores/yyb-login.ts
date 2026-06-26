@@ -25,6 +25,11 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
   const loading = ref(false)
   const fetchingCode = ref(false)
 
+  let reconnectTimer: ReturnType<typeof setInterval> | null = null
+  let offlineCheckTimer: ReturnType<typeof setInterval> | null = null
+  let accountStoreRef: any = null
+  const processingOpenIds = new Set<string>()
+
   const config = computed<YybConfig>(() => ({
     ...defaultConfig,
     ...rawConfig.value,
@@ -51,6 +56,8 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
     if (res.data?.ok && res.data.config) {
       rawConfig.value = { ...defaultConfig, ...res.data.config }
     }
+    // 配置变更后重启监听器
+    restartReconnectWatcher()
     return res.data
   }
 
@@ -72,6 +79,123 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
     }
   }
 
+  /**
+   * 为指定 OpenID 获取新 Code 并更新/新增账号，确保账号处于运行状态。
+   */
+  async function reloginAccount(
+    accountStore: any,
+    openid: string,
+    preferName?: string,
+  ): Promise<{ ok: boolean, accountId?: string, started?: boolean, error?: string }> {
+    if (!openid) {
+      return { ok: false, error: '缺少 OpenID' }
+    }
+    if (processingOpenIds.has(openid)) {
+      return { ok: false, error: '正在重连中' }
+    }
+
+    processingOpenIds.add(openid)
+    try {
+      const result = await fetchCode(openid)
+      if (!result.ok || !result.code) {
+        return { ok: false, error: result.error || '获取 Code 失败' }
+      }
+
+      const name = preferName?.trim() || `应用宝_${openid.slice(-6)}`
+      const existing = accountStore.accounts.find((a: any) => a.openid === openid)
+
+      try {
+        if (existing) {
+          await accountStore.updateAccount(String(existing.id), {
+            name,
+            code: result.code,
+            platform: 'wx',
+            loginType: 'yyb',
+            openid,
+          })
+        }
+        else {
+          await accountStore.addAccount({
+            name,
+            code: result.code,
+            platform: 'wx',
+            loginType: 'yyb',
+            openid,
+          })
+        }
+
+        // 确保账号列表已刷新，并启动账号
+        await accountStore.fetchAccounts()
+        const updated = accountStore.accounts.find((a: any) => a.openid === openid)
+        if (updated && !updated.running) {
+          await accountStore.startAccount(String(updated.id))
+        }
+
+        return {
+          ok: true,
+          accountId: updated ? String(updated.id) : (existing ? String(existing.id) : undefined),
+          started: updated ? updated.running : false,
+        }
+      }
+      catch (e: any) {
+        return { ok: false, error: e?.response?.data?.error || e?.message || '保存账号失败' }
+      }
+    }
+    finally {
+      processingOpenIds.delete(openid)
+    }
+  }
+
+  function stopReconnectWatcher() {
+    if (reconnectTimer) {
+      clearInterval(reconnectTimer)
+      reconnectTimer = null
+    }
+    if (offlineCheckTimer) {
+      clearInterval(offlineCheckTimer)
+      offlineCheckTimer = null
+    }
+  }
+
+  async function startReconnectWatcher(accountStore: any) {
+    stopReconnectWatcher()
+    accountStoreRef = accountStore
+    await loadConfig()
+
+    const intervalMinutes = config.value.reconnectIntervalMinutes
+    if (intervalMinutes > 0) {
+      reconnectTimer = setInterval(async () => {
+        if (!accountStoreRef)
+          return
+        const yybAccounts = accountStoreRef.accounts.filter(
+          (a: any) => a.loginType === 'yyb' && a.openid && a.running,
+        )
+        for (const acc of yybAccounts) {
+          await reloginAccount(accountStoreRef, acc.openid, acc.name)
+        }
+      }, intervalMinutes * 60 * 1000)
+    }
+
+    if (config.value.autoReconnect) {
+      offlineCheckTimer = setInterval(async () => {
+        if (!accountStoreRef)
+          return
+        const yybAccounts = accountStoreRef.accounts.filter(
+          (a: any) => a.loginType === 'yyb' && a.openid && !a.running,
+        )
+        for (const acc of yybAccounts) {
+          await reloginAccount(accountStoreRef, acc.openid, acc.name)
+        }
+      }, 30000)
+    }
+  }
+
+  function restartReconnectWatcher() {
+    if (accountStoreRef) {
+      startReconnectWatcher(accountStoreRef)
+    }
+  }
+
   return {
     config,
     loading,
@@ -79,5 +203,9 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
     loadConfig,
     saveConfig,
     fetchCode,
+    reloginAccount,
+    startReconnectWatcher,
+    stopReconnectWatcher,
+    restartReconnectWatcher,
   }
 })

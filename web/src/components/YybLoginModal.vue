@@ -36,53 +36,16 @@ watch(() => props.show, (show) => {
 async function loginOne(openid: string) {
   loadingOpenId.value = openid
   try {
-    const result = await yybStore.fetchCode(openid)
-    if (!result.ok || !result.code) {
-      toast.error(result.error || '获取 Code 失败')
-      return false
-    }
-
     const name = accountNames.value[openid]?.trim() || `应用宝_${openid.slice(-6)}`
-    const platform = 'wx'
-
-    // 查找是否已存在同 OpenID 的账号，存在则更新 code
-    const existing = accountStore.accounts.find((a: any) => a.openid === openid || a.name === name)
-    try {
-      if (existing) {
-        await accountStore.updateAccount(String(existing.id), {
-          name,
-          code: result.code,
-          platform,
-          loginType: 'yyb',
-          openid,
-        })
-        toast.success(`已更新账号: ${name}`)
-      }
-      else {
-        await accountStore.addAccount({
-          name,
-          code: result.code,
-          platform,
-          loginType: 'yyb',
-          openid,
-        })
-        toast.success(`已添加账号: ${name}`)
-      }
-
-      // 登录成功后自动启动账号
-      const started = accountStore.accounts.find((a: any) => a.openid === openid)
-      if (started && !started.running) {
-        await accountStore.startAccount(String(started.id))
-        toast.success(`账号已启动: ${name}`)
-      }
-
-      emit('saved')
-      return true
-    }
-    catch (e: any) {
-      toast.error(e?.response?.data?.error || e?.message || '保存账号失败')
+    const result = await yybStore.reloginAccount(accountStore, openid, name)
+    if (!result.ok) {
+      toast.error(result.error || '登录失败')
       return false
     }
+
+    toast.success(`已${accountStore.accounts.find((a: any) => a.openid === openid) ? '更新' : '添加'}并启动账号: ${name}`)
+    emit('saved')
+    return true
   }
   finally {
     loadingOpenId.value = null

@@ -67,27 +67,40 @@ onUnmounted(() => {
 
     <main class="relative h-full min-w-0 flex flex-1 flex-col overflow-hidden">
       <!-- Top Bar (Mobile/Tablet only or for additional actions) -->
-      <header class="h-16 flex shrink-0 items-center justify-between border-b-3 border-[#8b6914]/30 from-[#f5e6c8] to-[#fef9ef] bg-gradient-to-r px-4 lg:hidden dark:border-gray-700/50 dark:bg-gray-800">
-        <div class="text-lg text-[#3d2b1f] font-display">
+      <header
+        class="h-16 flex shrink-0 items-center justify-between border-b-3 bg-gradient-to-r px-4 lg:hidden"
+        :style="{
+          background: 'linear-gradient(90deg, color-mix(in srgb, var(--theme-bg) 92%, var(--theme-primary)) 0%, var(--theme-bg) 100%)',
+          borderColor: 'color-mix(in srgb, var(--theme-primary) 30%, transparent)',
+        }"
+      >
+        <div class="text-lg font-display" style="color: var(--theme-primary)">
           🌾 QQ农场智能助手
         </div>
         <div class="flex items-center gap-2">
           <div
             v-if="currentAccount"
-            class="relative max-w-[180px] flex cursor-pointer items-center gap-2 border border-pink-300 rounded-xl bg-pink-50 px-2.5 py-1.5 shadow-sm dark:border-pink-700/50 dark:bg-pink-900/20"
+            class="relative max-w-[180px] flex cursor-pointer items-center gap-2 rounded-xl px-2.5 py-1.5 shadow-sm"
+            :style="{
+              backgroundColor: 'color-mix(in srgb, var(--theme-primary) 8%, var(--theme-bg))',
+              border: '1px solid color-mix(in srgb, var(--theme-primary) 25%, transparent)',
+            }"
             @click="showAccountDropdown = !showAccountDropdown"
           >
-            <div class="h-7 w-7 flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-pink-200 dark:bg-pink-800">
+            <div
+              class="h-7 w-7 flex shrink-0 items-center justify-center overflow-hidden rounded-full"
+              :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 18%, transparent)' }"
+            >
               <img
                 v-if="currentAccount.uin"
                 :src="`https://q1.qlogo.cn/g?b=qq&nk=${currentAccount.uin}&s=100`"
                 class="h-full w-full object-cover"
                 @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
               >
-              <div v-else class="i-carbon-user text-pink-500" />
+              <div v-else class="i-carbon-user" :style="{ color: 'var(--theme-primary)' }" />
             </div>
             <div class="min-w-0 flex flex-1 flex-col">
-              <span class="truncate text-xs text-pink-700 font-medium dark:text-pink-200">
+              <span class="truncate text-xs font-medium" style="color: var(--theme-primary)">
                 {{ displayName }}
               </span>
               <div class="flex items-center gap-1">
@@ -98,18 +111,30 @@ onUnmounted(() => {
                 >
                   {{ platform }}
                 </span>
-                <span class="text-[9px] text-pink-400">{{ currentAccount.uin || currentAccount.id }}</span>
+                <span
+                  v-if="currentAccount.level"
+                  class="rounded px-1 py-0 text-[9px] font-medium leading-tight"
+                  :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 15%, transparent)', color: 'var(--theme-secondary)' }"
+                >
+                  Lv.{{ currentAccount.level }}
+                </span>
+                <span class="text-[9px]" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">{{ currentAccount.uin || currentAccount.id }}</span>
               </div>
             </div>
             <div
-              class="i-carbon-chevron-down text-pink-400 transition-transform duration-200"
+              class="i-carbon-chevron-down transition-transform duration-200"
               :class="{ 'rotate-180': showAccountDropdown }"
+              :style="{ color: 'var(--theme-primary)' }"
             />
 
             <!-- Account Dropdown Menu -->
             <div
               v-if="showAccountDropdown"
-              class="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden border border-pink-200 rounded-2xl bg-white/95 py-1 shadow-xl backdrop-blur-sm dark:border-pink-800/40 dark:bg-gray-900/95"
+              class="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl py-1 shadow-xl backdrop-blur-sm"
+              :style="{
+                backgroundColor: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--theme-primary) 20%, transparent)',
+              }"
               @click.stop
             >
               <div class="custom-scrollbar max-h-60 overflow-y-auto">
@@ -117,21 +142,27 @@ onUnmounted(() => {
                   <button
                     v-for="acc in accounts"
                     :key="acc.id || acc.uin"
-                    class="mx-1 w-full flex items-center gap-3 rounded-xl px-4 py-2 transition-all duration-200 hover:bg-pink-50/50 dark:hover:bg-pink-900/20"
-                    :style="{ backgroundColor: currentAccount?.id === acc.id ? 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' : undefined }"
+                    class="mx-1 w-full flex items-center gap-3 rounded-xl px-4 py-2 transition-all duration-200"
+                    :style="{
+                      backgroundColor: currentAccount?.id === acc.id ? 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' : undefined,
+                      color: 'var(--theme-text)',
+                    }"
                     @click="selectAccount(acc)"
                   >
-                    <div class="h-6 w-6 flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 shadow-sm dark:bg-gray-600">
+                    <div
+                      class="h-6 w-6 flex shrink-0 items-center justify-center overflow-hidden rounded-full shadow-sm"
+                      :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' }"
+                    >
                       <img
                         v-if="acc.uin"
                         :src="`https://q1.qlogo.cn/g?b=qq&nk=${acc.uin}&s=100`"
                         class="h-full w-full object-cover"
                         @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
                       >
-                      <div v-else class="i-carbon-user text-gray-400" />
+                      <div v-else class="i-carbon-user" :style="{ color: 'var(--theme-primary)' }" />
                     </div>
                     <div class="min-w-0 flex flex-1 flex-col items-start">
-                      <span class="w-full truncate text-left text-sm font-medium">
+                      <span class="w-full truncate text-left text-sm font-medium" style="color: 'var(--theme-text)'">
                         {{ acc.name || acc.nick || acc.uin || acc.id }}
                       </span>
                       <div class="flex items-center gap-1.5">
@@ -142,13 +173,21 @@ onUnmounted(() => {
                         >
                           {{ getPlatformLabel(acc.platform) }}
                         </span>
-                        <span class="text-xs text-gray-400">{{ acc.uin || acc.id }}</span>
+                        <span
+                          v-if="acc.level"
+                          class="rounded-lg px-1.5 py-0.2 text-[10px] font-medium leading-tight"
+                          :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 15%, transparent)', color: 'var(--theme-secondary)' }"
+                        >
+                          Lv.{{ acc.level }}
+                        </span>
+                        <span class="text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">{{ acc.uin || acc.id }}</span>
                       </div>
                     </div>
                     <div class="flex items-center gap-1">
                       <button
-                        class="rounded-full p-1 text-gray-400 transition-colors hover:bg-pink-50/50 hover:text-pink-500 dark:hover:bg-pink-900/20"
+                        class="rounded-full p-1 transition-colors"
                         title="编辑账号"
+                        :style="{ color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)' }"
                         @click.stop="openAccountEditModal(acc)"
                       >
                         <div class="i-carbon-edit" />
@@ -157,13 +196,13 @@ onUnmounted(() => {
                     </div>
                   </button>
                 </template>
-                <div v-else class="px-4 py-3 text-center text-sm text-gray-400">
+                <div v-else class="px-4 py-3 text-center text-sm" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
                   暂无账号
                 </div>
               </div>
-              <div class="mt-1 border-t border-gray-100/60 pt-1 dark:border-gray-700/60">
+              <div class="mt-1 border-t pt-1" style="borderColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)'">
                 <button
-                  class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-colors hover:bg-pink-50/50 dark:hover:bg-pink-900/20"
+                  class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-colors"
                   :style="{ color: 'var(--theme-primary)' }"
                   @click="showAccountModal = true; showAccountDropdown = false"
                 >
@@ -172,7 +211,7 @@ onUnmounted(() => {
                 </button>
                 <router-link
                   to="/settings"
-                  class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-colors hover:bg-pink-50/50 dark:hover:bg-pink-900/20"
+                  class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-colors"
                   :style="{ color: 'var(--theme-primary)' }"
                   @click="showAccountDropdown = false"
                 >
@@ -183,7 +222,12 @@ onUnmounted(() => {
             </div>
           </div>
           <button
-            class="flex items-center justify-center rounded-xl p-2 text-[#8b6914] transition-colors hover:bg-[#f0c040]/20 dark:text-[#f0c040] dark:hover:bg-gray-700"
+            class="flex items-center justify-center rounded-xl p-2 transition-colors"
+            :style="{
+              color: 'var(--theme-secondary)',
+            }"
+            @mouseenter="($event.target as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--theme-secondary) 15%, transparent)'"
+            @mouseleave="($event.target as HTMLElement).style.backgroundColor = ''"
             @click="appStore.toggleSidebar"
           >
             <div class="i-carbon-menu text-xl" />
