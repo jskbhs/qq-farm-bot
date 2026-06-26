@@ -20,6 +20,8 @@ export {
     clearFriendsListCache,
 } from './visit-strategy';
 
+export { getFriendDogInfo } from './api';
+
 export {
     syncKnownFriendGidsFromFriends,
     syncKnownFriendGidsFromRecentVisitors,

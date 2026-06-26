@@ -29,6 +29,8 @@ const {
   friendsListCacheTtlSec,
   knownFriendSettingsLoading,
   knownFriendSettingsSaving,
+  friendDogMap,
+  friendDogLoading,
 } = storeToRefs(friendStore)
 const { status, loading: statusLoading, realtimeConnected } = storeToRefs(statusStore)
 
@@ -264,6 +266,28 @@ function toggleFriend(friendId: string) {
       friendStore.fetchFriendLands(currentAccountId.value, friendId)
     }
   }
+}
+
+async function handleFetchDogInfo(friendId: string, e: Event) {
+  e.stopPropagation()
+  if (!currentAccountId.value)
+    return
+  const data = await friendStore.fetchFriendDogInfo(currentAccountId.value, friendId)
+  if (data.dogName) {
+    toast.success(`${friendStore.friends.find((f: any) => String(f.gid) === friendId)?.name || friendId}: ${data.dogName}`)
+  }
+  else {
+    toast.info('该好友没有狗狗信息')
+  }
+}
+
+function getDogButtonClass(friendId: string): string {
+  const info = friendDogMap.value[friendId]
+  if (!info?.dogName)
+    return 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+  if (info.dogId === 90021)
+    return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+  return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
 }
 
 async function handleOp(friendId: string, type: string, e: Event) {
@@ -737,6 +761,15 @@ async function handleBatchAddKnownFriendGids() {
                     {{ friend.name }} ({{ friend.gid }})
 
                     <span v-if="blacklistGidSet.has(Number(friend.gid))" class="rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">已屏蔽</span>
+
+                    <button
+                      class="rounded px-1.5 py-0.5 text-xs transition"
+                      :class="getDogButtonClass(String(friend.gid))"
+                      :disabled="friendDogLoading[String(friend.gid)]"
+                      @click="handleFetchDogInfo(String(friend.gid), $event)"
+                    >
+                      {{ friendDogLoading[String(friend.gid)] ? '获取中...' : (friendDogMap[String(friend.gid)]?.dogName || '获取狗信息') }}
+                    </button>
                   </div>
                   <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
                     <span

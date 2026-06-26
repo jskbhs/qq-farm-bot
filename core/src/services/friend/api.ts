@@ -82,6 +82,22 @@ export async function enterFriendFarm(friendGid: number): Promise<any> {
     return types.VisitEnterReply.decode(replyBody);
 }
 
+const DOG_NAME_MAP: Record<number, string> = {
+    90001: '田园犬',
+    90002: '牧羊犬',
+    90011: '柯基',
+    90021: '护主犬',
+};
+
+export async function getFriendDogInfo(friendGid: number): Promise<{ dogId: number; dogName: string }> {
+    const reply: any = await enterFriendFarm(friendGid);
+    const dogId = toNum(reply.briefDogInfo || 0);
+    const dogName = DOG_NAME_MAP[dogId] || '';
+    // 离开好友农场，减少连接占用
+    leaveFriendFarm(friendGid).catch(() => null);
+    return { dogId, dogName };
+}
+
 export async function leaveFriendFarm(friendGid: number): Promise<void> {
     const body: Uint8Array = types.VisitLeaveRequest.encode(types.VisitLeaveRequest.create({
         host_gid: toLong(friendGid),

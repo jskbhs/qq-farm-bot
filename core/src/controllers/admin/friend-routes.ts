@@ -87,6 +87,24 @@ function mountFriendRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
+    // API: 好友狗信息
+    app.get('/api/friend/:gid/dog-info', async (req: Request, res: Response) => {
+        const id = getAccId(ctx, req);
+        if (!id) return res.status(400).json({ ok: false });
+
+        // 检查权限
+        if (!checkAccountAccess(ctx, req as any, id)) {
+            return res.status(403).json({ ok: false, error: '无权访问此账号' });
+        }
+
+        try {
+            const data = await ctx.provider.getFriendDogInfo(id, req.params.gid);
+            res.json({ ok: true, data });
+        } catch (e: any) {
+            handleApiError(res, e);
+        }
+    });
+
     // API: 对指定好友执行单次操作（偷菜/浇水/除草/捣乱）
     app.post('/api/friend/:gid/op', async (req: Request, res: Response) => {
         const id = getAccId(ctx, req);

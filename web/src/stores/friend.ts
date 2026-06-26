@@ -23,6 +23,8 @@ export const useFriendStore = defineStore('friend', () => {
   const interactRecords = ref<any[]>([])
   const interactLoading = ref(false)
   const interactError = ref('')
+  const friendDogMap = ref<Record<string, { dogId: number; dogName: string }>>({})
+  const friendDogLoading = ref<Record<string, boolean>>({})
 
   const knownFriendGids = ref<number[]>([])
   const knownFriendGidSyncCooldownSec = ref(600)
@@ -186,6 +188,26 @@ export const useFriendStore = defineStore('friend', () => {
     }
   }
 
+  async function fetchFriendDogInfo(accountId: string, friendId: string) {
+    if (!accountId || !friendId)
+      return { dogId: 0, dogName: '' }
+    friendDogLoading.value[friendId] = true
+    try {
+      const res = await api.get(`/api/friend/${friendId}/dog-info`, {
+        headers: { 'x-account-id': accountId },
+      })
+      if (res.data.ok) {
+        const data = res.data.data || { dogId: 0, dogName: '' }
+        friendDogMap.value[friendId] = data
+        return data
+      }
+    }
+    finally {
+      friendDogLoading.value[friendId] = false
+    }
+    return { dogId: 0, dogName: '' }
+  }
+
   function applyKnownFriendSettings(data: KnownFriendSettings | null | undefined) {
     if (!data)
       return
@@ -299,11 +321,14 @@ export const useFriendStore = defineStore('friend', () => {
     friendsListCacheTtlSec,
     knownFriendSettingsLoading,
     knownFriendSettingsSaving,
+    friendDogMap,
+    friendDogLoading,
     fetchFriends,
     fetchBlacklist,
     toggleBlacklist,
     fetchInteractRecords,
     fetchFriendLands,
+    fetchFriendDogInfo,
     operate,
     fetchKnownFriendSettings,
     saveKnownFriendSettings,
