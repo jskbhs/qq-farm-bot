@@ -570,18 +570,8 @@ export async function checkAndAcceptApplicationsOnce(): Promise<void> {
  */
 async function acceptFriendsWithRetry(gids: number[], minLevel?: number): Promise<void> {
     if (gids.length === 0) return;
-    log('好友', `准备同意 ${gids.length} 个好友申请 (门槛: ${minLevel ?? 0})`, {
-        event: 'friend_application_accept_start',
-        module: 'friend',
-        meta: { gids, minLevel: minLevel ?? 0 },
-    });
     try {
         const reply: any = await acceptFriends(gids);
-        log('好友', `同意好友申请接口返回: ret=${reply.ret ?? 'none'}, friends=${(reply.friends || []).length}`, {
-            event: 'friend_application_accept_reply',
-            module: 'friend',
-            meta: { ret: reply.ret, gids, friendCount: (reply.friends || []).length },
-        });
         const friends: any[] = reply.friends || [];
         if (friends.length > 0) {
             for (const f of friends) {
