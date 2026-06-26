@@ -147,6 +147,40 @@ export const useFriendStore = defineStore('friend', () => {
     }
   }
 
+  async function batchAddBlacklist(accountId: string, gids: number[]) {
+    if (!accountId || !gids || gids.length === 0)
+      return { ok: false, count: 0 }
+    try {
+      const res = await api.post('/api/friend-blacklist/batch-add', { gids }, {
+        headers: { 'x-account-id': accountId },
+      })
+      if (res.data.ok) {
+        blacklist.value = res.data.data || []
+      }
+      return { ok: res.data.ok, count: (res.data.data || []).length }
+    }
+    catch (e: any) {
+      return { ok: false, count: 0, error: e?.response?.data?.error || e?.message || '批量拉黑失败' }
+    }
+  }
+
+  async function batchRemoveBlacklist(accountId: string, gids: number[]) {
+    if (!accountId || !gids || gids.length === 0)
+      return { ok: false, count: 0 }
+    try {
+      const res = await api.post('/api/friend-blacklist/batch-remove', { gids }, {
+        headers: { 'x-account-id': accountId },
+      })
+      if (res.data.ok) {
+        blacklist.value = res.data.data || []
+      }
+      return { ok: res.data.ok, count: (res.data.data || []).length }
+    }
+    catch (e: any) {
+      return { ok: false, count: 0, error: e?.response?.data?.error || e?.message || '批量拉白失败' }
+    }
+  }
+
   async function fetchFriendLands(accountId: string, friendId: string) {
     if (!accountId || !friendId)
       return
@@ -302,6 +336,8 @@ export const useFriendStore = defineStore('friend', () => {
     fetchFriends,
     fetchBlacklist,
     toggleBlacklist,
+    batchAddBlacklist,
+    batchRemoveBlacklist,
     fetchInteractRecords,
     fetchFriendLands,
     operate,

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { onMounted, onUnmounted } from 'vue'
+import BottomNav from '@/components/BottomNav.vue'
 import Sidebar from '@/components/Sidebar.vue'
+import { getPlatformClass, getPlatformLabel, useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
 
 const appStore = useAppStore()
+const accountStore = useAccountStore()
 const { sidebarOpen } = storeToRefs(appStore)
+const { currentAccount } = storeToRefs(accountStore)
 
 onMounted(() => {
   // 移除了强制警告弹窗
@@ -29,21 +33,52 @@ onUnmounted(() => {
 
     <main class="relative h-full min-w-0 flex flex-1 flex-col overflow-hidden">
       <!-- Top Bar (Mobile/Tablet only or for additional actions) -->
-      <header class="h-16 flex shrink-0 items-center justify-between border-b-3 border-[#8b6914]/30 bg-gradient-to-r from-[#f5e6c8] to-[#fef9ef] px-6 lg:hidden dark:border-gray-700/50 dark:bg-gray-800">
+      <header class="h-16 flex shrink-0 items-center justify-between border-b-3 border-[#8b6914]/30 bg-gradient-to-r from-[#f5e6c8] to-[#fef9ef] px-4 lg:hidden dark:border-gray-700/50 dark:bg-gray-800">
         <div class="font-display text-lg text-[#3d2b1f]">
           🌾 QQ农场智能助手
         </div>
-        <button
-          class="flex items-center justify-center rounded-xl p-2 text-[#8b6914] hover:bg-[#f0c040]/20 dark:text-[#f0c040] dark:hover:bg-gray-700 transition-colors"
-          @click="appStore.toggleSidebar"
-        >
-          <div class="i-carbon-menu text-xl" />
-        </button>
+        <div class="flex items-center gap-2">
+          <div
+            v-if="currentAccount"
+            class="flex max-w-[160px] items-center gap-2 rounded-xl border border-[#8b6914]/10 bg-white/60 px-2 py-1.5 dark:border-gray-600/40 dark:bg-gray-700/60"
+          >
+            <div class="h-7 w-7 flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+              <img
+                v-if="currentAccount.uin"
+                :src="`https://q1.qlogo.cn/g?b=qq&nk=${currentAccount.uin}&s=100`"
+                class="h-full w-full object-cover"
+                @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
+              >
+              <div v-else class="i-carbon-user text-gray-400" />
+            </div>
+            <div class="min-w-0 flex flex-col">
+              <span class="truncate text-xs font-medium" :style="{ color: 'var(--theme-text)' }">
+                {{ currentAccount.name || currentAccount.nick || currentAccount.uin }}
+              </span>
+              <div class="flex items-center gap-1">
+                <span
+                  v-if="currentAccount.platform"
+                  class="rounded px-1 py-0 text-[9px] font-medium leading-tight"
+                  :class="getPlatformClass(currentAccount.platform)"
+                >
+                  {{ getPlatformLabel(currentAccount.platform) }}
+                </span>
+                <span class="text-[9px] text-gray-400">{{ currentAccount.uin || currentAccount.id }}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            class="flex items-center justify-center rounded-xl p-2 text-[#8b6914] hover:bg-[#f0c040]/20 dark:text-[#f0c040] dark:hover:bg-gray-700 transition-colors"
+            @click="appStore.toggleSidebar"
+          >
+            <div class="i-carbon-menu text-xl" />
+          </button>
+        </div>
       </header>
 
       <!-- Main Content Area -->
       <div class="flex flex-1 flex-col overflow-hidden">
-        <div class="custom-scrollbar flex flex-1 flex-col overflow-y-auto p-2 md:p-6 sm:p-4">
+        <div class="custom-scrollbar flex flex-1 flex-col overflow-y-auto p-2 pb-24 md:p-6 sm:p-4 lg:pb-6">
           <RouterView v-slot="{ Component, route }">
             <Transition name="slide-fade" mode="out-in">
               <component :is="Component" :key="route.path" />
@@ -51,6 +86,8 @@ onUnmounted(() => {
           </RouterView>
         </div>
       </div>
+
+      <BottomNav />
     </main>
   </div>
 </template>

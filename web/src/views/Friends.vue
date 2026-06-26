@@ -141,6 +141,40 @@ async function onConfirm() {
   }
 }
 
+function handleBatchBlacklist() {
+  if (!currentAccountId.value)
+    return
+  const gids = filteredFriends.value
+    .filter(f => !blacklistGidSet.value.has(Number(f.gid)))
+    .map(f => Number(f.gid))
+  if (gids.length === 0) {
+    toast.info('没有可拉黑的好友')
+    return
+  }
+  confirmAction(`确定将 ${gids.length} 名好友全部加入黑名单？`, async () => {
+    const result = await friendStore.batchAddBlacklist(currentAccountId.value!, gids)
+    if (result.ok) toast.success(`已拉黑 ${gids.length} 名好友`)
+    else toast.error(result.error || '批量拉黑失败')
+  })
+}
+
+function handleBatchWhitelist() {
+  if (!currentAccountId.value)
+    return
+  const gids = friends.value
+    .filter(f => blacklistGidSet.value.has(Number(f.gid)))
+    .map(f => Number(f.gid))
+  if (gids.length === 0) {
+    toast.info('没有可拉白的好友')
+    return
+  }
+  confirmAction(`确定将 ${gids.length} 名黑名单好友全部移出？`, async () => {
+    const result = await friendStore.batchRemoveBlacklist(currentAccountId.value!, gids)
+    if (result.ok) toast.success(`已移出 ${gids.length} 名黑名单好友`)
+    else toast.error(result.error || '批量拉白失败')
+  })
+}
+
 const expandedFriends = ref<Set<string>>(new Set())
 const currentPage = ref(1)
 const pageSize = 25
@@ -565,8 +599,20 @@ async function handleBatchAddKnownFriendGids() {
             class="farm-input w-full border border-gray-300 rounded-xl bg-white py-2 pl-10 pr-4 text-sm sm:w-64 dark:border-gray-600 focus:border-blue-500 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
         </div>
-        <div v-if="activeTab === 'friends' && friends.length" class="text-sm text-gray-500">
-          共 {{ filteredFriends.length }}/{{ friends.length }} 名好友
+        <div v-if="activeTab === 'friends' && friends.length" class="flex items-center gap-2 text-sm text-gray-500">
+          <span>共 {{ filteredFriends.length }}/{{ friends.length }} 名好友</span>
+          <button
+            class="rounded-lg bg-gray-100 px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            @click="handleBatchBlacklist"
+          >
+            一键拉黑
+          </button>
+          <button
+            class="rounded-lg bg-gray-100 px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            @click="handleBatchWhitelist"
+          >
+            一键拉白
+          </button>
         </div>
         <div v-if="activeTab === 'blacklist'" class="text-sm text-gray-500">
           共 {{ blacklist.length }} 人

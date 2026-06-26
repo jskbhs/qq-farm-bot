@@ -101,6 +101,7 @@ const stoppedAccountsCount = computed(() => stoppedAccounts.value.length)
 
 onMounted(async () => {
   await accountStore.fetchAccounts()
+  yybStore.loadConfig()
   if (!currentAccountId.value && accounts.value.length > 0 && accounts.value[0]) {
     accountStore.selectAccount(String(accounts.value[0].id))
   }
@@ -1071,7 +1072,7 @@ async function handleTestOffline() {
 
           <YybConfigModal
             :show="showYybConfig"
-            @close="showYybConfig = false"
+            @close="showYybConfig = false; yybStore.loadConfig()"
           />
 
           <YybLoginModal

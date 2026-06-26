@@ -213,6 +213,90 @@ function mountFriendRoutes(app: Application, ctx: AdminContext): void {
         res.json({ ok: true, data: saved });
     });
 
+    async function buildBlacklistWithInfo(id: string, gids: number[]) {
+        let friendsList: any[] = [];
+        try {
+            if (ctx.provider && typeof ctx.provider.getFriends === 'function') {
+                friendsList = await ctx.provider.getFriends(id) || [];
+            }
+        } catch (e) {
+            // 忽略获取好友列表失败
+        }
+
+        const friendMap = new Map<number, { name: string; avatarUrl: string }>();
+        for (const f of friendsList) {
+            const fGid = Number(f && f.gid);
+            if (fGid > 0) {
+                friendMap.set(fGid, {
+                    name: f.name || f.remark || '',
+                    avatarUrl: f.avatarUrl || f.avatar_url || '',
+                });
+            }
+        }
+
+        return gids.map((g: any) => {
+            const info = friendMap.get(Number(g)) || { name: '', avatarUrl: '' };
+            return {
+                gid: Number(g),
+                name: info.name || '',
+                avatarUrl: info.avatarUrl || '',
+            };
+        });
+    }
+
+    app.post('/api/friend-blacklist/batch-add', async (req: Request, res: Response) => {
+        const id = getAccId(ctx, req);
+        if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });
+
+        if (!checkAccountAccess(ctx, req as any, id)) {
+            return res.status(403).json({ ok: false, error: '无权访问此账号' });
+        }
+
+        const gids = Array.isArray((req.body || {}).gids) ? (req.body || {}).gids : [];
+        const validGids = gids.map(Number).filter((g: number) => g > 0);
+        if (validGids.length === 0) {
+            return res.status(400).json({ ok: false, error: '缺少有效的 gid 列表' });
+        }
+
+        const current = store.getFriendBlacklist ? store.getFriendBlacklist(id) : [];
+        const next = Array.from(new Set([...current, ...validGids]));
+        const savedGids = store.setFriendBlacklist ? store.setFriendBlacklist(id, next) : next;
+
+        if (ctx.provider && typeof ctx.provider.broadcastConfig === 'function') {
+            ctx.provider.broadcastConfig(id);
+        }
+
+        const saved = await buildBlacklistWithInfo(id, savedGids);
+        res.json({ ok: true, data: saved });
+    });
+
+    app.post('/api/friend-blacklist/batch-remove', async (req: Request, res: Response) => {
+        const id = getAccId(ctx, req);
+        if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });
+
+        if (!checkAccountAccess(ctx, req as any, id)) {
+            return res.status(403).json({ ok: false, error: '无权访问此账号' });
+        }
+
+        const gids = Array.isArray((req.body || {}).gids) ? (req.body || {}).gids : [];
+        const validGids = gids.map(Number).filter((g: number) => g > 0);
+        if (validGids.length === 0) {
+            return res.status(400).json({ ok: false, error: '缺少有效的 gid 列表' });
+        }
+
+        const current = store.getFriendBlacklist ? store.getFriendBlacklist(id) : [];
+        const removeSet = new Set(validGids);
+        const next = current.filter((g: number) => !removeSet.has(g));
+        const savedGids = store.setFriendBlacklist ? store.setFriendBlacklist(id, next) : next;
+
+        if (ctx.provider && typeof ctx.provider.broadcastConfig === 'function') {
+            ctx.provider.broadcastConfig(id);
+        }
+
+        const saved = await buildBlacklistWithInfo(id, savedGids);
+        res.json({ ok: true, data: saved });
+    });
+
     // ============ 好友GID管理 API ============
 
     // 获取已知好友GID设置

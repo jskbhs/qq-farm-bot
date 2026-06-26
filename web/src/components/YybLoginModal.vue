@@ -47,27 +47,34 @@ async function loginOne(openid: string) {
 
     // 查找是否已存在同 OpenID 的账号，存在则更新 code
     const existing = accountStore.accounts.find((a: any) => a.openid === openid || a.name === name)
-    if (existing) {
-      await accountStore.updateAccount(String(existing.id), {
-        name,
-        code: result.code,
-        platform,
-        loginType: 'yyb',
-        openid,
-      })
-      toast.success(`已更新账号: ${name}`)
+    try {
+      if (existing) {
+        await accountStore.updateAccount(String(existing.id), {
+          name,
+          code: result.code,
+          platform,
+          loginType: 'yyb',
+          openid,
+        })
+        toast.success(`已更新账号: ${name}`)
+      }
+      else {
+        await accountStore.addAccount({
+          name,
+          code: result.code,
+          platform,
+          loginType: 'yyb',
+          openid,
+        })
+        toast.success(`已添加账号: ${name}`)
+      }
+      emit('saved')
+      return true
     }
-    else {
-      await accountStore.addAccount({
-        name,
-        code: result.code,
-        platform,
-        loginType: 'yyb',
-        openid,
-      })
-      toast.success(`已添加账号: ${name}`)
+    catch (e: any) {
+      toast.error(e?.response?.data?.error || e?.message || '保存账号失败')
+      return false
     }
-    emit('saved')
   }
   finally {
     loadingOpenId.value = null
@@ -84,13 +91,8 @@ async function loginAll() {
   let successCount = 0
   try {
     for (const openid of openIds) {
-      try {
-        await loginOne(openid)
-        successCount++
-      }
-      catch (e) {
-        console.error('一键登录失败', openid, e)
-      }
+      const ok = await loginOne(openid)
+      if (ok) successCount++
     }
   }
   finally {
@@ -163,8 +165,8 @@ function close() {
             v-if="yybStore.config.openIds.length > 0"
             variant="primary"
             class="cartoon-btn"
-            :loading="yybStore.fetchingCode && loadingOpenId === 'all'"
-            :disabled="yybStore.fetchingCode"
+            :loading="loadingOpenId === 'all'"
+            :disabled="loadingOpenId !== null"
             @click="loginAll"
           >
             一键登录全部
