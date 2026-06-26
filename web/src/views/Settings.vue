@@ -1041,6 +1041,8 @@ async function handleTestOffline() {
             :edit-data="editingAccount"
             @close="showModal = false"
             @saved="handleSaved"
+            @yyb-login="showModal = false; showYybLogin = true"
+            @yyb-config="showModal = false; showYybConfig = true"
           />
 
           <ConfirmModal

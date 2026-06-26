@@ -18,22 +18,18 @@ const toast = useToastStore()
 
 const loadingOpenId = ref<string | null>(null)
 const accountNames = ref<Record<string, string>>({})
-const accountPlatforms = ref<Record<string, 'qq' | 'wx'>>({})
 
-function resetState() {
-  const nextNames: Record<string, string> = {}
-  const nextPlatforms: Record<string, 'qq' | 'wx'> = {}
+function resetNames() {
+  const next: Record<string, string> = {}
   for (const openid of yybStore.config.openIds) {
-    nextNames[openid] = accountNames.value[openid] || ''
-    nextPlatforms[openid] = accountPlatforms.value[openid] || 'qq'
+    next[openid] = accountNames.value[openid] || ''
   }
-  accountNames.value = nextNames
-  accountPlatforms.value = nextPlatforms
+  accountNames.value = next
 }
 
 watch(() => props.show, (show) => {
   if (show) {
-    yybStore.loadConfig().then(resetState)
+    yybStore.loadConfig().then(resetNames)
   }
 })
 
@@ -47,7 +43,7 @@ async function loginOne(openid: string) {
     }
 
     const name = accountNames.value[openid]?.trim() || `应用宝_${openid.slice(-6)}`
-    const platform = accountPlatforms.value[openid] || 'qq'
+    const platform = 'wx'
 
     // 查找是否已存在同 OpenID 的账号，存在则更新 code
     const existing = accountStore.accounts.find((a: any) => a.openid === openid || a.name === name)
@@ -149,28 +145,6 @@ function close() {
               >
                 登录
               </BaseButton>
-            </div>
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                class="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
-                :class="accountPlatforms[openid] === 'qq'
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400'"
-                @click="accountPlatforms[openid] = 'qq'"
-              >
-                QQ
-              </button>
-              <button
-                type="button"
-                class="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
-                :class="accountPlatforms[openid] === 'wx'
-                  ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400'"
-                @click="accountPlatforms[openid] = 'wx'"
-              >
-                微信
-              </button>
             </div>
             <BaseInput
               v-model="accountNames[openid]"

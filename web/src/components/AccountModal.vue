@@ -10,7 +10,7 @@ const props = defineProps<{
   editData?: any
 }>()
 
-const emit = defineEmits(['close', 'saved'])
+const emit = defineEmits(['close', 'saved', 'yyb-login', 'yyb-config'])
 
 const loading = ref(false)
 const errorMessage = ref('')
@@ -167,6 +167,29 @@ watch(() => props.show, (newVal) => {
               >
               <span class="text-sm" :style="{ color: 'var(--theme-text)' }">微信小程序</span>
             </label>
+          </div>
+
+          <div v-if="!editData" class="rounded-xl border border-dashed p-3 dark:border-gray-600" style="border-color: color-mix(in srgb, var(--theme-text) 15%, transparent)">
+            <p class="mb-2 text-xs opacity-70" :style="{ color: 'var(--theme-text)' }">
+              其他登录方式
+            </p>
+            <div class="flex gap-2">
+              <BaseButton
+                variant="outline"
+                size="sm"
+                class="flex-1"
+                @click="emit('yyb-login'); close()"
+              >
+                应用宝一键登录
+              </BaseButton>
+              <BaseButton
+                variant="ghost"
+                size="sm"
+                @click="emit('yyb-config'); close()"
+              >
+                配置
+              </BaseButton>
+            </div>
           </div>
 
           <div class="flex justify-end gap-2 pt-4">
