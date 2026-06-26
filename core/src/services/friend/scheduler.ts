@@ -475,10 +475,6 @@ interface FriendAutoAcceptConfig {
 function getFriendAutoAcceptConfig(): FriendAutoAcceptConfig {
     const accountId = getAccountIdForScheduler();
     const { enabled, minLevel } = getFriendAutoAccept(accountId);
-    log('好友', `读取好友最低等级配置: raw=${minLevel}, parsed=${minLevel}, accountId=${accountId}`, {
-        event: 'friend_auto_accept_config',
-        module: 'friend',
-    });
     return { enabled, minLevel, accountId };
 }
 
@@ -525,11 +521,6 @@ export function onFriendApplicationReceived(applications: any[]): void {
         }
 
         const { accepted, ignored } = filterApplicationsByLevel(applications, config);
-        log('好友', `好友申请筛选结果: 共 ${applications.length} 个，符合等级门槛 ${accepted.length} 个，忽略 ${ignored.length} 个`, {
-            event: 'friend_application_filter_result',
-            module: 'friend',
-            meta: { total: applications.length, accepted: accepted.length, ignored: ignored.length, minLevel: config.minLevel },
-        });
 
         for (const app of ignored) {
             logIgnoredApplication(app, config.minLevel, 'level');
