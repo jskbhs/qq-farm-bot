@@ -24,10 +24,6 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
   const rawConfig = ref<YybConfig>({ ...defaultConfig })
   const loading = ref(false)
   const fetchingCode = ref(false)
-
-  let reconnectTimer: ReturnType<typeof setInterval> | null = null
-  let offlineCheckTimer: ReturnType<typeof setInterval> | null = null
-  let accountStoreRef: any = null
   const processingOpenIds = new Set<string>()
 
   const config = computed<YybConfig>(() => ({
@@ -56,8 +52,6 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
     if (res.data?.ok && res.data.config) {
       rawConfig.value = { ...defaultConfig, ...res.data.config }
     }
-    // 配置变更后重启监听器
-    restartReconnectWatcher()
     return res.data
   }
 
@@ -81,6 +75,7 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
 
   /**
    * 为指定 OpenID 获取新 Code 并更新/新增账号，确保账号处于运行状态。
+   * 自动重连逻辑由后端 yyb-relogin 服务统一处理，前端仅在手动手动一键登录时调用此方法。
    */
   async function reloginAccount(
     accountStore: any,
@@ -146,56 +141,6 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
     }
   }
 
-  function stopReconnectWatcher() {
-    if (reconnectTimer) {
-      clearInterval(reconnectTimer)
-      reconnectTimer = null
-    }
-    if (offlineCheckTimer) {
-      clearInterval(offlineCheckTimer)
-      offlineCheckTimer = null
-    }
-  }
-
-  async function startReconnectWatcher(accountStore: any) {
-    stopReconnectWatcher()
-    accountStoreRef = accountStore
-    await loadConfig()
-
-    const intervalMinutes = config.value.reconnectIntervalMinutes
-    if (intervalMinutes > 0) {
-      reconnectTimer = setInterval(async () => {
-        if (!accountStoreRef)
-          return
-        const yybAccounts = accountStoreRef.accounts.filter(
-          (a: any) => a.loginType === 'yyb' && a.openid && a.running,
-        )
-        for (const acc of yybAccounts) {
-          await reloginAccount(accountStoreRef, acc.openid, acc.name)
-        }
-      }, intervalMinutes * 60 * 1000)
-    }
-
-    if (config.value.autoReconnect) {
-      offlineCheckTimer = setInterval(async () => {
-        if (!accountStoreRef)
-          return
-        const yybAccounts = accountStoreRef.accounts.filter(
-          (a: any) => a.loginType === 'yyb' && a.openid && !a.running,
-        )
-        for (const acc of yybAccounts) {
-          await reloginAccount(accountStoreRef, acc.openid, acc.name)
-        }
-      }, 30000)
-    }
-  }
-
-  function restartReconnectWatcher() {
-    if (accountStoreRef) {
-      startReconnectWatcher(accountStoreRef)
-    }
-  }
-
   return {
     config,
     loading,
@@ -204,8 +149,5 @@ export const useYybLoginStore = defineStore('yyb-login', () => {
     saveConfig,
     fetchCode,
     reloginAccount,
-    startReconnectWatcher,
-    stopReconnectWatcher,
-    restartReconnectWatcher,
   }
 })

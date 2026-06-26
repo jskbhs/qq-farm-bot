@@ -68,13 +68,13 @@ function createYybReloginService(options: YybReloginOptions) {
         return { ok: true, code: result.code };
     }
 
-    async function applyCodeRefresh(account: any, reason: string): Promise<boolean> {
+    async function applyCodeRefresh(account: any, reason: string): Promise<{ ok: boolean; code?: string }> {
         const accountId = String(account.id || '');
         const accountName = String(account.name || accountId);
         const result = await refreshAccountCode(account);
         if (!result.ok) {
             log('错误', `应用宝刷新失败: ${accountName} - ${result.error}`, { accountId });
-            return false;
+            return { ok: false };
         }
 
         const newCode = result.code!;
@@ -88,7 +88,7 @@ function createYybReloginService(options: YybReloginOptions) {
             log('系统', `应用宝刷新 Code 成功: ${accountName}`, { accountId, reason });
         }
         lastRefreshAt.set(accountId, Date.now());
-        return true;
+        return { ok: true, code: newCode };
     }
 
     async function refreshRunningAccounts(): Promise<void> {
@@ -110,9 +110,9 @@ function createYybReloginService(options: YybReloginOptions) {
             const last = lastRefreshAt.get(accountId) || 0;
             if (now - last < intervalMinutes * 60 * 1000) continue;
 
-            const ok = await applyCodeRefresh(account, 'scheduled');
-            if (ok && account.code) {
-                const refreshed = { ...account, code: account.code };
+            const refreshResult = await applyCodeRefresh(account, 'scheduled');
+            if (refreshResult.ok && refreshResult.code) {
+                const refreshed = { ...account, code: refreshResult.code };
                 restartWorker(refreshed);
             }
         }
@@ -129,13 +129,13 @@ function createYybReloginService(options: YybReloginOptions) {
         if (!cfg || !cfg.enabled || !cfg.autoReconnect) return;
 
         log('系统', `应用宝离线自动重连: ${account.name} (${reason})`, { accountId });
-        const ok = await applyCodeRefresh(account, reason);
-        if (!ok) {
+        const refreshResult = await applyCodeRefresh(account, reason);
+        if (!refreshResult.ok) {
             log('错误', `应用宝离线自动重连失败: ${account.name}`, { accountId, reason });
             return;
         }
 
-        const refreshed = { ...account, code: account.code };
+        const refreshed = { ...account, code: refreshResult.code || account.code };
         if (isAccountRunning(accountId)) {
             restartWorker(refreshed);
         } else {

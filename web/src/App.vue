@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import type { Theme } from '@/stores/app'
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import ToastContainer from '@/components/ToastContainer.vue'
-import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
-import { useYybLoginStore } from '@/stores/yyb-login'
 
 const appStore = useAppStore()
-const accountStore = useAccountStore()
-const yybStore = useYybLoginStore()
 
 // 立即应用保存的主题（在组件挂载前）
 const savedTheme = localStorage.getItem('ui_theme') as Theme
@@ -19,12 +15,6 @@ if (savedTheme && appStore.themes[savedTheme]) {
 
 onMounted(() => {
   appStore.fetchTheme()
-  // 启动应用宝自动重连监听器
-  yybStore.startReconnectWatcher(accountStore)
-})
-
-onUnmounted(() => {
-  yybStore.stopReconnectWatcher()
 })
 </script>
 
