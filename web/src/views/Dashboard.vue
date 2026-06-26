@@ -260,20 +260,30 @@ function formatDuration(seconds: number) {
   return `${pad(h)}:${pad(m)}:${pad(s)}`
 }
 
-function getLogTagClass(tag: string) {
-  if (tag === '错误')
-    return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-  if (tag === '系统')
-    return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-  if (tag === '警告')
-    return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-  return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+function getLogTagStyle(tag: string) {
+  if (tag === '错误') {
+    return {
+      backgroundColor: 'color-mix(in srgb, #ef4444 12%, transparent)',
+      color: '#ef4444',
+    }
+  }
+  if (tag === '警告') {
+    return {
+      backgroundColor: 'color-mix(in srgb, #f97316 12%, transparent)',
+      color: '#f97316',
+    }
+  }
+  return {
+    backgroundColor: 'color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+    color: 'var(--theme-primary)',
+  }
 }
 
-function getLogMsgClass(tag: string) {
-  if (tag === '错误')
-    return 'text-red-600 dark:text-red-400'
-  return 'text-gray-700 dark:text-gray-300'
+function getLogMsgStyle(tag: string) {
+  if (tag === '错误') {
+    return { color: '#ef4444' }
+  }
+  return { color: 'var(--theme-text)' }
 }
 
 function formatLogTime(timeStr: string) {
@@ -665,15 +675,15 @@ useIntervalFn(updateCountdowns, 1000)
             </div>
           </div>
 
-          <div ref="logContainer" class="max-h-[50vh] min-h-0 flex-1 overflow-y-auto rounded-xl bg-gray-50 p-4 text-sm leading-relaxed font-mono dark:bg-gray-900" @scroll="onLogScroll">
-            <div v-if="!allLogs.length" class="py-8 text-center text-gray-400">
+          <div ref="logContainer" class="max-h-[50vh] min-h-0 flex-1 overflow-y-auto rounded-xl p-4 text-sm leading-relaxed font-mono" :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-bg) 50%, transparent)' }" @scroll="onLogScroll">
+            <div v-if="!allLogs.length" class="py-8 text-center" :style="{ color: 'color-mix(in srgb, var(--theme-text) 40%, transparent)' }">
               暂无日志
             </div>
             <div v-for="log in allLogs" :key="log.ts + log.msg" class="mb-1 break-all">
-              <span class="mr-2 select-none text-gray-400">[{{ formatLogTime(log.time) }}]</span>
-              <span class="mr-2 rounded-full px-1.5 py-0.5 text-xs font-bold" :class="getLogTagClass(log.tag)">{{ log.tag }}</span>
-              <span v-if="log.meta?.event" class="mr-2 rounded-full bg-blue-50 px-1.5 py-0.5 text-xs text-blue-500 dark:bg-blue-900/20 dark:text-blue-400">{{ getEventLabel(log.meta.event) }}</span>
-              <span :class="getLogMsgClass(log.tag)">{{ log.msg }}</span>
+              <span class="mr-2 select-none" :style="{ color: 'color-mix(in srgb, var(--theme-text) 40%, transparent)' }">[{{ formatLogTime(log.time) }}]</span>
+              <span class="mr-2 rounded-full px-1.5 py-0.5 text-xs font-bold" :style="getLogTagStyle(log.tag)">{{ log.tag }}</span>
+              <span v-if="log.meta?.event" class="mr-2 rounded-full px-1.5 py-0.5 text-xs" :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 12%, transparent)', color: 'var(--theme-secondary)' }">{{ getEventLabel(log.meta.event) }}</span>
+              <span :style="getLogMsgStyle(log.tag)">{{ log.msg }}</span>
             </div>
           </div>
         </div>
