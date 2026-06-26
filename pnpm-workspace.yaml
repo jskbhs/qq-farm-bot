@@ -1,6 +1,7 @@
 packages:
   - core
   - web
+  - frontend
 
 ignoredBuiltDependencies:
   - '@parcel/watcher'
