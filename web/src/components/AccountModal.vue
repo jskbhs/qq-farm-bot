@@ -4,6 +4,7 @@ import api from '@/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
+import { useYybLoginStore } from '@/stores/yyb-login'
 
 const props = defineProps<{
   show: boolean
@@ -13,7 +14,10 @@ const props = defineProps<{
 const emit = defineEmits(['close', 'saved', 'yyb-login', 'yyb-config'])
 
 const loading = ref(false)
+const yybLoading = ref(false)
 const errorMessage = ref('')
+
+const yybStore = useYybLoginStore()
 
 // 表单数据
 const form = reactive({
@@ -88,6 +92,37 @@ async function submitManual() {
   }
 
   await addAccount(payload)
+}
+
+async function reloginYyb() {
+  if (!props.editData) return
+  const openid = String(props.editData.openid || '').trim()
+  if (!openid) {
+    errorMessage.value = '该账号没有绑定应用宝 OpenID'
+    return
+  }
+
+  yybLoading.value = true
+  errorMessage.value = ''
+  try {
+    const result = await yybStore.fetchCode(openid)
+    if (!result.ok || !result.code) {
+      errorMessage.value = result.error || '获取 Code 失败'
+      return
+    }
+
+    await addAccount({
+      id: props.editData.id,
+      name: form.name || props.editData.name,
+      code: result.code,
+      platform: 'wx',
+      loginType: 'yyb',
+      openid,
+    })
+  }
+  finally {
+    yybLoading.value = false
+  }
 }
 
 function close() {
@@ -190,6 +225,22 @@ watch(() => props.show, (newVal) => {
                 配置
               </BaseButton>
             </div>
+          </div>
+
+          <div v-if="editData" class="rounded-xl border border-dashed p-3 dark:border-gray-600" style="border-color: color-mix(in srgb, var(--theme-text) 15%, transparent)">
+            <p class="mb-2 text-xs opacity-70" :style="{ color: 'var(--theme-text)' }">
+              应用宝登录
+            </p>
+            <BaseButton
+              variant="outline"
+              size="sm"
+              class="w-full"
+              :loading="yybLoading"
+              :disabled="!editData.openid"
+              @click="reloginYyb"
+            >
+              {{ editData.openid ? '应用宝一键登录' : '未绑定应用宝 OpenID' }}
+            </BaseButton>
           </div>
 
           <div class="flex justify-end gap-2 pt-4">

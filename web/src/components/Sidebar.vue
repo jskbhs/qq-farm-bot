@@ -6,6 +6,8 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/api'
 import AccountModal from '@/components/AccountModal.vue'
 import RemarkModal from '@/components/RemarkModal.vue'
+import YybConfigModal from '@/components/YybConfigModal.vue'
+import YybLoginModal from '@/components/YybLoginModal.vue'
 
 import { menuRoutes } from '@/router/menu'
 import { getPlatformClass, getPlatformLabel, useAccountStore } from '@/stores/account'
@@ -26,6 +28,8 @@ const { sidebarOpen } = storeToRefs(appStore)
 const showAccountDropdown = ref(false)
 const showAccountModal = ref(false)
 const showRemarkModal = ref(false)
+const showYybConfig = ref(false)
+const showYybLogin = ref(false)
 const accountToEdit = ref<any>(null)
 const wsErrorNotifiedAt = ref<Record<string, number>>({})
 
@@ -76,9 +80,9 @@ async function handleAccountSaved() {
   showRemarkModal.value = false
 }
 
-function openRemarkModal(acc: any) {
+function openAccountEditModal(acc: any) {
   accountToEdit.value = acc
-  showRemarkModal.value = true
+  showAccountModal.value = true
   showAccountDropdown.value = false
 }
 
@@ -648,8 +652,8 @@ async function copyToken() {
                 <div class="flex items-center gap-1">
                   <button
                     class="rounded-full p-1 text-gray-400 transition-colors hover:bg-blue-50/50 hover:text-blue-500 dark:hover:bg-blue-900/20"
-                    title="修改备注"
-                    @click.stop="openRemarkModal(acc)"
+                    title="编辑账号"
+                    @click.stop="openAccountEditModal(acc)"
                   >
                     <div class="i-carbon-edit" />
                   </button>
@@ -832,6 +836,19 @@ async function copyToken() {
     :show="showAccountModal"
     :edit-data="accountToEdit"
     @close="showAccountModal = false; accountToEdit = null"
+    @saved="handleAccountSaved"
+    @yyb-login="showAccountModal = false; showYybLogin = true"
+    @yyb-config="showAccountModal = false; showYybConfig = true"
+  />
+
+  <YybConfigModal
+    :show="showYybConfig"
+    @close="showYybConfig = false"
+  />
+
+  <YybLoginModal
+    :show="showYybLogin"
+    @close="showYybLogin = false"
     @saved="handleAccountSaved"
   />
 

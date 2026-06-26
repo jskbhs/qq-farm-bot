@@ -97,6 +97,7 @@ async function loginAll() {
     loadingOpenId.value = null
   }
   toast.success(`一键登录完成，成功 ${successCount}/${openIds.length}`)
+  emit('close')
 }
 
 function close() {
