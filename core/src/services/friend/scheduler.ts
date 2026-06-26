@@ -464,10 +464,24 @@ function getAccountIdForScheduler(): string {
     return process.env.FARM_ACCOUNT_ID || '';
 }
 
-function filterApplicationsByLevel(applications: any[]): { accepted: any[]; ignored: any[] } {
+interface FriendAutoAcceptConfig {
+    enabled: boolean;
+    minLevel: number;
+    accountId: string;
+}
+
+function getFriendAutoAcceptConfig(): FriendAutoAcceptConfig {
     const accountId = getAccountIdForScheduler();
     const { enabled, minLevel } = getFriendAutoAccept(accountId);
-    if (!enabled) {
+    log('好友', `读取好友最低等级配置: raw=${minLevel}, parsed=${minLevel}, accountId=${accountId}`, {
+        event: 'friend_auto_accept_config',
+        module: 'friend',
+    });
+    return { enabled, minLevel, accountId };
+}
+
+function filterApplicationsByLevel(applications: any[], config: FriendAutoAcceptConfig): { accepted: any[]; ignored: any[] } {
+    if (!config.enabled) {
         return { accepted: [], ignored: applications };
     }
 
@@ -475,7 +489,7 @@ function filterApplicationsByLevel(applications: any[]): { accepted: any[]; igno
     const ignored: any[] = [];
     for (const app of applications) {
         const level = toNum(app.level);
-        if (level >= minLevel) {
+        if (level >= config.minLevel) {
             accepted.push(app);
         } else {
             ignored.push(app);
@@ -484,18 +498,29 @@ function filterApplicationsByLevel(applications: any[]): { accepted: any[]; igno
     return { accepted, ignored };
 }
 
-export function onFriendApplicationReceived(applications: any[]): void {
-    const names: string = applications.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
-    log('申请', `收到 ${applications.length} 个好友申请: ${names}`);
+function logIgnoredApplication(app: any, minLevel: number, reason: string): void {
+    const name: string = app.name || `GID:${toNum(app.gid)}`;
+    const level: number = toNum(app.level);
+    const reasonText: string = reason === 'disabled'
+        ? '功能未开启'
+        : `等级 ${level} < ${minLevel}`;
+    log('好友', `忽略好友申请: ${name}（${reasonText}）`, {
+        event: 'friend_application_ignored',
+        module: 'friend',
+        meta: { gid: toNum(app.gid), level, minLevel, reason },
+    });
+}
 
-    const { accepted, ignored } = filterApplicationsByLevel(applications);
-    if (ignored.length > 0) {
-        const ignoredNames: string = ignored.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
-        log('申请', `因等级不足忽略 ${ignored.length} 人: ${ignoredNames}`);
+export function onFriendApplicationReceived(applications: any[]): void {
+    const config = getFriendAutoAcceptConfig();
+
+    const { accepted, ignored } = filterApplicationsByLevel(applications, config);
+    for (const app of ignored) {
+        logIgnoredApplication(app, config.minLevel, config.enabled ? 'level' : 'disabled');
     }
 
     const gids: number[] = accepted.map((a: any) => toNum(a.gid));
-    acceptFriendsWithRetry(gids);
+    acceptFriendsWithRetry(gids, config.minLevel);
 }
 
 /**
@@ -507,20 +532,23 @@ async function checkAndAcceptApplications(): Promise<void> {
         const applications: any[] = reply.applications || [];
         if (applications.length === 0) return;
 
-        const { accepted, ignored } = filterApplicationsByLevel(applications);
-        if (accepted.length === 0) {
-            if (ignored.length > 0) {
-                const ignoredNames: string = ignored.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
-                log('申请', `发现 ${ignored.length} 个待处理申请，因等级不足全部忽略: ${ignoredNames}`);
-            }
-            return;
+        const config = getFriendAutoAcceptConfig();
+        const { accepted, ignored } = filterApplicationsByLevel(applications, config);
+
+        log('系统', `发现 ${applications.length} 个待处理申请，${ignored.length} 个因等级不足或功能未开启已忽略`, {
+            event: 'friend_application_summary',
+            module: 'system',
+            meta: { total: applications.length, accepted: accepted.length, ignored: ignored.length },
+        });
+
+        for (const app of ignored) {
+            logIgnoredApplication(app, config.minLevel, config.enabled ? 'level' : 'disabled');
         }
 
-        const names: string = accepted.map((a: any) => a.name || `GID:${toNum(a.gid)}`).join(', ');
-        log('申请', `发现 ${accepted.length} 个待处理申请: ${names}`);
+        if (accepted.length === 0) return;
 
         const gids: number[] = accepted.map((a: any) => toNum(a.gid));
-        await acceptFriendsWithRetry(gids);
+        await acceptFriendsWithRetry(gids, config.minLevel);
     } catch {
         // 静默失败，可能是 QQ 平台不支持
     }
@@ -529,14 +557,19 @@ async function checkAndAcceptApplications(): Promise<void> {
 /**
  * 同意好友申请 (带重试)
  */
-async function acceptFriendsWithRetry(gids: number[]): Promise<void> {
+async function acceptFriendsWithRetry(gids: number[], minLevel?: number): Promise<void> {
     if (gids.length === 0) return;
     try {
         const reply: any = await acceptFriends(gids);
         const friends: any[] = reply.friends || [];
         if (friends.length > 0) {
-            const names: string = friends.map((f: any) => f.name || f.remark || `GID:${toNum(f.gid)}`).join(', ');
-            log('申请', `已同意 ${friends.length} 人: ${names}`);
+            for (const f of friends) {
+                log('好友', `已同意好友申请: ${f.name || f.remark || `GID:${toNum(f.gid)}`}（等级 ${toNum(f.level)}${minLevel === undefined ? '' : ` ≥ ${minLevel}`}）`, {
+                    event: 'friend_application_accepted',
+                    module: 'friend',
+                    meta: { gid: toNum(f.gid), level: toNum(f.level), minLevel },
+                });
+            }
         }
     } catch (e: any) {
         logWarn('申请', `同意失败: ${e.message}`);

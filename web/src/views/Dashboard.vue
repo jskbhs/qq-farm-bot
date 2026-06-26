@@ -86,6 +86,10 @@ const events = [
   { label: '土地解锁', value: 'unlock_land' },
   { label: '好友巡查', value: 'friend_cycle' },
   { label: '访问好友', value: 'visit_friend' },
+  { label: '读取好友最低等级', value: 'friend_auto_accept_config' },
+  { label: '好友申请忽略', value: 'friend_application_ignored' },
+  { label: '好友申请同意', value: 'friend_application_accepted' },
+  { label: '好友申请汇总', value: 'friend_application_summary' },
 ]
 
 const eventLabelMap: Record<string, string> = Object.fromEntries(
