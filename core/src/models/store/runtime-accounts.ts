@@ -8,14 +8,23 @@ interface RuntimeAccountsData {
 }
 
 function loadRuntimeAccounts(): RuntimeAccountsData {
-    ensureDataDir();
-    const data = readJsonFile(RUNTIME_ACCOUNTS_FILE, () => ({ runningAccountIds: [] }));
-    return normalizeRuntimeAccountsData(data);
+    try {
+        ensureDataDir();
+        const data = readJsonFile(RUNTIME_ACCOUNTS_FILE, () => ({ runningAccountIds: [] }));
+        return normalizeRuntimeAccountsData(data);
+    } catch (e: any) {
+        console.warn('[runtime-accounts] load failed:', e && e.message ? e.message : e);
+        return { runningAccountIds: [] };
+    }
 }
 
 function saveRuntimeAccounts(data: RuntimeAccountsData): void {
-    ensureDataDir();
-    writeJsonFileAtomic(RUNTIME_ACCOUNTS_FILE, normalizeRuntimeAccountsData(data));
+    try {
+        ensureDataDir();
+        writeJsonFileAtomic(RUNTIME_ACCOUNTS_FILE, normalizeRuntimeAccountsData(data));
+    } catch (e: any) {
+        console.warn('[runtime-accounts] save failed:', e && e.message ? e.message : e);
+    }
 }
 
 function normalizeRuntimeAccountsData(raw: unknown): RuntimeAccountsData {
@@ -37,23 +46,31 @@ function isAccountRunning(accountId: string | number): boolean {
 }
 
 function markAccountRunning(accountId: string | number): void {
-    const id = String(accountId || '').trim();
-    if (!id) return;
-    const data = loadRuntimeAccounts();
-    if (!data.runningAccountIds.includes(id)) {
-        data.runningAccountIds.push(id);
-        saveRuntimeAccounts(data);
+    try {
+        const id = String(accountId || '').trim();
+        if (!id) return;
+        const data = loadRuntimeAccounts();
+        if (!data.runningAccountIds.includes(id)) {
+            data.runningAccountIds.push(id);
+            saveRuntimeAccounts(data);
+        }
+    } catch (e: any) {
+        console.warn('[runtime-accounts] markAccountRunning failed:', e && e.message ? e.message : e);
     }
 }
 
 function markAccountStopped(accountId: string | number): void {
-    const id = String(accountId || '').trim();
-    if (!id) return;
-    const data = loadRuntimeAccounts();
-    const idx = data.runningAccountIds.indexOf(id);
-    if (idx >= 0) {
-        data.runningAccountIds.splice(idx, 1);
-        saveRuntimeAccounts(data);
+    try {
+        const id = String(accountId || '').trim();
+        if (!id) return;
+        const data = loadRuntimeAccounts();
+        const idx = data.runningAccountIds.indexOf(id);
+        if (idx >= 0) {
+            data.runningAccountIds.splice(idx, 1);
+            saveRuntimeAccounts(data);
+        }
+    } catch (e: any) {
+        console.warn('[runtime-accounts] markAccountStopped failed:', e && e.message ? e.message : e);
     }
 }
 
