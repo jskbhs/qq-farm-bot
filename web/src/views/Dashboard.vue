@@ -285,6 +285,25 @@ function getLogTagStyle(tag: string) {
   }
 }
 
+function getLogRowStyle(tag: string) {
+  if (tag === '错误') {
+    return {
+      backgroundColor: 'color-mix(in srgb, #ef4444 10%, transparent)',
+      borderLeft: '3px solid #ef4444',
+    }
+  }
+  if (tag === '警告') {
+    return {
+      backgroundColor: 'color-mix(in srgb, #f97316 8%, transparent)',
+      borderLeft: '3px solid #f97316',
+    }
+  }
+  return {
+    backgroundColor: 'transparent',
+    borderLeft: '3px solid transparent',
+  }
+}
+
 function getLogMsgStyle(tag: string) {
   if (tag === '错误') {
     return { color: '#ef4444' }
@@ -690,6 +709,15 @@ useIntervalFn(updateCountdowns, 1000)
               <BaseButton
                 variant="secondary"
                 size="sm"
+                :title="autoScroll ? '暂停自动滚动' : '开启自动滚动'"
+                @click="autoScroll = !autoScroll"
+              >
+                {{ autoScroll ? '📜' : '⏸️' }}
+              </BaseButton>
+
+              <BaseButton
+                variant="secondary"
+                size="sm"
                 :loading="clearingLogs"
                 @click="clearLogs"
               >
@@ -702,7 +730,12 @@ useIntervalFn(updateCountdowns, 1000)
             <div v-if="!allLogs.length" class="py-8 text-center" :style="{ color: 'color-mix(in srgb, var(--theme-text) 40%, transparent)' }">
               暂无日志
             </div>
-            <div v-for="log in allLogs" :key="log.ts + log.msg" class="mb-1.5 break-all">
+            <div
+              v-for="log in allLogs"
+              :key="log.ts + log.msg"
+              class="mb-1.5 break-all rounded-md px-2 py-1"
+              :style="getLogRowStyle(log.tag)"
+            >
               <span class="mr-2 select-none" :style="{ color: 'color-mix(in srgb, var(--theme-text) 40%, transparent)' }">[{{ formatLogTime(log.time) }}]</span>
               <span class="mr-2 rounded-full px-2 py-0.5 text-xs font-bold" :style="getLogTagStyle(log.tag)">{{ log.tag }}</span>
               <span v-if="log.meta?.event" class="mr-2 rounded-full px-2 py-0.5 text-xs font-medium" :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 12%, transparent)', color: 'var(--theme-secondary)' }">{{ getEventLabel(log.meta.event) }}</span>

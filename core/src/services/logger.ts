@@ -4,10 +4,13 @@ const path = require('node:path');
 const { ensureDataDir } = require('../config/runtime-paths');
 
 let winston: any = null;
+let DailyRotateFile: any = null;
 try {
     winston = require('winston');
+    DailyRotateFile = require('winston-daily-rotate-file');
 } catch {
     winston = null;
+    DailyRotateFile = null;
 }
 
 const SENSITIVE_KEY_RE = /code|token|password|passwd|auth|ticket|cookie|session/i;
@@ -112,40 +115,72 @@ function getRootLogger(): any {
     const level = String(process.env.LOG_LEVEL || 'info').toLowerCase();
     const { combine, timestamp, errors, json, colorize, printf } = winston.format;
 
-    rootLogger = winston.createLogger({
-        level,
-        defaultMeta: { app: 'qq-farm-bot' },
-        transports: [
-            new winston.transports.Console({
-                format: combine(
-                    colorize(),
-                    timestamp(),
-                    errors({ stack: true }),
-                    printf((info: any) => {
-                        const moduleName = info.module ? `[${info.module}] ` : '';
-                        const msg = redactString(info.message || '');
-                        const meta = { ...info };
-                        delete meta.level;
-                        delete meta.message;
-                        delete meta.timestamp;
-                        delete meta.app;
-                        delete meta.module;
-                        const safeMeta = sanitizeMeta(meta);
-                        const hasMeta = safeMeta && Object.keys(safeMeta).length > 0;
-                        return `${info.timestamp} [${info.level}] ${moduleName}${msg}${hasMeta ? ` ${JSON.stringify(safeMeta)}` : ''}`;
-                    }),
-                ),
+    const maxFiles = process.env.LOG_MAX_DAYS ? Number(process.env.LOG_MAX_DAYS) : 30;
+    const transports: any[] = [
+        new winston.transports.Console({
+            format: combine(
+                colorize(),
+                timestamp(),
+                errors({ stack: true }),
+                printf((info: any) => {
+                    const moduleName = info.module ? `[${info.module}] ` : '';
+                    const msg = redactString(info.message || '');
+                    const meta = { ...info };
+                    delete meta.level;
+                    delete meta.message;
+                    delete meta.timestamp;
+                    delete meta.app;
+                    delete meta.module;
+                    const safeMeta = sanitizeMeta(meta);
+                    const hasMeta = safeMeta && Object.keys(safeMeta).length > 0;
+                    return `${info.timestamp} [${info.level}] ${moduleName}${msg}${hasMeta ? ` ${JSON.stringify(safeMeta)}` : ''}`;
+                }),
+            ),
+        }),
+    ];
+
+    if (DailyRotateFile) {
+        transports.push(
+            new DailyRotateFile({
+                filename: path.join(logDir, 'combined-%DATE%.log'),
+                datePattern: 'YYYY-MM-DD',
+                zippedArchive: true,
+                maxSize: '50m',
+                maxFiles: `${maxFiles}d`,
+                format: combine(timestamp(), errors({ stack: true }), json()),
             }),
+        );
+        transports.push(
+            new DailyRotateFile({
+                filename: path.join(logDir, 'error-%DATE%.log'),
+                datePattern: 'YYYY-MM-DD',
+                level: 'error',
+                zippedArchive: true,
+                maxSize: '50m',
+                maxFiles: `${maxFiles}d`,
+                format: combine(timestamp(), errors({ stack: true }), json()),
+            }),
+        );
+    } else {
+        transports.push(
             new winston.transports.File({
                 filename: path.join(logDir, 'combined.log'),
                 format: combine(timestamp(), errors({ stack: true }), json()),
             }),
+        );
+        transports.push(
             new winston.transports.File({
                 filename: path.join(logDir, 'error.log'),
                 level: 'error',
                 format: combine(timestamp(), errors({ stack: true }), json()),
             }),
-        ],
+        );
+    }
+
+    rootLogger = winston.createLogger({
+        level,
+        defaultMeta: { app: 'qq-farm-bot' },
+        transports,
     });
 
     return rootLogger;
