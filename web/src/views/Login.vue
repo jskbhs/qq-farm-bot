@@ -45,8 +45,7 @@ const forgotError = ref('')
 const forgotSuccess = ref('')
 const showForgotPasswordStrength = ref(false)
 
-const passwordStrength = computed(() => {
-  const pwd = password.value
+function calcPasswordStrength(pwd: string) {
   if (!pwd)
     return { score: 0, level: '', valid: false }
 
@@ -85,7 +84,11 @@ const passwordStrength = computed(() => {
   const valid = pwd.length >= 6 && typeCount >= 2
 
   return { score, level, color, valid }
-})
+}
+
+const passwordStrength = computed(() => calcPasswordStrength(password.value))
+
+const forgotPasswordStrength = computed(() => calcPasswordStrength(forgotNewPassword.value))
 
 const usernameValid = computed(() => {
   const name = username.value
@@ -331,7 +334,7 @@ function validateForgotForm(): boolean {
     return false
   }
 
-  if (!passwordStrength.value.valid) {
+  if (!forgotPasswordStrength.value.valid) {
     forgotError.value = '密码强度不足：需包含大写字母、小写字母、数字、特殊符号中的至少两种'
     return false
   }
@@ -714,11 +717,11 @@ async function fetchGameVersion() {
                     <div class="strength-bar">
                       <div
                         class="strength-fill"
-                        :style="{ width: `${Math.min(passwordStrength.score * 12.5, 100)}%`, backgroundColor: passwordStrength.color }"
+                        :style="{ width: `${Math.min(forgotPasswordStrength.score * 12.5, 100)}%`, backgroundColor: forgotPasswordStrength.color }"
                       />
                     </div>
-                    <span class="strength-text" :style="{ color: passwordStrength.color }">
-                      {{ passwordStrength.level }}
+                    <span class="strength-text" :style="{ color: forgotPasswordStrength.color }">
+                      {{ forgotPasswordStrength.level }}
                     </span>
                   </div>
                 </div>
