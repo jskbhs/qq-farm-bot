@@ -778,15 +778,6 @@ async function copyToken() {
         <div class="flex items-center justify-between opacity-50">
           <div class="flex items-center gap-2">
             <span>Web v{{ version }}</span>
-            <a
-              href="https://github.com/XyhTender/qq-farm-automation-bot"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="开源地址"
-              class="inline-flex items-center text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <div class="i-carbon-logo-github text-base" />
-            </a>
           </div>
           <span v-if="serverVersion">Core v{{ serverVersion }}</span>
         </div>
