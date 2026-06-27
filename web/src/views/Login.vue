@@ -159,9 +159,11 @@ async function handleSubmit() {
       if (result.ok) {
         if (rememberMe.value) {
           localStorage.setItem('remembered_username', username.value)
+          localStorage.setItem('remembered_password', password.value)
         }
         else {
           localStorage.removeItem('remembered_username')
+          localStorage.removeItem('remembered_password')
         }
         if (result.data?.mustChangePassword) {
           success.value = '登录成功！请修改默认密码以确保账户安全'
@@ -394,9 +396,13 @@ onMounted(() => {
   checkCardClaimStatus()
   fetchGameVersion()
   const savedUsername = localStorage.getItem('remembered_username')
+  const savedPassword = localStorage.getItem('remembered_password')
   if (savedUsername) {
     username.value = savedUsername
     rememberMe.value = true
+  }
+  if (savedPassword) {
+    password.value = savedPassword
   }
 })
 
