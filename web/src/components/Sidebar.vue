@@ -700,7 +700,7 @@ async function copyToken() {
         v-for="item in navItems"
         :key="item.path"
         :to="item.path"
-        class="group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-300 overflow-hidden"
+        class="group relative flex items-center gap-3 overflow-hidden rounded-2xl px-3 py-2.5 transition-all duration-300"
         :active-class="item.path === '/' ? '' : 'font-bold'"
         :style="{
           color: 'var(--theme-text)',
@@ -710,7 +710,7 @@ async function copyToken() {
       >
         <div
           v-if="isActiveRoute(item.path)"
-          class="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full"
+          class="absolute left-0 top-1/2 h-8 w-1 rounded-r-full -translate-y-1/2"
           :style="{ backgroundColor: 'var(--theme-primary)', boxShadow: '0 0 8px var(--theme-primary)' }"
         />
         <div
@@ -724,7 +724,7 @@ async function copyToken() {
           class="relative z-10 select-none text-xl transition-all duration-300"
           :class="isActiveRoute(item.path) ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-6'"
         >{{ item.icon }}</span>
-        <span class="relative z-10 font-body font-bold">{{ item.label }}</span>
+        <span class="font-body relative z-10 font-bold">{{ item.label }}</span>
         <div
           v-if="isActiveRoute(item.path)"
           class="relative z-10 ml-auto text-xs"
@@ -814,7 +814,7 @@ async function copyToken() {
       <!-- 主题选择弹出面板 -->
       <div
         v-show="showThemeDropdown"
-        class="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-2xl border-2 p-2 shadow-2xl"
+        class="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden border-2 rounded-2xl p-2 shadow-2xl"
         :style="{
           backgroundColor: 'var(--theme-bg)',
           borderColor: 'color-mix(in srgb, var(--theme-primary) 25%, transparent)',
@@ -840,11 +840,11 @@ async function copyToken() {
             :title="t.name"
             @click="appStore.applyTheme(theme as any); showThemeDropdown = false"
           >
-            <div :class="[t.icon, 'text-lg', { 'animate-sparkle': appStore.currentTheme === theme }]" :style="{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }" />
+            <div class="text-lg" :class="[t.icon, { 'animate-sparkle': appStore.currentTheme === theme }]" :style="{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }" />
             <span class="text-[9px] font-bold leading-tight" style="color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3)">{{ t.name }}</span>
             <div
               v-if="appStore.currentTheme === theme"
-              class="absolute -right-1 -top-1 h-4 w-4 flex items-center justify-center rounded-full shadow-md animate-bounce-in"
+              class="absolute h-4 w-4 flex animate-bounce-in items-center justify-center rounded-full shadow-md -right-1 -top-1"
               :style="{ backgroundColor: t.primary }"
             >
               <div class="i-carbon-checkmark text-[10px] text-white" />

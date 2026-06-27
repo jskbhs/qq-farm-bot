@@ -138,7 +138,7 @@ onUnmounted(() => {
       >
         <div class="flex items-center gap-2">
           <span class="title-wheat text-2xl">🌾</span>
-          <div class="text-lg font-display font-bold" style="color: var(--theme-primary)">
+          <div class="text-lg font-bold font-display" style="color: var(--theme-primary)">
             QQ农场智能助手
           </div>
           <span class="animate-sparkle text-sm" style="animation-delay: 0.5s">✨</span>

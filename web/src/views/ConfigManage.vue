@@ -395,54 +395,61 @@ function formatPrice(price: number, priceId?: number): string {
 <template>
   <div class="space-y-5">
     <!-- Tab 切换 -->
-    <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-      <button
-        class="flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors"
-        :class="activeTab === 'seeds'
-          ? 'border-green-500 text-green-600 dark:border-green-400 dark:text-green-400'
-          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
-        @click="switchTab('seeds')"
-      >
-        <span class="text-lg">🌱</span>
-        <span>种子</span>
-        <span v-if="seedList.length" class="ml-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/50 dark:text-green-300">
-          {{ seedList.length }}
-        </span>
-      </button>
-      <button
-        class="flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors"
-        :class="activeTab === 'fruits'
-          ? 'border-orange-500 text-orange-600 dark:border-orange-400 dark:text-orange-400'
-          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
-        @click="switchTab('fruits')"
-      >
-        <span class="text-lg">🍎</span>
-        <span>果实</span>
-        <span v-if="fruitList.length" class="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
-          {{ fruitList.length }}
-        </span>
-      </button>
-      <button
-        class="flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors"
-        :class="activeTab === 'items'
-          ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
-        @click="switchTab('items')"
-      >
-        <span class="text-lg">🎒</span>
-        <span>道具</span>
-        <span v-if="itemList.length" class="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-          {{ itemList.length }}
-        </span>
-      </button>
+    <div class="farm-card-enhanced p-2">
+      <div class="flex gap-2">
+        <button
+          class="config-tab flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
+          :class="activeTab === 'seeds'
+            ? 'config-tab-active seed-tab-active'
+            : 'config-tab-inactive'"
+          @click="switchTab('seeds')"
+        >
+          <span class="tab-icon text-lg">🌱</span>
+          <span>种子</span>
+          <span v-if="seedList.length" class="tab-badge ml-1 rounded-full px-2 py-0.5 text-xs font-bold" :class="activeTab === 'seeds' ? 'tab-badge-active' : 'tab-badge-inactive'">
+            {{ seedList.length }}
+          </span>
+        </button>
+        <button
+          class="config-tab flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
+          :class="activeTab === 'fruits'
+            ? 'config-tab-active fruit-tab-active'
+            : 'config-tab-inactive'"
+          @click="switchTab('fruits')"
+        >
+          <span class="tab-icon text-lg">🍎</span>
+          <span>果实</span>
+          <span v-if="fruitList.length" class="tab-badge ml-1 rounded-full px-2 py-0.5 text-xs font-bold" :class="activeTab === 'fruits' ? 'tab-badge-active' : 'tab-badge-inactive'">
+            {{ fruitList.length }}
+          </span>
+        </button>
+        <button
+          class="config-tab flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
+          :class="activeTab === 'items'
+            ? 'config-tab-active item-tab-active'
+            : 'config-tab-inactive'"
+          @click="switchTab('items')"
+        >
+          <span class="tab-icon text-lg">🎒</span>
+          <span>道具</span>
+          <span v-if="itemList.length" class="tab-badge ml-1 rounded-full px-2 py-0.5 text-xs font-bold" :class="activeTab === 'items' ? 'tab-badge-active' : 'tab-badge-inactive'">
+            {{ itemList.length }}
+          </span>
+        </button>
+      </div>
     </div>
 
-    <div class="border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
+    <div class="farm-card-enhanced">
       <!-- 搜索 + 筛选 + 录入按钮 -->
-      <div class="flex flex-wrap items-center gap-2 border-b border-gray-100 from-green-50/50 to-yellow-50/50 bg-gradient-to-r p-4 dark:border-gray-700 dark:bg-gray-900/30">
+      <div class="config-toolbar flex flex-wrap items-center gap-3 p-4">
+        <div class="section-title flex items-center gap-2">
+          <span class="title-icon">🔧</span>
+          <span class="title-text">快捷操作</span>
+          <div class="title-divider" />
+        </div>
         <button
           v-show="activeTab === 'seeds'"
-          class="flex shrink-0 cartoon-btn items-center gap-1 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-600 transition dark:bg-green-900/20 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30"
+          class="config-add-btn flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
           @click="showSeedModal = true"
         >
           <span>➕</span>
@@ -450,19 +457,19 @@ function formatPrice(price: number, priceId?: number): string {
         </button>
         <button
           v-show="activeTab === 'items'"
-          class="flex shrink-0 cartoon-btn items-center gap-1 rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-600 transition dark:bg-blue-900/20 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30"
+          class="config-add-btn config-add-btn-blue flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
           @click="showItemModal = true"
         >
           <span>➕</span>
           录入道具
         </button>
-        <div class="relative w-48 shrink-0">
-          <span class="absolute left-3 top-1/2 text-gray-400 -translate-y-1/2">🔍</span>
+        <div class="config-search relative w-56 shrink-0">
+          <span class="search-icon absolute left-3.5 top-1/2 text-base -translate-y-1/2">🔍</span>
           <input
             v-model="searchKeyword"
             type="text"
             :placeholder="activeTab === 'seeds' ? '搜索种子...' : activeTab === 'fruits' ? '搜索果实...' : '搜索道具...'"
-            class="w-full border border-gray-300 rounded-lg bg-white py-2 pl-10 pr-4 text-sm dark:border-gray-600 focus:border-green-500 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-green-500"
+            class="config-search-input w-full rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition-all duration-300"
           >
         </div>
         <!-- 种子筛选 -->
@@ -529,49 +536,49 @@ function formatPrice(price: number, priceId?: number): string {
         <div v-if="filteredSeeds.length === 0" class="py-16 text-center text-gray-400">
           {{ searchKeyword ? '没有匹配的种子' : '暂无种子数据' }}
         </div>
-        <div v-else class="hidden farm-card overflow-hidden border border-gray-200 rounded-2xl shadow-sm sm:block dark:border-gray-700">
+        <div v-else class="config-table-wrap hidden overflow-hidden rounded-2xl sm:block">
           <div class="overflow-x-auto">
-            <table class="w-full whitespace-nowrap text-left text-sm">
-              <thead class="border-b bg-gray-50 text-xs text-gray-500 uppercase dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">
+            <table class="config-table w-full whitespace-nowrap text-left text-sm">
+              <thead class="config-table-head">
                 <tr>
-                  <th class="sticky left-0 z-10 bg-gray-50 px-4 py-3 font-medium shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:bg-gray-800">
-                    种子
+                  <th class="sticky left-0 z-10 px-4 py-3 font-bold">
+                    🌱 种子
                   </th>
-                  <th class="px-4 py-3 font-medium">
+                  <th class="px-4 py-3 font-bold">
                     种子ID
                   </th>
-                  <th class="px-4 py-3 font-medium">
+                  <th class="px-4 py-3 font-bold">
                     等级
                   </th>
-                  <th class="px-4 py-3 font-medium">
+                  <th class="px-4 py-3 font-bold">
                     季节
                   </th>
-                  <th class="px-4 py-3 font-medium">
+                  <th class="px-4 py-3 font-bold">
                     生长时间
                   </th>
-                  <th class="px-4 py-3 font-medium">
+                  <th class="px-4 py-3 font-bold">
                     收获数
                   </th>
-                  <th class="px-4 py-3 font-medium">
+                  <th class="px-4 py-3 font-bold">
                     经验
                   </th>
-                  <th class="px-4 py-3 font-medium">
+                  <th class="px-4 py-3 font-bold">
                     价格
                   </th>
-                  <th class="px-4 py-3 text-center font-medium">
+                  <th class="px-4 py-3 text-center font-bold">
                     操作
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                <tr v-for="item in filteredSeeds" :key="item.seedId" class="group transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td class="sticky left-0 bg-white px-4 py-2 shadow-[1px_0_0_0_rgba(0,0,0,0.05)] dark:bg-gray-800 dark:group-hover:bg-gray-700/50">
+              <tbody class="config-table-body">
+                <tr v-for="(item, index) in filteredSeeds" :key="item.seedId" class="config-table-row group" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
+                  <td class="row-sticky-cell sticky left-0 px-4 py-3">
                     <div class="flex items-center gap-3">
-                      <div class="relative h-10 w-10 flex shrink-0 items-center justify-center overflow-hidden border border-gray-200 rounded-lg bg-gray-100 dark:border-gray-600 dark:bg-gray-700">
+                      <div class="config-item-icon relative h-11 w-11 flex shrink-0 items-center justify-center overflow-hidden rounded-xl">
                         <img
                           v-if="item.image && !imageErrors[item.seedId]"
                           :src="item.image"
-                          class="h-8 w-8 object-contain"
+                          class="h-9 w-9 object-contain"
                           loading="lazy"
                           @error="imageErrors[item.seedId] = true"
                         >
@@ -608,24 +615,24 @@ function formatPrice(price: number, priceId?: number): string {
                   <td class="px-4 py-2 text-amber-600 font-medium dark:text-amber-400">
                     {{ formatPrice(item.price, item.priceId) }}
                   </td>
-                  <td class="px-4 py-2 text-center">
-                    <div class="flex items-center justify-center gap-1">
+                  <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center gap-1.5">
                       <button
-                        class="rounded-lg px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                        class="config-action-btn config-action-btn-warning rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-300"
                         title="加入/移出黑名单"
                         @click="handleToggleBlacklist(item.seedId)"
                       >
                         🚫
                       </button>
                       <button
-                        class="rounded-lg px-2 py-1 text-xs text-blue-600 transition hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        class="config-action-btn config-action-btn-primary rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-300"
                         title="编辑"
                         @click="editSeedData = { ...item }"
                       >
                         ✏️
                       </button>
                       <button
-                        class="rounded-lg px-2 py-1 text-xs text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                        class="config-action-btn config-action-btn-danger rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-300"
                         title="删除"
                         @click="handleDeleteSeed(item.seedId, item.name)"
                       >
@@ -978,22 +985,25 @@ function formatPrice(price: number, priceId?: number): string {
 
     <!-- 删除确认 -->
     <div v-if="confirmVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="mx-4 max-w-sm w-full rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
-        <h3 class="text-lg text-gray-900 font-semibold dark:text-gray-100">
+      <div class="confirm-modal mx-4 max-w-sm w-full">
+        <div class="confirm-icon-wrap">
+          <span class="confirm-icon">⚠️</span>
+        </div>
+        <h3 class="confirm-title">
           {{ confirmTitle }}
         </h3>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <p class="confirm-message">
           {{ confirmMessage }}
         </p>
-        <div class="mt-4 flex justify-end gap-2">
+        <div class="mt-6 flex justify-end gap-3">
           <button
-            class="rounded-lg px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+            class="confirm-btn confirm-btn-cancel"
             @click="confirmVisible = false"
           >
             取消
           </button>
           <button
-            class="rounded-lg bg-red-500 px-4 py-2 text-sm text-white transition hover:bg-red-600"
+            class="confirm-btn confirm-btn-danger"
             @click="executeConfirm"
           >
             确认删除
@@ -1003,3 +1013,545 @@ function formatPrice(price: number, priceId?: number): string {
     </div>
   </div>
 </template>
+
+<style scoped lang="postcss">
+/* Tab 选项卡样式 */
+.config-tab {
+  position: relative;
+  font-family: 'Nunito', sans-serif;
+}
+
+.config-tab-inactive {
+  color: #6b7280;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .config-tab-inactive {
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.config-tab-inactive:hover {
+  color: #374151;
+  background: rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.dark .config-tab-inactive:hover {
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.config-tab-active {
+  color: white;
+  transform: translateY(-2px);
+}
+
+.seed-tab-active {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  box-shadow:
+    0 4px 0 #15803d,
+    0 6px 20px rgba(34, 197, 94, 0.4),
+    0 0 20px rgba(34, 197, 94, 0.3) inset;
+}
+
+.fruit-tab-active {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  box-shadow:
+    0 4px 0 #c2410c,
+    0 6px 20px rgba(249, 115, 22, 0.4),
+    0 0 20px rgba(249, 115, 22, 0.3) inset;
+}
+
+.item-tab-active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow:
+    0 4px 0 #1d4ed8,
+    0 6px 20px rgba(59, 130, 246, 0.4),
+    0 0 20px rgba(59, 130, 246, 0.3) inset;
+}
+
+.tab-icon {
+  display: inline-block;
+  animation: tab-icon-bounce 2s ease-in-out infinite;
+}
+
+@keyframes tab-icon-bounce {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.15) rotate(-5deg);
+  }
+  50% {
+    transform: scale(1) rotate(0deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+.tab-badge {
+  transition: all 0.3s ease;
+}
+
+.tab-badge-inactive {
+  background: rgba(0, 0, 0, 0.08);
+  color: #6b7280;
+}
+
+.dark .tab-badge-inactive {
+  background: rgba(255, 255, 255, 0.1);
+  color: #9ca3af;
+}
+
+.tab-badge-active {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+/* 工具栏样式 */
+.config-toolbar {
+  background: linear-gradient(180deg, rgba(139, 105, 20, 0.04) 0%, transparent 100%);
+  border-bottom: 2px solid rgba(139, 105, 20, 0.08);
+}
+
+.dark .config-toolbar {
+  background: linear-gradient(180deg, rgba(109, 191, 91, 0.06) 0%, transparent 100%);
+  border-bottom: 2px solid rgba(109, 191, 91, 0.1);
+}
+
+.section-title {
+  margin-right: 8px;
+}
+
+.title-icon {
+  font-size: 18px;
+  animation: wheat-sway 3s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: bottom center;
+}
+
+.title-text {
+  font-family: 'ZCOOL KuaiLe', cursive;
+  font-size: 16px;
+  color: #8b6914;
+  letter-spacing: 0.02em;
+}
+
+.dark .title-text {
+  color: #6dbf5b;
+}
+
+.title-divider {
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(180deg, transparent 0%, rgba(139, 105, 20, 0.3) 50%, transparent 100%);
+  margin-left: 4px;
+}
+
+.dark .title-divider {
+  background: linear-gradient(180deg, transparent 0%, rgba(109, 191, 91, 0.3) 50%, transparent 100%);
+}
+
+/* 添加按钮 */
+.config-add-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 4px solid rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(34, 197, 94, 0.25);
+}
+
+.config-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.15),
+    0 6px 20px rgba(34, 197, 94, 0.35);
+}
+
+.config-add-btn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(34, 197, 94, 0.2);
+}
+
+.config-add-btn-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.config-add-btn-blue:hover {
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.15),
+    0 6px 20px rgba(59, 130, 246, 0.35);
+}
+
+/* 搜索框 */
+.config-search-input {
+  border: 2px solid rgba(139, 105, 20, 0.15);
+  background: linear-gradient(145deg, #ffffff 0%, #fefcf5 100%);
+  color: #374151;
+}
+
+.dark .config-search-input {
+  border: 2px solid rgba(109, 191, 91, 0.2);
+  background: linear-gradient(145deg, rgba(45, 55, 45, 0.98) 0%, rgba(30, 40, 30, 0.95) 100%);
+  color: #e5e7eb;
+}
+
+.config-search-input:focus {
+  border-color: var(--theme-primary);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--theme-primary) 15%, transparent),
+    0 0 16px color-mix(in srgb, var(--theme-primary) 30%, transparent);
+  transform: translateY(-1px);
+}
+
+.search-icon {
+  transition: transform 0.3s ease;
+}
+
+.config-search:focus-within .search-icon {
+  transform: translateY(-50%) scale(1.15);
+  filter: drop-shadow(0 0 4px var(--theme-primary));
+}
+
+/* 表格美化 */
+.config-table-wrap {
+  background: linear-gradient(145deg, #ffffff 0%, #fefcf5 100%);
+  border: 2px solid rgba(139, 105, 20, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 4px 16px rgba(139, 105, 20, 0.1);
+}
+
+.dark .config-table-wrap {
+  background: linear-gradient(145deg, rgba(45, 55, 45, 0.98) 0%, rgba(30, 40, 30, 0.95) 100%);
+  border: 2px solid rgba(109, 191, 91, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.config-table-head {
+  background: linear-gradient(180deg, rgba(139, 105, 20, 0.08) 0%, rgba(139, 105, 20, 0.04) 100%);
+  border-bottom: 2px solid rgba(139, 105, 20, 0.15);
+}
+
+.dark .config-table-head {
+  background: linear-gradient(180deg, rgba(109, 191, 91, 0.1) 0%, rgba(109, 191, 91, 0.05) 100%);
+  border-bottom: 2px solid rgba(109, 191, 91, 0.2);
+}
+
+.config-table-head th {
+  color: #8b6914;
+  font-family: 'ZCOOL KuaiLe', cursive;
+  font-weight: normal;
+  letter-spacing: 0.03em;
+  font-size: 13px;
+}
+
+.dark .config-table-head th {
+  color: #6dbf5b;
+}
+
+.config-table-body {
+  border: none;
+}
+
+.config-table-row {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.row-even {
+  background: rgba(139, 105, 20, 0.02);
+}
+
+.dark .row-even {
+  background: rgba(109, 191, 91, 0.02);
+}
+
+.row-odd {
+  background: transparent;
+}
+
+.config-table-row:hover {
+  background: color-mix(in srgb, var(--theme-primary) 8%, transparent);
+  transform: scale(1.002);
+  box-shadow: 0 2px 12px rgba(139, 105, 20, 0.1);
+}
+
+.dark .config-table-row:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.row-sticky-cell {
+  background: inherit;
+}
+
+.config-item-icon {
+  background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid rgba(217, 119, 6, 0.2);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.config-table-row:hover .config-item-icon {
+  transform: scale(1.1) rotate(-3deg);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+}
+
+/* 操作按钮 */
+.config-action-btn {
+  position: relative;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.12);
+  background: white;
+}
+
+.dark .config-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.config-action-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.config-action-btn:active {
+  transform: translateY(1px) scale(0.98);
+  border-bottom-width: 2px;
+}
+
+.config-action-btn-primary {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.2);
+  border-bottom-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.config-action-btn-primary:hover {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  box-shadow:
+    0 4px 16px rgba(59, 130, 246, 0.3),
+    0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.dark .config-action-btn-primary {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%);
+  color: #93c5fd;
+}
+
+.config-action-btn-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-color: rgba(245, 158, 11, 0.2);
+  border-bottom-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+}
+
+.config-action-btn-warning:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+  box-shadow:
+    0 4px 16px rgba(245, 158, 11, 0.3),
+    0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.dark .config-action-btn-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.25) 100%);
+  color: #fcd34d;
+}
+
+.config-action-btn-danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.2);
+  border-bottom-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.config-action-btn-danger:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  box-shadow:
+    0 4px 16px rgba(239, 68, 68, 0.3),
+    0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+.dark .config-action-btn-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.25) 100%);
+  color: #fca5a5;
+}
+
+/* 确认弹窗 */
+.confirm-modal {
+  position: relative;
+  background: linear-gradient(145deg, #ffffff 0%, #fefcf5 100%);
+  border-radius: 24px;
+  padding: 32px 28px 28px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 10px 0 rgba(139, 105, 20, 0.15),
+    0 16px 48px rgba(0, 0, 0, 0.25);
+  border: 3px solid rgba(139, 105, 20, 0.15);
+  animation: confirm-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark .confirm-modal {
+  background: linear-gradient(145deg, rgba(45, 55, 45, 0.98) 0%, rgba(30, 40, 30, 0.95) 100%);
+  border-color: rgba(109, 191, 91, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 10px 0 rgba(0, 0, 0, 0.3),
+    0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes confirm-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.confirm-icon-wrap {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 4px solid white;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: icon-bounce 2s ease-in-out infinite;
+}
+
+.dark .confirm-icon-wrap {
+  border-color: rgba(30, 40, 30, 0.95);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(217, 119, 6, 0.3) 100%);
+}
+
+@keyframes icon-bounce {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-6px);
+  }
+}
+
+.confirm-icon {
+  font-size: 28px;
+}
+
+.confirm-title {
+  text-align: center;
+  font-family: 'ZCOOL KuaiLe', cursive;
+  font-size: 20px;
+  color: #8b6914;
+  margin-top: 16px;
+  letter-spacing: 0.03em;
+}
+
+.dark .confirm-title {
+  color: #6dbf5b;
+}
+
+.confirm-message {
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+.dark .confirm-message {
+  color: #9ca3af;
+}
+
+.confirm-btn {
+  padding: 10px 24px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 4px solid rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.confirm-btn:hover {
+  transform: translateY(-2px);
+}
+
+.confirm-btn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+.confirm-btn-cancel {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #4b5563;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.confirm-btn-cancel:hover {
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.1),
+    0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.dark .confirm-btn-cancel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  color: #d1d5db;
+}
+
+.confirm-btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow:
+    0 2px 0 #991b1b,
+    0 4px 12px rgba(239, 68, 68, 0.35);
+}
+
+.confirm-btn-danger:hover {
+  box-shadow:
+    0 4px 0 #991b1b,
+    0 6px 24px rgba(239, 68, 68, 0.45),
+    0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes wheat-sway {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+</style>

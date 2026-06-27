@@ -379,53 +379,75 @@ useIntervalFn(loadBag, 60000)
     </div>
 
     <div v-else>
-      <div class="mb-4 flex flex-wrap items-center gap-2">
-        <button
-          v-for="cat in CATEGORY_OPTIONS"
-          :key="cat.value"
-          class="rounded-xl px-3 py-1.5 text-sm font-medium transition"
-          :class="selectedCategory === cat.value
-            ? 'bg-blue-500 text-white dark:bg-blue-600'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
-          @click="selectedCategory = cat.value"
-        >
-          {{ cat.value === 'fruit' ? '🍎' : cat.value === 'seed' ? '🌱' : cat.value === 'tool' ? '🔧' : cat.value === 'other' ? '📦' : '📋' }}
-          {{ cat.label }}
-          <span class="ml-1 text-xs opacity-70">({{ categoryCounts[cat.value] || 0 }})</span>
-        </button>
-
-        <div class="flex-1" />
-
-        <template v-if="selectedCategory === 'fruit' || selectedCategory === 'all'">
+      <div class="farm-card-enhanced p-2 mb-4">
+        <div class="flex flex-wrap gap-1.5">
           <button
-            class="cartoon-btn rounded-xl px-3 py-1.5 text-sm font-medium transition"
-            :class="batchMode
-              ? 'bg-orange-500 text-white dark:bg-orange-600'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
-            @click="toggleBatchMode"
+            v-for="cat in CATEGORY_OPTIONS"
+            :key="cat.value"
+            class="relative flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition-all duration-300 overflow-hidden"
+            :class="selectedCategory === cat.value
+              ? 'text-white shadow-md scale-105'
+              : 'hover:scale-105'"
+            :style="selectedCategory === cat.value
+              ? {
+                  backgroundColor: 'var(--theme-primary)',
+                  boxShadow: `0 3px 10px color-mix(in srgb, var(--theme-primary), 40%, transparent)`,
+                }
+              : {
+                  color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
+                }"
+            @click="selectedCategory = cat.value"
           >
-            <span v-if="batchMode" class="mr-1">✕</span>
-            {{ batchMode ? '取消批量' : '批量出售' }}
+            <span>{{ cat.value === 'fruit' ? '🍎' : cat.value === 'seed' ? '🌱' : cat.value === 'tool' ? '🔧' : cat.value === 'other' ? '📦' : '📋' }}</span>
+            {{ cat.label }}
+            <span class="text-xs opacity-80">({{ categoryCounts[cat.value] || 0 }})</span>
+            <div
+              v-if="selectedCategory === cat.value"
+              class="absolute inset-0 pointer-events-none"
+              style="background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);"
+            />
           </button>
-          <template v-if="batchMode">
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 mt-3 pt-3" style="border-top: 1px solid color-mix(in srgb, var(--theme-primary) 10%, transparent)">
+          <template v-if="selectedCategory === 'fruit' || selectedCategory === 'all'">
             <button
-              class="cartoon-btn rounded-xl bg-blue-500 px-3 py-1.5 text-sm text-white font-medium transition dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700"
-              @click="selectAllSellable"
+              class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold transition-all duration-200 hover:scale-105"
+              :class="batchMode
+                ? 'text-white shadow-md'
+                : 'hover:bg-black/5'"
+              :style="batchMode
+                ? { backgroundColor: '#f97316', boxShadow: '0 3px 0 #c2410c' }
+                : { color: 'color-mix(in srgb, var(--theme-text) 70%, transparent)' }"
+              @click="toggleBatchMode"
             >
-              全选
+              <span v-if="batchMode">✕</span>
+              {{ batchMode ? '取消批量' : '批量出售' }}
             </button>
-            <button
-              class="cartoon-btn rounded-xl px-3 py-1.5 text-sm font-medium transition"
-              :class="selectedSellableCount > 0
-                ? 'bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700'
-                : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'"
-              :disabled="selectedSellableCount === 0"
-              @click="handleBatchSellClick"
-            >
-              出售 ({{ selectedSellableCount }})
-            </button>
+            <template v-if="batchMode">
+              <button
+                class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold text-white transition-all duration-200 hover:scale-105 shadow-md"
+                style="background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 3px 0 #1d4ed8"
+                @click="selectAllSellable"
+              >
+                全选
+              </button>
+              <button
+                class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold transition-all duration-200"
+                :class="selectedSellableCount > 0
+                  ? 'text-white shadow-md hover:scale-105'
+                  : 'opacity-50 cursor-not-allowed'"
+                :style="selectedSellableCount > 0
+                  ? { background: 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)', boxShadow: '0 3px 0 #b91c1c' }
+                  : { backgroundColor: '#9ca3af' }"
+                :disabled="selectedSellableCount === 0"
+                @click="handleBatchSellClick"
+              >
+                出售 ({{ selectedSellableCount }})
+              </button>
+            </template>
           </template>
-        </template>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 xl:grid-cols-6">

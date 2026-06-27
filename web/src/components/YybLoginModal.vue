@@ -43,7 +43,7 @@ async function loginOne(openid: string) {
       return false
     }
 
-    toast.success(`已${accountStore.accounts.find((a: any) => a.openid === openid) ? '更新' : '添加'}并启动账号: ${name}`)
+    toast.success(`已${accountStore.accounts.some((a: any) => a.openid === openid) ? '更新' : '添加'}并启动账号: ${name}`)
     emit('saved')
     return true
   }

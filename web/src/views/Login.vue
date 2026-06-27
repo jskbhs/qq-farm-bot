@@ -993,8 +993,8 @@ async function fetchGameVersion() {
   background: linear-gradient(145deg, rgba(254, 249, 239, 0.98) 0%, rgba(255, 245, 225, 0.97) 100%);
   border-radius: 28px;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.8) inset,
-    0 -2px 0 rgba(0,0,0,0.05) inset,
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.05) inset,
     0 8px 0 #6b4f0e,
     0 16px 48px rgba(0, 0, 0, 0.25);
   position: relative;
@@ -1030,7 +1030,7 @@ async function fetchGameVersion() {
   height: 5px;
   background: linear-gradient(90deg, #8b6914 0%, #c4941a 50%, #8b6914 100%);
   border-radius: 0 0 6px 6px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* 卡片四角装饰 */
@@ -1041,13 +1041,18 @@ async function fetchGameVersion() {
   left: 50%;
   transform: translateX(-50%);
   font-size: 28px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   animation: wheatSway 3s ease-in-out infinite;
 }
 
 @keyframes wheatSway {
-  0%, 100% { transform: translateX(-50%) rotate(-5deg); }
-  50% { transform: translateX(-50%) rotate(5deg); }
+  0%,
+  100% {
+    transform: translateX(-50%) rotate(-5deg);
+  }
+  50% {
+    transform: translateX(-50%) rotate(5deg);
+  }
 }
 
 /* 农场风格输入框 */
@@ -1093,8 +1098,8 @@ async function fetchGameVersion() {
   border-radius: 24px;
   margin-bottom: 16px;
   box-shadow:
-    0 2px 0 rgba(255,255,255,0.3) inset,
-    0 -2px 0 rgba(0,0,0,0.1) inset,
+    0 2px 0 rgba(255, 255, 255, 0.3) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.1) inset,
     0 6px 0 #3a6b2e,
     0 12px 28px rgba(74, 140, 63, 0.35);
   animation: logoBounce 2.5s ease-in-out infinite;
@@ -1107,7 +1112,7 @@ async function fetchGameVersion() {
   position: absolute;
   inset: 0;
   border-radius: 21px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
   pointer-events: none;
 }
 

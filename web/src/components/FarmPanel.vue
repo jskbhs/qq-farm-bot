@@ -57,11 +57,11 @@ function handleOperate(opType: string) {
 }
 
 const operations = [
-  { type: 'harvest', label: '收获', icon: '🌾', color: 'bg-[#5bb8f5] hover:bg-[#4aa8e5]' },
-  { type: 'clear', label: '一键务农', icon: '🌿', color: 'bg-[#4a8c3f] hover:bg-[#3a7c2f]' },
-  { type: 'plant', label: '种植', icon: '🌱', color: 'bg-[#6dbf5b] hover:bg-[#5daf4b]' },
-  { type: 'upgrade', label: '升级土地', icon: '⬆️', color: 'bg-[#a855f7] hover:bg-[#9333ea]' },
-  { type: 'all', label: '一键全收', icon: '⚡', color: 'bg-[#f0c040] hover:bg-[#e0b030] text-[#3d2b1f]' },
+  { type: 'harvest', label: '收获', icon: '🌾', bgGradient: 'linear-gradient(180deg, #5bb8f5 0%, #3aa0e0 100%)', shadowColor: '#1e88c8' },
+  { type: 'clear', label: '一键务农', icon: '🌿', bgGradient: 'linear-gradient(180deg, #5da94f 0%, #4a8c3f 100%)', shadowColor: '#3a6b2e' },
+  { type: 'plant', label: '种植', icon: '🌱', bgGradient: 'linear-gradient(180deg, #7dcf69 0%, #5db849 100%)', shadowColor: '#3a8b2e' },
+  { type: 'upgrade', label: '升级土地', icon: '⬆️', bgGradient: 'linear-gradient(180deg, #c084fc 0%, #a855f7 100%)', shadowColor: '#7c3aed' },
+  { type: 'all', label: '一键全收', icon: '⚡', bgGradient: 'linear-gradient(180deg, #fcd34d 0%, #f0b020 100%)', shadowColor: '#d97706' },
 ]
 
 async function refresh() {
@@ -108,48 +108,57 @@ onUnmounted(() => {
 
 <template>
   <div class="space-y-5">
-    <div class="cartoon-card farm-card rounded-2xl bg-white shadow-lg dark:bg-gray-800">
-      <!-- Header with Title and Actions -->
-      <div class="flex flex-col items-center justify-between gap-4 border-b border-gray-100 p-5 sm:flex-row dark:border-gray-700">
-        <h3 class="flex items-center gap-2 text-xl font-bold font-display">
-          🌾 土地详情
+    <div class="farm-card-enhanced overflow-hidden">
+      <div class="flex flex-col items-center justify-between gap-4 p-5 sm:flex-row" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-primary) 10%, transparent)">
+        <h3 class="flex items-center gap-2 text-xl font-bold font-display" :style="{ color: 'var(--theme-text)' }">
+          <span class="title-wheat inline-block">🌾</span>
+          土地详情
         </h3>
         <div class="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
           <button
             v-for="op in operations"
             :key="op.type"
-            class="flex cartoon-btn items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-            :class="op.color"
+            class="relative flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden active:translate-y-1 active:scale-95 hover:-translate-y-0.5 hover:brightness-110"
+            :style="{
+              background: op.bgGradient,
+              boxShadow: `0 3px 0 ${op.shadowColor}, 0 6px 14px ${op.shadowColor}50`,
+            }"
             :disabled="operating"
             @click="handleOperate(op.type)"
           >
-            <span>{{ op.icon }}</span>
+            <span class="text-base drop-shadow-sm">{{ op.icon }}</span>
             {{ op.label }}
+            <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 50%)" />
           </button>
         </div>
       </div>
 
-      <!-- Summary -->
-      <div class="flex flex-wrap gap-4 border-b border-gray-100 from-green-50 to-yellow-50 bg-gradient-to-r p-5 text-sm dark:border-gray-700 dark:bg-gray-900/50">
-        <div class="flex farm-card items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-orange-700 shadow-sm dark:bg-orange-900/30 dark:text-orange-400">
-          <span>🌾</span>
+      <div
+        class="flex flex-wrap gap-3 p-5 text-sm"
+        :style="{
+          background: `linear-gradient(90deg, color-mix(in srgb, var(--theme-primary) 6%, transparent) 0%, color-mix(in srgb, var(--theme-secondary) 6%, transparent) 100%)`,
+          borderBottom: '1px solid color-mix(in srgb, var(--theme-primary) 10%, transparent)',
+        }"
+      >
+        <div class="flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold shadow-sm transition-all duration-200 hover:scale-105" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309">
+          <span class="text-base">🌾</span>
           <div class="i-carbon-clean" />
-          <span class="font-body font-semibold">可收: {{ summary?.harvestable || 0 }}</span>
+          可收: <span class="font-bold">{{ summary?.harvestable || 0 }}</span>
         </div>
-        <div class="flex farm-card items-center gap-2 rounded-full bg-green-100 px-4 py-1.5 text-green-700 shadow-sm dark:bg-green-900/30 dark:text-green-400">
-          <span>🌿</span>
+        <div class="flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold shadow-sm transition-all duration-200 hover:scale-105" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #15803d">
+          <span class="text-base">🌿</span>
           <div class="i-carbon-sprout" />
-          <span class="font-body font-semibold">生长: {{ summary?.growing || 0 }}</span>
+          生长: <span class="font-bold">{{ summary?.growing || 0 }}</span>
         </div>
-        <div class="flex farm-card items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5 text-gray-700 shadow-sm dark:bg-gray-800 dark:text-gray-400">
-          <span>🟫</span>
+        <div class="flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold shadow-sm transition-all duration-200 hover:scale-105" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563">
+          <span class="text-base">🟫</span>
           <div class="i-carbon-checkbox" />
-          <span class="font-body font-semibold">空闲: {{ summary?.empty || 0 }}</span>
+          空闲: <span class="font-bold">{{ summary?.empty || 0 }}</span>
         </div>
-        <div class="flex farm-card items-center gap-2 rounded-full bg-red-100 px-4 py-1.5 text-red-700 shadow-sm dark:bg-red-900/30 dark:text-red-400">
-          <span>🥀</span>
+        <div class="flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold shadow-sm transition-all duration-200 hover:scale-105" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #b91c1c">
+          <span class="text-base">🥀</span>
           <div class="i-carbon-warning" />
-          <span class="font-body font-semibold">枯萎: {{ summary?.dead || 0 }}</span>
+          枯萎: <span class="font-bold">{{ summary?.dead || 0 }}</span>
         </div>
       </div>
 

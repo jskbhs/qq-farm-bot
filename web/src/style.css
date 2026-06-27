@@ -642,3 +642,22 @@ body {
   background: var(--theme-bg);
   padding: 0 8px;
 }
+
+/* 策略颜色变量 */
+:root {
+  --strategy-purple-from: #a855f7;
+  --strategy-purple-to: #9333ea;
+  --strategy-purple-text: #7c3aed;
+  --strategy-blue-from: #3b82f6;
+  --strategy-blue-to: #2563eb;
+  --strategy-blue-text: #2563eb;
+  --strategy-amber-from: #f59e0b;
+  --strategy-amber-to: #d97706;
+  --strategy-amber-text: #d97706;
+  --strategy-green-from: #22c55e;
+  --strategy-green-to: #16a34a;
+  --strategy-green-text: #16a34a;
+  --strategy-rose-from: #f43f5e;
+  --strategy-rose-to: #e11d48;
+  --strategy-rose-text: #e11d48;
+}

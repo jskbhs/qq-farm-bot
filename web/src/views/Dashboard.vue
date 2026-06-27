@@ -482,7 +482,7 @@ useIntervalFn(updateCountdowns, 1000)
     <!-- Status Cards -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:grid-cols-2">
       <!-- Account & Exp -->
-      <div class="farm-card-enhanced flex flex-col p-5 animate-fade-in-up animate-stagger-1">
+      <div class="farm-card-enhanced animate-stagger-1 flex flex-col animate-fade-in-up p-5">
         <div class="mb-3 flex items-start justify-between">
           <div class="flex items-center gap-2 text-sm font-bold" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
             <div class="i-fas-user-circle" style="color: var(--theme-primary)" />
@@ -519,13 +519,15 @@ useIntervalFn(updateCountdowns, 1000)
       </div>
 
       <!-- Assets & Status -->
-      <div class="farm-card-enhanced flex flex-col justify-between p-5 animate-fade-in-up animate-stagger-2">
+      <div class="farm-card-enhanced animate-stagger-2 flex flex-col animate-fade-in-up justify-between p-5">
         <div class="grid grid-cols-3 gap-2">
           <div class="flex flex-col items-center">
-            <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)">
+            <div class="mb-1 h-10 w-10 flex items-center justify-center rounded-full" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)">
               <span class="text-xl">🪙</span>
             </div>
-            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">金币</div>
+            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+              金币
+            </div>
             <div class="asset-number text-xl font-extrabold" style="color: #d97706">
               {{ formatNumber(status?.status?.gold || 0) }}
             </div>
@@ -538,10 +540,12 @@ useIntervalFn(updateCountdowns, 1000)
             </div>
           </div>
           <div class="flex flex-col items-center">
-            <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)">
+            <div class="mb-1 h-10 w-10 flex items-center justify-center rounded-full" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)">
               <span class="text-xl">🎫</span>
             </div>
-            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">点券</div>
+            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+              点券
+            </div>
             <div class="asset-number text-xl font-extrabold" style="color: #059669">
               {{ formatNumber(status?.status?.coupon || 0) }}
             </div>
@@ -554,10 +558,12 @@ useIntervalFn(updateCountdowns, 1000)
             </div>
           </div>
           <div class="flex flex-col items-center">
-            <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%)">
+            <div class="mb-1 h-10 w-10 flex items-center justify-center rounded-full" style="background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%)">
               <span class="text-xl">🫘</span>
             </div>
-            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">金豆豆</div>
+            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+              金豆豆
+            </div>
             <div class="asset-number text-xl font-extrabold" style="color: #b45309">
               {{ formatNumber(status?.status?.goldBean || 0) }}
             </div>
@@ -577,7 +583,7 @@ useIntervalFn(updateCountdowns, 1000)
       </div>
 
       <!-- Items (Fertilizer & Collection) -->
-      <div class="farm-card-enhanced flex flex-col justify-between p-5 animate-fade-in-up animate-stagger-3">
+      <div class="farm-card-enhanced animate-stagger-3 flex flex-col animate-fade-in-up justify-between p-5">
         <div class="mb-3 flex items-center gap-2 text-sm font-bold" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
           <div class="i-fas-flask" style="color: #10b981" />
           化肥容器
@@ -635,7 +641,7 @@ useIntervalFn(updateCountdowns, 1000)
       <!-- Logs (Left Column) -->
       <div class="flex flex-1 flex-col gap-6 md:w-3/4">
         <!-- Logs -->
-        <div class="farm-card-enhanced flex flex-1 flex-col p-6 md:overflow-hidden animate-fade-in-up animate-stagger-4">
+        <div class="farm-card-enhanced animate-stagger-4 flex flex-1 flex-col animate-fade-in-up p-6 md:overflow-hidden">
           <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h3 class="flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
               <span class="text-xl">📋</span>
@@ -709,7 +715,7 @@ useIntervalFn(updateCountdowns, 1000)
       <!-- Right Column Stack -->
       <div class="flex flex-col gap-6 md:w-1/4">
         <!-- Next Checks -->
-        <div class="farm-card-enhanced flex flex-col p-6 animate-fade-in-up animate-stagger-5">
+        <div class="farm-card-enhanced animate-stagger-5 flex flex-col animate-fade-in-up p-6">
           <h3 class="mb-4 flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
             <span class="text-xl">⏳</span>
             <span>下次巡查倒计时</span>
@@ -746,7 +752,7 @@ useIntervalFn(updateCountdowns, 1000)
         </div>
 
         <!-- Operations Grid -->
-        <div class="farm-card-enhanced flex-1 p-5 animate-fade-in-up animate-stagger-6">
+        <div class="farm-card-enhanced animate-stagger-6 flex-1 animate-fade-in-up p-5">
           <h3 class="mb-4 flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
             <span class="text-xl">📊</span>
             <span>今日统计</span>

@@ -18,6 +18,15 @@ const { blacklist } = storeToRefs(plantBlacklistStore)
 const { settings } = storeToRefs(settingStore)
 const { status } = storeToRefs(statusStore)
 
+function formatNumber(num: number | string | undefined | null): string {
+  if (num === undefined || num === null)
+    return '0'
+  const n = Number(num)
+  if (Number.isNaN(n))
+    return '0'
+  return n.toLocaleString('zh-CN')
+}
+
 const loading = ref(false)
 const list = ref<any[]>([])
 const sortKey = ref('exp')
@@ -154,42 +163,6 @@ function getStrategyAvailableCount() {
   }).length
 }
 
-function getColorClass(color: string, type: 'bg' | 'text' | 'border' | 'gradient') {
-  const colorMap: Record<string, Record<string, string>> = {
-    purple: {
-      bg: 'bg-purple-100 dark:bg-purple-900/30',
-      text: 'text-purple-600 dark:text-purple-400',
-      border: 'border-purple-200 dark:border-purple-800',
-      gradient: 'from-purple-500 to-purple-600',
-    },
-    blue: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-600 dark:text-blue-400',
-      border: 'border-blue-200 dark:border-blue-800',
-      gradient: 'from-blue-500 to-blue-600',
-    },
-    amber: {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-600 dark:text-amber-400',
-      border: 'border-amber-200 dark:border-amber-800',
-      gradient: 'from-amber-500 to-amber-600',
-    },
-    green: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-600 dark:text-green-400',
-      border: 'border-green-200 dark:border-green-800',
-      gradient: 'from-green-500 to-green-600',
-    },
-    rose: {
-      bg: 'bg-rose-100 dark:bg-rose-900/30',
-      text: 'text-rose-600 dark:text-rose-400',
-      border: 'border-rose-200 dark:border-rose-800',
-      gradient: 'from-rose-500 to-rose-600',
-    },
-  }
-  return colorMap[color]?.[type] || ''
-}
-
 async function loadAnalytics() {
   if (!currentAccountId.value)
     return
@@ -271,263 +244,329 @@ function getSeedNameById(seedId: number) {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-      <button
-        class="border-b-2 px-4 py-2 text-sm font-medium transition-colors"
-        :class="activeTab === 'strategy'
-          ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
-        @click="activeTab = 'strategy'"
-      >
-        <div class="flex items-center space-x-2">
-          <span class="text-lg">📊</span>
-          <span>种植策略</span>
-        </div>
-      </button>
-      <button
-        class="border-b-2 px-4 py-2 text-sm font-medium transition-colors"
-        :class="activeTab === 'blacklist'
-          ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
-        @click="activeTab = 'blacklist'"
-      >
-        <div class="flex items-center space-x-2">
-          <span class="text-lg">🚫</span>
-          <span>黑名单</span>
-          <span v-if="blacklist.length" class="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/50 dark:text-red-300">
-            {{ blacklist.length }}
-          </span>
-        </div>
-      </button>
+  <div class="flex flex-col gap-6 pt-6">
+    <!-- Tabs -->
+    <div class="farm-card-enhanced animate-stagger-1 animate-fade-in-up p-2">
+      <div class="flex gap-2">
+        <button
+          class="relative flex-1 overflow-hidden rounded-2xl px-4 py-3 text-sm font-bold font-display transition-all duration-300"
+          :class="activeTab === 'strategy'
+            ? 'text-white shadow-lg'
+            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+          :style="activeTab === 'strategy'
+            ? { background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)' }
+            : {}"
+          @click="activeTab = 'strategy'"
+        >
+          <div v-if="activeTab === 'strategy'" class="absolute inset-0 opacity-30">
+            <div class="absolute left-0 right-0 top-0 h-1/2 rounded-t-2xl from-white/40 to-transparent bg-gradient-to-b" />
+          </div>
+          <div class="relative flex items-center justify-center gap-2">
+            <span class="text-xl" :class="activeTab === 'strategy' ? 'animate-wiggle' : ''">📊</span>
+            <span>种植策略</span>
+          </div>
+        </button>
+        <button
+          class="relative flex-1 overflow-hidden rounded-2xl px-4 py-3 text-sm font-bold font-display transition-all duration-300"
+          :class="activeTab === 'blacklist'
+            ? 'text-white shadow-lg'
+            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+          :style="activeTab === 'blacklist'
+            ? { background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)' }
+            : {}"
+          @click="activeTab = 'blacklist'"
+        >
+          <div v-if="activeTab === 'blacklist'" class="absolute inset-0 opacity-30">
+            <div class="absolute left-0 right-0 top-0 h-1/2 rounded-t-2xl from-white/40 to-transparent bg-gradient-to-b" />
+          </div>
+          <div class="relative flex items-center justify-center gap-2">
+            <span class="text-xl" :class="activeTab === 'blacklist' ? 'animate-wiggle' : ''">🚫</span>
+            <span>黑名单</span>
+            <span
+              v-if="blacklist.length"
+              class="relative ml-1 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-extrabold"
+              :class="activeTab === 'blacklist' ? 'bg-white/30 text-white' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'"
+            >
+              {{ blacklist.length }}
+            </span>
+          </div>
+        </button>
+      </div>
     </div>
 
     <div>
-      <div v-if="activeTab === 'strategy'" class="space-y-4">
-        <div class="farm-card overflow-hidden border border-blue-200 rounded-2xl from-blue-50 to-indigo-50 bg-gradient-to-r shadow-md dark:border-blue-800 dark:from-blue-900/20 dark:to-indigo-900/20">
-          <div class="p-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <span class="text-xl text-blue-500">🎯</span>
-                <div>
-                  <h3 class="text-gray-700 font-semibold dark:text-gray-300">
-                    当前策略: {{ currentStrategyLabel }}
-                  </h3>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    与设置页种植策略同步
-                  </p>
-                </div>
-              </div>
+      <div v-if="activeTab === 'strategy'" class="flex flex-col gap-6">
+        <!-- Current Strategy Card -->
+        <div class="farm-card-enhanced animate-stagger-2 animate-fade-in-up p-6">
+          <div class="mb-4 flex items-center gap-3">
+            <div class="h-12 w-12 flex items-center justify-center rounded-2xl" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)">
+              <span class="title-wheat text-2xl">🎯</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold font-display" style="color: var(--theme-text)">
+                当前策略
+              </h3>
+              <p class="text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                与设置页种植策略同步
+              </p>
+            </div>
+          </div>
+
+          <div class="decorative-divider mb-4" />
+
+          <div class="rounded-2xl p-4" style="background: linear-gradient(135deg, color-mix(in srgb, #3b82f6 10%, transparent) 0%, color-mix(in srgb, #8b5cf6 10%, transparent) 100%)">
+            <div class="mb-3 flex items-center gap-2">
+              <div class="status-dot-online" />
+              <span class="font-bold" style="color: var(--theme-text)">{{ currentStrategyLabel }}</span>
             </div>
 
-            <div v-if="currentStrategy === 'bag_priority'" class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-              背包种子优先策略：优先使用背包中的种子，按背包优先级排序，用完后回退到商店购买。具体种植内容取决于背包中实际持有的种子。
+            <div v-if="currentStrategy === 'bag_priority'" class="rounded-xl p-3 text-sm" style="background: color-mix(in srgb, #f59e0b 15%, transparent); color: #d97706">
+              <span class="font-bold">💡 背包种子优先策略</span>
+              <p class="mt-1 text-xs opacity-80">
+                优先使用背包中的种子，按背包优先级排序，用完后回退到商店购买。具体种植内容取决于背包中实际持有的种子。
+              </p>
             </div>
-            <div v-else-if="currentStrategyBestPlant" class="mt-3 flex items-center gap-3">
-              <div class="h-12 w-12 flex shrink-0 items-center justify-center overflow-hidden border border-blue-200 rounded-lg bg-white dark:border-blue-700 dark:bg-gray-800">
+            <div v-else-if="currentStrategyBestPlant" class="flex items-center gap-4">
+              <div class="relative h-16 w-16 flex shrink-0 items-center justify-center overflow-hidden rounded-2xl" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 3px solid rgba(34, 197, 94, 0.2)">
                 <img
                   v-if="currentStrategyBestPlant.image && !imageErrors[currentStrategyBestPlant.seedId]"
                   :src="currentStrategyBestPlant.image"
-                  class="h-10 w-10 object-contain"
+                  class="h-12 w-12 object-contain"
                   loading="lazy"
                   @error="imageErrors[currentStrategyBestPlant.seedId] = true"
                 >
-                <span v-else class="text-2xl text-gray-400">🌱</span>
+                <span v-else class="text-3xl">🌱</span>
               </div>
-              <div class="flex-1">
-                <div class="text-gray-800 font-bold dark:text-gray-100">
+              <div class="min-w-0 flex-1">
+                <div class="truncate text-lg font-extrabold" style="color: var(--theme-text)">
                   {{ currentStrategyBestPlant.name }}
-                  <span class="ml-1 text-xs text-gray-500">Lv{{ formatLv(currentStrategyBestPlant.level) }}</span>
-                  <span class="ml-1 text-xs text-gray-400">{{ currentStrategyBestPlant.seasons }}季</span>
                 </div>
-                <div class="mt-1 flex flex-wrap gap-3 text-xs">
-                  <span v-if="currentStrategyBestPlant.expPerHour" class="text-purple-600 dark:text-purple-400">经验/时: {{ currentStrategyBestPlant.expPerHour }}</span>
-                  <span v-if="currentStrategyBestPlant.profitPerHour" class="text-amber-600 dark:text-amber-400">利润/时: {{ currentStrategyBestPlant.profitPerHour }}</span>
-                  <span v-if="currentStrategyBestPlant.normalFertilizerExpPerHour" class="text-blue-600 dark:text-blue-400">普肥经验/时: {{ currentStrategyBestPlant.normalFertilizerExpPerHour }}</span>
-                  <span v-if="currentStrategyBestPlant.normalFertilizerProfitPerHour" class="text-green-600 dark:text-green-400">普肥利润/时: {{ currentStrategyBestPlant.normalFertilizerProfitPerHour }}</span>
+                <div class="mt-1 flex items-center gap-2">
+                  <span class="level-badge text-xs">
+                    Lv{{ formatLv(currentStrategyBestPlant.level) }}
+                  </span>
+                  <span class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                    {{ currentStrategyBestPlant.seasons }}季作物
+                  </span>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <span v-if="currentStrategyBestPlant.expPerHour" class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold" style="background: color-mix(in srgb, #8b5cf6 15%, transparent); color: #7c3aed">
+                    ⚡ {{ formatNumber(currentStrategyBestPlant.expPerHour) }}/时
+                  </span>
+                  <span v-if="currentStrategyBestPlant.profitPerHour" class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold" style="background: color-mix(in srgb, #f59e0b 15%, transparent); color: #d97706">
+                    💰 {{ formatNumber(currentStrategyBestPlant.profitPerHour) }}/时
+                  </span>
                 </div>
               </div>
             </div>
-            <div v-else class="mt-3 text-sm text-gray-400">
-              暂无可种植作物
+            <div v-else class="py-4 text-center" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
+              <span class="text-4xl opacity-50">🌱</span>
+              <p class="mt-2 text-sm">
+                暂无可种植作物
+              </p>
             </div>
           </div>
         </div>
 
-        <div class="farm-card overflow-hidden border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
-          <div class="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/50">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <span class="text-xl text-blue-500">📊</span>
-                <div>
-                  <h3 class="text-gray-700 font-semibold dark:text-gray-300">
-                    策略对比
-                  </h3>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    各策略下可种植的最优作物
-                  </p>
-                </div>
+        <!-- Strategy Comparison Card -->
+        <div class="farm-card-enhanced animate-stagger-3 animate-fade-in-up p-6">
+          <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 flex items-center justify-center rounded-2xl" style="background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)">
+                <span class="title-wheat text-2xl">📊</span>
               </div>
-              <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-500">参考等级:</span>
+              <div>
+                <h3 class="text-lg font-bold font-display" style="color: var(--theme-text)">
+                  策略对比
+                </h3>
+                <p class="text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                  各策略下可种植的最优作物
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-bold" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">参考等级:</span>
+              <div class="relative">
                 <input
                   v-model.number="strategyLevel"
                   type="number"
                   min="1"
                   max="100"
-                  class="w-16 border farm-input border-gray-300 rounded-xl bg-white px-3 py-1.5 text-center text-sm outline-none dark:border-gray-600 focus:border-blue-400 dark:bg-gray-700 dark:text-gray-200"
+                  class="w-20 farm-input rounded-2xl px-4 py-2 text-center text-lg font-extrabold outline-none transition-all"
+                  style="border: 3px solid rgba(139, 105, 20, 0.15); background: var(--theme-bg); color: var(--theme-text)"
                 >
               </div>
             </div>
           </div>
 
-          <div class="p-4">
-            <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <div
-                v-for="strategy in strategies"
-                :key="strategy.key"
-                class="cartoon-card overflow-hidden border rounded-2xl bg-white transition-shadow dark:bg-gray-800 hover:shadow-md"
-                :class="[
-                  getColorClass(strategy.color, 'border'),
-                  currentStrategy === strategy.key ? 'ring-2 ring-blue-400 dark:ring-blue-500' : '',
-                ]"
-              >
-                <div class="p-3">
-                  <div class="mb-2 flex items-center gap-2">
-                    <div
-                      class="h-7 w-7 flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white"
-                      :class="getColorClass(strategy.color, 'gradient')"
-                    >
-                      <div class="text-sm" :class="strategy.icon" />
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <div class="truncate text-sm font-semibold" :class="getColorClass(strategy.color, 'text')">
-                        {{ strategy.label }}
-                      </div>
-                      <div v-if="currentStrategy === strategy.key" class="text-[10px] text-blue-500 font-medium dark:text-blue-400">
-                        当前策略
-                      </div>
-                    </div>
-                  </div>
+          <div class="decorative-divider mb-6" />
 
-                  <div v-if="getStrategyBestPlant(strategy.key)" class="space-y-2">
-                    <div class="flex items-center gap-2">
-                      <div class="h-10 w-10 flex shrink-0 items-center justify-center overflow-hidden border rounded-lg bg-gray-50 dark:border-gray-600 dark:bg-gray-700" :class="getColorClass(strategy.color, 'border')">
-                        <img
-                          v-if="getStrategyBestPlant(strategy.key)?.image && !imageErrors[getStrategyBestPlant(strategy.key)?.seedId]"
-                          :src="getStrategyBestPlant(strategy.key)?.image"
-                          class="h-8 w-8 object-contain"
-                          loading="lazy"
-                          @error="imageErrors[getStrategyBestPlant(strategy.key)?.seedId] = true"
-                        >
-                        <span v-else class="text-lg text-gray-400">🌱</span>
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <div class="truncate text-sm text-gray-800 font-medium dark:text-gray-200">
-                          {{ getStrategyBestPlant(strategy.key)?.name }}
-                        </div>
-                        <div class="text-xs text-gray-500">
-                          Lv{{ formatLv(getStrategyBestPlant(strategy.key)?.level) }}
-                        </div>
-                      </div>
-                    </div>
-                    <div class="rounded-md bg-gray-50 px-2 py-1.5 dark:bg-gray-900/50">
-                      <div class="flex items-baseline justify-between">
-                        <span class="text-xs text-gray-500">{{ strategy.unit }}/时</span>
-                        <span class="text-base font-bold" :class="getColorClass(strategy.color, 'text')">
-                          {{ getStrategyBestPlant(strategy.key)?.[strategy.metric] }}
-                        </span>
-                      </div>
-                    </div>
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div
+              v-for="(strategy, index) in strategies"
+              :key="strategy.key"
+              class="farm-card-enhanced cursor-pointer p-4 transition-all duration-300"
+              :class="[
+                currentStrategy === strategy.key ? 'ring-2 ring-blue-400 scale-105' : 'hover:scale-102',
+                `animate-fade-in-up animate-stagger-${index + 1}`,
+              ]"
+              :style="currentStrategy === strategy.key ? { boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' } : {}"
+            >
+              <div class="mb-3 flex items-center gap-2.5">
+                <div
+                  class="relative h-10 w-10 flex shrink-0 items-center justify-center rounded-xl text-white"
+                  :style="{ background: `linear-gradient(135deg, var(--strategy-${strategy.color}-from), var(--strategy-${strategy.color}-to))` }"
+                >
+                  <span class="text-lg" :class="currentStrategy === strategy.key ? 'animate-sparkle' : ''">{{ strategy.icon }}</span>
+                  <div v-if="currentStrategy === strategy.key" class="animate-online-pulse absolute h-3 w-3 rounded-full bg-green-500 -right-1 -top-1" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-sm font-extrabold" :style="{ color: `var(--strategy-${strategy.color}-text)` }">
+                    {{ strategy.label }}
                   </div>
-                  <div v-else class="py-3 text-center text-xs text-gray-400">
-                    暂无可种植作物
+                  <div v-if="currentStrategy === strategy.key" class="flex items-center gap-1 text-[10px] text-blue-500 font-bold">
+                    <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500" />
+                    当前策略
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>💡</span>
-              <span>可种植 {{ getStrategyAvailableCount() }}/{{ list.length }} 种作物 · 蓝色边框为当前设置的种植策略</span>
+              <div v-if="getStrategyBestPlant(strategy.key)" class="space-y-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="h-11 w-11 flex shrink-0 items-center justify-center overflow-hidden rounded-xl" :style="{ background: `color-mix(in srgb, var(--strategy-${strategy.color}-from), transparent 85%)`, border: '2px solid rgba(0,0,0,0.05)' }">
+                    <img
+                      v-if="getStrategyBestPlant(strategy.key)?.image && !imageErrors[getStrategyBestPlant(strategy.key)?.seedId]"
+                      :src="getStrategyBestPlant(strategy.key)?.image"
+                      class="h-8 w-8 object-contain"
+                      loading="lazy"
+                      @error="imageErrors[getStrategyBestPlant(strategy.key)?.seedId] = true"
+                    >
+                    <span v-else class="text-lg opacity-50">🌱</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-sm font-bold" style="color: var(--theme-text)">
+                      {{ getStrategyBestPlant(strategy.key)?.name }}
+                    </div>
+                    <div class="text-xs font-medium" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                      Lv{{ formatLv(getStrategyBestPlant(strategy.key)?.level) }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-xl p-3" style="background: color-mix(in srgb, var(--theme-primary) 6%, transparent)">
+                  <div class="flex items-baseline justify-between">
+                    <span class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">{{ strategy.unit }}/时</span>
+                    <span class="asset-number text-lg font-extrabold" :style="{ color: `var(--strategy-${strategy.color}-text)` }">
+                      {{ formatNumber(getStrategyBestPlant(strategy.key)?.[strategy.metric]) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="py-4 text-center">
+                <span class="text-3xl opacity-30">🌱</span>
+                <p class="mt-1 text-xs font-medium" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
+                  暂无可种植作物
+                </p>
+              </div>
             </div>
+          </div>
+
+          <div class="decorative-divider my-6" />
+
+          <div class="flex items-center justify-center gap-2 text-sm font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+            <span class="text-xl">💡</span>
+            <span>可种植 <span class="asset-number text-base" style="color: var(--theme-primary)">{{ getStrategyAvailableCount() }}</span> / {{ formatNumber(list.length) }} 种作物</span>
           </div>
         </div>
       </div>
 
-      <div v-if="activeTab === 'blacklist'" class="farm-card overflow-hidden border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
-        <div class="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/50">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="text-xl text-red-500">🚫</span>
-              <div>
-                <h3 class="text-gray-700 font-semibold dark:text-gray-300">
-                  偷菜黑名单
-                </h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  加入黑名单的蔬菜在自动偷菜时会被跳过，但不会影响自己种植
-                </p>
-              </div>
+      <div v-if="activeTab === 'blacklist'" class="farm-card-enhanced animate-stagger-2 animate-fade-in-up p-6">
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-3">
+            <div class="h-12 w-12 flex items-center justify-center rounded-2xl" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)">
+              <span class="title-wheat text-2xl">🚫</span>
             </div>
-            <div class="flex items-center gap-2">
-              <button
-                class="flex cartoon-btn items-center gap-1 rounded-xl bg-orange-50 px-3 py-2 text-sm text-orange-600 transition dark:bg-orange-900/20 hover:bg-orange-100 dark:text-orange-400 disabled:opacity-50 dark:hover:bg-orange-900/30"
-                :disabled="batchLoading || list.length === 0"
-                @click="handleAddAllToBlacklist"
-              >
-                <span v-if="batchLoading" class="animate-spin">⏳</span>
-                <span v-else>➕</span>
-                一键全部加入黑名单
-              </button>
-              <button
-                v-if="blacklist.length > 0"
-                class="flex cartoon-btn items-center gap-1 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 transition dark:bg-red-900/20 hover:bg-red-100 dark:text-red-400 disabled:opacity-50 dark:hover:bg-red-900/30"
-                :disabled="batchLoading"
-                @click="handleClearBlacklist"
-              >
-                🗑️
-                清空黑名单
-              </button>
+            <div>
+              <h3 class="text-lg font-bold font-display" style="color: var(--theme-text)">
+                偷菜黑名单
+              </h3>
+              <p class="text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                加入黑名单的蔬菜在自动偷菜时会被跳过
+              </p>
             </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              class="flex cartoon-btn items-center gap-1.5 rounded-2xl px-4 py-2 text-sm text-white font-bold transition"
+              style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%)"
+              :disabled="batchLoading || list.length === 0"
+              @click="handleAddAllToBlacklist"
+            >
+              <span v-if="batchLoading" class="animate-spin">⏳</span>
+              <span v-else>➕</span>
+              一键全部加入
+            </button>
+            <button
+              v-if="blacklist.length > 0"
+              class="flex cartoon-btn items-center gap-1.5 rounded-2xl px-4 py-2 text-sm text-white font-bold transition"
+              style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+              :disabled="batchLoading"
+              @click="handleClearBlacklist"
+            >
+              🗑️
+              清空
+            </button>
           </div>
         </div>
 
-        <div class="p-4">
-          <div v-if="blacklist.length === 0" class="py-8 text-center text-gray-500 dark:text-gray-400">
+        <div class="decorative-divider mb-6" />
+
+        <div v-if="blacklist.length === 0" class="py-16 text-center">
+          <span class="text-6xl opacity-30">📭</span>
+          <p class="mt-4 text-lg font-bold" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
             暂无黑名单蔬菜
-          </div>
-          <div v-else class="space-y-3">
-            <div
-              v-for="seedId in blacklist"
-              :key="seedId"
-              class="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 dark:bg-gray-700/50"
-            >
-              <div class="flex items-center gap-3">
-                <div class="relative h-10 w-10 flex shrink-0 items-center justify-center overflow-hidden border border-gray-200 rounded-lg bg-gray-100 dark:border-gray-600 dark:bg-gray-700">
-                  <img
-                    v-if="list.find(i => i.seedId === seedId)?.image"
-                    :src="list.find(i => i.seedId === seedId)?.image"
-                    class="h-8 w-8 object-contain"
-                    loading="lazy"
-                  >
-                  <span v-else class="text-xl text-gray-400">🌱</span>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-900 font-medium dark:text-white">
-                    {{ getSeedNameById(seedId) }}
-                  </div>
-                  <div class="text-xs text-gray-400">
-                    ID: {{ seedId }}
-                  </div>
+          </p>
+          <p class="mt-1 text-sm" style="color: color-mix(in srgb, var(--theme-text) 30%, transparent)">
+            黑名单中的作物在自动偷菜时会被自动跳过
+          </p>
+        </div>
+        <div v-else class="grid grid-cols-1 gap-3 lg:grid-cols-3 sm:grid-cols-2">
+          <div
+            v-for="(seedId, index) in blacklist"
+            :key="seedId"
+            class="flex animate-fade-in-up items-center justify-between rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+            :class="`animate-stagger-${Math.min(index + 1, 7)}`"
+            style="background: color-mix(in srgb, var(--theme-primary) 5%, transparent); border: 2px solid rgba(0,0,0,0.05)"
+          >
+            <div class="flex items-center gap-3">
+              <div class="relative h-12 w-12 flex shrink-0 items-center justify-center overflow-hidden rounded-xl" style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid rgba(239, 68, 68, 0.15)">
+                <img
+                  v-if="list.find(i => i.seedId === seedId)?.image"
+                  :src="list.find(i => i.seedId === seedId)?.image"
+                  class="h-9 w-9 object-contain"
+                  loading="lazy"
+                >
+                <span v-else class="text-2xl opacity-50">🌱</span>
+                <div class="absolute h-4 w-4 flex items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold -right-1 -top-1">
+                  ✕
                 </div>
               </div>
-              <button
-                class="cartoon-btn rounded-xl bg-red-100 px-3 py-1.5 text-sm text-red-700 transition dark:bg-red-900/30 hover:bg-red-200 dark:text-red-400 dark:hover:bg-red-900/50"
-                @click="plantBlacklistStore.removeFromBlacklist(seedId)"
-              >
-                移出黑名单
-              </button>
+              <div class="min-w-0">
+                <div class="truncate text-sm font-extrabold" style="color: var(--theme-text)">
+                  {{ getSeedNameById(seedId) }}
+                </div>
+                <div class="text-xs font-medium" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
+                  ID: {{ seedId }}
+                </div>
+              </div>
             </div>
+            <button
+              class="cartoon-btn rounded-xl px-3 py-1.5 text-xs text-white font-bold transition"
+              style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+              @click="plantBlacklistStore.removeFromBlacklist(seedId)"
+            >
+              移出
+            </button>
           </div>
         </div>
       </div>

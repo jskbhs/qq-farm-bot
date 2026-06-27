@@ -26,7 +26,7 @@ watch(() => route.path, () => {
 <template>
   <nav class="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 lg:hidden">
     <div
-      class="flex items-center justify-around rounded-2xl border-2 px-2 py-2 shadow-lg backdrop-blur-md"
+      class="flex items-center justify-around border-2 rounded-2xl px-2 py-2 shadow-lg backdrop-blur-md"
       style="
         background: linear-gradient(180deg, color-mix(in srgb, var(--theme-bg) 95%, white) 0%, color-mix(in srgb, var(--theme-bg) 90%, white) 100%);
         border-color: color-mix(in srgb, var(--theme-primary) 15%, transparent);
@@ -51,7 +51,7 @@ watch(() => route.path, () => {
         <span class="scale-90 font-bold">{{ item.label }}</span>
         <div
           v-if="isActive(item.path)"
-          class="absolute -bottom-0.5 h-1 w-6 rounded-full"
+          class="absolute h-1 w-6 rounded-full -bottom-0.5"
           :style="{ backgroundColor: 'var(--theme-primary)', boxShadow: `0 0 8px var(--theme-primary)` }"
         />
       </RouterLink>

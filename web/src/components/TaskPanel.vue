@@ -61,61 +61,61 @@ function formatTaskProgress(task: any) {
 
 <template>
   <div class="space-y-6">
-    <!-- Daily Overview (Daily Gifts & Tasks) -->
     <DailyOverview :daily-gifts="dailyGifts" />
 
-    <!-- Growth Task -->
-    <div class="flex flex-col farm-card rounded-xl p-4">
-      <div class="mb-3 flex items-center justify-between">
-        <h3 class="flex items-center gap-2 font-medium" style="color: var(--theme-primary, #22c55e)">
-          <span>🌱</span>
+    <div class="farm-card-enhanced p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="flex items-center gap-2 text-lg font-bold font-display" :style="{ color: 'var(--theme-text)' }">
+          <span class="title-wheat inline-block">🌱</span>
           <span>成长任务</span>
         </h3>
         <span
           v-if="growth"
-          class="rounded-lg px-2.5 py-0.5 text-xs font-bold"
-          :class="growth.doneToday
-            ? 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20'
-            : 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20'"
+          class="rounded-xl px-3 py-1 text-xs font-bold shadow-sm transition-all duration-200 hover:scale-105"
+          :style="growth.doneToday
+            ? { background: 'linear-gradient(135deg, #bbf7d0 0%, #86efac 100%)', color: '#15803d' }
+            : { background: 'linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)', color: '#1d4ed8' }"
         >
-          {{ growth.doneToday ? '今日已完成' : `${growth.completedCount}/${growth.totalCount}` }}
+          {{ growth.doneToday ? '✨ 今日已完成' : `${growth.completedCount}/${growth.totalCount}` }}
         </span>
       </div>
 
       <div
         v-if="!currentAccountId"
-        class="flex flex-col items-center justify-center gap-3 rounded-xl py-8 text-center"
-        style="background: color-mix(in srgb, var(--theme-bg, #fff) 90%, var(--theme-primary, #3b82f6))"
+        class="flex flex-col items-center justify-center gap-3 rounded-2xl py-8 text-center"
+        :style="{ background: `linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 8%, transparent) 0%, color-mix(in srgb, var(--theme-secondary) 8%, transparent) 100%)` }"
       >
-        <div class="text-3xl" style="opacity: 0.5">
+        <div class="text-3xl animate-float">
           👤
         </div>
         <div>
-          <div class="text-sm font-medium" style="color: var(--theme-text, #374151)">
+          <div class="text-sm font-bold" :style="{ color: 'var(--theme-text)' }">
             未登录账号
           </div>
-          <div class="mt-1 text-xs text-gray-400">
+          <div class="mt-1 text-xs opacity-60">
             请先添加农场账号
           </div>
         </div>
       </div>
+
       <div
         v-else-if="!status?.connection?.connected"
-        class="flex flex-col items-center justify-center gap-3 rounded-xl py-8 text-center"
-        style="background: color-mix(in srgb, var(--theme-bg, #fff) 90%, var(--theme-primary, #3b82f6))"
+        class="flex flex-col items-center justify-center gap-3 rounded-2xl py-8 text-center"
+        :style="{ background: `linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 8%, transparent) 0%, color-mix(in srgb, var(--theme-secondary) 8%, transparent) 100%)` }"
       >
-        <div class="text-3xl" style="opacity: 0.5">
+        <div class="text-3xl animate-float">
           📡
         </div>
         <div>
-          <div class="text-sm font-medium" style="color: var(--theme-text, #374151)">
+          <div class="text-sm font-bold" :style="{ color: 'var(--theme-text)' }">
             账号未登录
           </div>
-          <div class="mt-1 text-xs text-gray-400">
-            请先运行账号或检查网络连接
+          <div class="mt-1 text-xs opacity-60">
+            请先运行账号或检查网络连接 🔄
           </div>
         </div>
       </div>
+
       <div
         v-else-if="growth && growth.tasks && growth.tasks.length"
         class="space-y-2"
@@ -123,14 +123,25 @@ function formatTaskProgress(task: any) {
         <div
           v-for="(task, idx) in growth.tasks"
           :key="idx"
-          class="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+          class="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-sm"
+          :style="{ background: `linear-gradient(90deg, color-mix(in srgb, var(--theme-primary) 4%, transparent) 0%, transparent 100%)` }"
         >
-          <span style="color: var(--theme-text, #6b7280); opacity: 0.85">{{ task.desc || task.name }}</span>
-          <span class="text-xs text-gray-500">{{ formatTaskProgress(task) }}</span>
+          <div class="flex items-center gap-2">
+            <div class="text-base">{{ task.done ? '✅' : '📋' }}</div>
+            <span class="font-medium" :style="{ color: 'var(--theme-text)', opacity: task.done ? 0.6 : 0.9 }">{{ task.desc || task.name }}</span>
+          </div>
+          <span
+            class="text-xs font-bold rounded-lg px-2 py-0.5"
+            :style="task.done
+              ? { background: 'linear-gradient(135deg, #bbf7d0 0%, #86efac 100%)', color: '#15803d' }
+              : { background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', color: '#4b5563' }"
+          >{{ formatTaskProgress(task) }}</span>
         </div>
       </div>
-      <div v-else class="text-center text-sm text-gray-400">
-        暂无任务详情
+
+      <div v-else class="flex flex-col items-center justify-center gap-2 py-8 text-center">
+        <div class="text-3xl opacity-50">📭</div>
+        <div class="text-sm opacity-60">暂无任务详情</div>
       </div>
     </div>
   </div>

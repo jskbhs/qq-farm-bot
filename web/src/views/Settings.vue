@@ -858,24 +858,24 @@ async function handleTestOffline() {
       </h1>
     </div>
 
-    <div class="farm-card-enhanced p-0 overflow-hidden">
+    <div class="farm-card-enhanced overflow-hidden p-0">
       <div class="border-b" :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 15%, transparent)' }">
         <nav class="flex gap-1.5 p-2.5">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300 overflow-hidden"
+            class="relative flex items-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
             :class="activeTab === tab.key
               ? 'text-white shadow-md scale-105'
               : 'hover:scale-105'"
             :style="activeTab === tab.key
               ? {
-                  backgroundColor: 'var(--theme-primary)',
-                  boxShadow: `0 4px 12px color-mix(in srgb, var(--theme-primary), 40%, transparent)`,
-                }
+                backgroundColor: 'var(--theme-primary)',
+                boxShadow: `0 4px 12px color-mix(in srgb, var(--theme-primary), 40%, transparent)`,
+              }
               : {
-                  color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
-                }"
+                color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
+              }"
             @click="activeTab = tab.key"
           >
             <div
@@ -884,7 +884,7 @@ async function handleTestOffline() {
             {{ tab.label }}
             <div
               v-if="activeTab === tab.key"
-              class="absolute inset-0 pointer-events-none"
+              class="pointer-events-none absolute inset-0"
               style="background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);"
             />
           </button>
@@ -1432,7 +1432,7 @@ async function handleTestOffline() {
               </p>
             </div>
 
-            <div v-if="localAutomationSettings.automation.friend" class="space-y-3 rounded bg-blue-50 p-3 text-sm dark:bg-blue-900/20">
+            <div v-if="localAutomationSettings.automation.friend" class="rounded bg-blue-50 p-3 text-sm space-y-3 dark:bg-blue-900/20">
               <div class="flex flex-wrap gap-4">
                 <BaseSwitch v-model="localAutomationSettings.automation.friend_steal" label="自动偷菜" />
                 <BaseSwitch v-model="localAutomationSettings.automation.friend_help" label="自动帮忙" />
@@ -1447,7 +1447,7 @@ async function handleTestOffline() {
                     v-model.number="localAutomationSettings.automation.friend_auto_accept_min_level"
                     type="number"
                     min="0"
-                    class="w-20 rounded-lg border border-gray-300 px-2 py-1 text-center text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="w-20 border border-gray-300 rounded-lg px-2 py-1 text-center text-sm dark:border-gray-600 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100 focus:outline-none"
                     placeholder="0"
                   >
                   <span class="text-xs text-gray-500">低于该等级自动忽略，高于或等于自动同意</span>

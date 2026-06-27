@@ -626,12 +626,6 @@ function getEventLabel(event: string): string {
   return event === 'login_success' ? '登录成功' : '登录失败'
 }
 
-function getEventClass(event: string): string {
-  return event === 'login_success'
-    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-}
-
 function getErrorTypeLabel(errorType: string | null): string {
   if (!errorType)
     return '-'
@@ -858,28 +852,30 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-panel">
-    <div class="mb-4">
-      <h1 class="flex items-center gap-2 text-2xl text-gray-900 font-bold dark:text-gray-100">
-        <div class="i-fas-user-shield text-lg" />
-        后台管理
+  <div class="admin-panel space-y-5">
+    <div class="farm-card-enhanced p-4">
+      <h1 class="flex items-center gap-3 text-2xl font-bold font-display" style="color: var(--theme-text)">
+        <div class="admin-title-icon">
+          <div class="i-fas-user-shield" />
+        </div>
+        <span>后台管理</span>
+        <div class="admin-title-decor" />
       </h1>
     </div>
 
-    <div class="farm-card border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
-      <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="flex gap-1 p-2">
+    <div class="farm-card-enhanced">
+      <div class="admin-tabs-nav">
+        <nav class="flex gap-2 p-2">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all"
+            class="admin-tab flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
             :class="activeTab === tab.key
-              ? 'text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'"
-            :style="activeTab === tab.key ? { backgroundColor: 'var(--theme-primary)' } : {}"
+              ? 'admin-tab-active'
+              : 'admin-tab-inactive'"
             @click="activeTab = tab.key"
           >
-            <div :class="tab.icon" />
+            <div :class="tab.icon" class="admin-tab-icon" />
             {{ tab.label }}
           </button>
         </nav>
@@ -903,24 +899,37 @@ onMounted(() => {
           </div>
 
           <!-- 卡密领取功能开关 -->
-          <div class="flex farm-card items-center justify-between border border-gray-200 rounded-2xl bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800">
-            <div>
-              <h4 class="text-sm text-gray-900 font-medium dark:text-white">
-                卡密领取功能
-              </h4>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                开启后，用户注册时可免费领取一张时间卡密
-              </p>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-xs text-gray-500">
-                库存: <span class="font-medium" :class="unusedTimeCardsCount > 0 ? 'text-green-600' : 'text-red-600'">{{ unusedTimeCardsCount }}</span> 张
-              </span>
-              <BaseSwitch
-                v-model="cardClaimEnabled"
-                :disabled="cardClaimLoading"
-                @update:model-value="toggleCardClaimStatus"
-              />
+          <div class="admin-info-card farm-card-enhanced p-5">
+            <div class="flex items-center gap-4">
+              <div class="admin-card-icon">
+                <span class="text-2xl">🎫</span>
+              </div>
+              <div class="flex-1">
+                <h4 class="text-base font-bold font-display" style="color: var(--theme-text)">
+                  卡密领取功能
+                </h4>
+                <p class="mt-1 text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                  开启后，用户注册时可免费领取一张时间卡密
+                </p>
+              </div>
+              <div class="flex items-center gap-4">
+                <div class="text-right">
+                  <div class="text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                    库存
+                  </div>
+                  <div class="asset-number text-lg font-extrabold" :class="unusedTimeCardsCount > 0 ? 'text-green-500' : 'text-red-500'">
+                    {{ unusedTimeCardsCount }}
+                    <span class="text-xs font-normal">张</span>
+                  </div>
+                </div>
+                <div class="admin-switch-wrap">
+                  <BaseSwitch
+                    v-model="cardClaimEnabled"
+                    :disabled="cardClaimLoading"
+                    @update:model-value="toggleCardClaimStatus"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1008,12 +1017,12 @@ onMounted(() => {
             <div>加载中...</div>
           </div>
 
-          <div v-else class="farm-card overflow-hidden rounded-2xl bg-white shadow-md dark:bg-gray-800">
+          <div v-else class="admin-table-wrap overflow-hidden rounded-2xl">
             <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
+              <table class="admin-table min-w-full text-left text-sm">
+                <thead class="admin-table-head">
                   <tr>
-                    <th class="px-3 py-2 text-left">
+                    <th class="px-3 py-3">
                       <input
                         v-model="selectAll"
                         type="checkbox"
@@ -1021,38 +1030,38 @@ onMounted(() => {
                         @change="toggleSelectAll"
                       >
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
-                      卡密
+                    <th class="px-4 py-3 font-bold">
+                      🔑 卡密
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
-                      描述
+                    <th class="px-4 py-3 font-bold">
+                      📝 描述
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
-                      类型
+                    <th class="px-4 py-3 font-bold">
+                      📦 类型
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
+                    <th class="px-4 py-3 font-bold">
                       数值
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
+                    <th class="px-4 py-3 font-bold">
                       状态
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
+                    <th class="px-4 py-3 font-bold">
                       使用者
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
+                    <th class="px-4 py-3 font-bold">
                       生成时间
                     </th>
-                    <th class="px-4 py-2 text-left text-xs text-gray-500 font-medium dark:text-gray-300">
+                    <th class="px-4 py-3 font-bold">
                       使用时间
                     </th>
-                    <th class="px-4 py-2 text-right text-xs text-gray-500 font-medium dark:text-gray-300">
+                    <th class="px-4 py-3 text-right font-bold">
                       操作
                     </th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr v-for="card in filteredCards" :key="card.code" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td class="px-3 py-2">
+                <tbody class="admin-table-body">
+                  <tr v-for="(card, index) in filteredCards" :key="card.code" class="admin-table-row" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
+                    <td class="px-3 py-3">
                       <input
                         :checked="selectedCards.has(card.code)"
                         type="checkbox"
@@ -1060,54 +1069,62 @@ onMounted(() => {
                         @change="toggleSelectCard(card.code)"
                       >
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2">
-                      <code class="rounded bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-700">{{ card.code }}</code>
+                    <td class="whitespace-nowrap px-4 py-3">
+                      <code class="admin-code-bg rounded-lg px-2.5 py-1 text-xs font-bold font-mono">{{ card.code }}</code>
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">
+                    <td class="whitespace-nowrap px-4 py-3 font-medium" style="color: var(--theme-text)">
                       {{ card.description }}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2">
+                    <td class="whitespace-nowrap px-4 py-3">
                       <span
-                        class="inline-flex rounded-full px-2 py-0.5 text-xs"
-                        :class="card.type === 'quota' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'"
+                        class="admin-badge inline-flex rounded-full px-2.5 py-1 text-xs font-bold"
+                        :class="card.type === 'quota' ? 'badge-purple' : 'badge-blue'"
                       >
                         {{ getCardTypeLabel(card) }}
                       </span>
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-900 dark:text-white">
+                    <td class="whitespace-nowrap px-4 py-3 font-bold" style="color: var(--theme-text)">
                       {{ getCardValueLabel(card) }}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2">
-                      <span
-                        class="inline-flex rounded-full px-2 py-0.5 text-xs"
-                        :class="card.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
-                      >
-                        {{ card.enabled ? '启用' : '禁用' }}
+                    <td class="whitespace-nowrap px-4 py-3">
+                      <span class="admin-status-wrap inline-flex items-center gap-1.5">
+                        <span
+                          class="admin-status-dot"
+                          :class="card.enabled ? 'status-online' : 'status-offline'"
+                        />
+                        <span
+                          class="admin-badge inline-flex rounded-full px-2.5 py-1 text-xs font-bold"
+                          :class="card.enabled ? 'badge-green' : 'badge-red'"
+                        >
+                          {{ card.enabled ? '启用' : '禁用' }}
+                        </span>
                       </span>
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
                       {{ card.usedBy || '-' }}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
                       {{ card.createdAt ? new Date(card.createdAt).toLocaleString() : '-' }}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
                       {{ card.usedAt ? new Date(card.usedAt).toLocaleString() : '-' }}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2 text-right text-sm">
-                      <button class="mr-2 hover:opacity-80" style="color: var(--theme-primary);" @click="copyCode(card.code)">
-                        复制
-                      </button>
-                      <button class="mr-2 hover:opacity-80" style="color: var(--theme-primary);" @click="toggleCardStatus(card)">
-                        {{ card.enabled ? '禁用' : '启用' }}
-                      </button>
-                      <button class="text-red-600 dark:text-red-400 hover:text-red-900" @click="deleteCard(card)">
-                        删除
-                      </button>
+                    <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
+                      <div class="flex items-center justify-end gap-1.5">
+                        <button class="admin-table-btn admin-table-btn-primary" @click="copyCode(card.code)">
+                          复制
+                        </button>
+                        <button class="admin-table-btn admin-table-btn-warning" @click="toggleCardStatus(card)">
+                          {{ card.enabled ? '禁用' : '启用' }}
+                        </button>
+                        <button class="admin-table-btn admin-table-btn-danger" @click="deleteCard(card)">
+                          删除
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   <tr v-if="filteredCards.length === 0">
-                    <td colspan="10" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="10" class="px-4 py-8 text-center" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
                       暂无卡密
                     </td>
                   </tr>
@@ -1429,72 +1446,81 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="farm-card overflow-hidden border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
+          <div class="admin-log-area farm-card-enhanced overflow-hidden">
             <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-900">
+              <table class="admin-table min-w-full text-left text-sm">
+                <thead class="admin-table-head">
                   <tr>
-                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
-                      时间
+                    <th class="px-4 py-3 font-bold">
+                      🕐 时间
                     </th>
-                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
-                      事件
+                    <th class="px-4 py-3 font-bold">
+                      📋 事件
                     </th>
-                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
-                      用户名
+                    <th class="px-4 py-3 font-bold">
+                      👤 用户名
                     </th>
-                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
-                      错误类型
+                    <th class="px-4 py-3 font-bold">
+                      ❌ 错误类型
                     </th>
-                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
-                      IP地址
+                    <th class="px-4 py-3 font-bold">
+                      🌐 IP地址
                     </th>
-                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
-                      浏览器
+                    <th class="px-4 py-3 font-bold">
+                      🖥️ 浏览器
                     </th>
                   </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                <tbody class="admin-table-body">
                   <tr v-if="loginLogsLoading">
-                    <td colspan="6" class="px-3 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="6" class="px-4 py-8 text-center" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
                       加载中...
                     </td>
                   </tr>
                   <tr v-else-if="loginLogs.length === 0">
-                    <td colspan="6" class="px-3 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="6" class="px-4 py-8 text-center" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
                       暂无登录日志
                     </td>
                   </tr>
-                  <tr v-for="log in loginLogs" :key="log.id">
-                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">
+                  <tr v-for="(log, index) in loginLogs" :key="log.id" class="admin-table-row" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm font-mono" style="color: var(--theme-text)">
                       {{ formatLogTime(log.timestamp) }}
                     </td>
-                    <td class="whitespace-nowrap px-3 py-2">
-                      <span
-                        class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
-                        :class="getEventClass(log.event)"
-                      >
-                        {{ getEventLabel(log.event) }}
+                    <td class="whitespace-nowrap px-4 py-3">
+                      <span class="admin-status-wrap inline-flex items-center gap-1.5">
+                        <span
+                          class="admin-status-dot"
+                          :class="log.event === 'login_success' ? 'status-online' : 'status-offline'"
+                        />
+                        <span
+                          class="admin-badge inline-flex rounded-full px-2.5 py-1 text-xs font-bold"
+                          :class="log.event === 'login_success' ? 'badge-green' : 'badge-red'"
+                        >
+                          {{ getEventLabel(log.event) }}
+                        </span>
                       </span>
                     </td>
-                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 font-medium dark:text-white">
+                    <td class="whitespace-nowrap px-4 py-3 font-bold" style="color: var(--theme-text)">
                       {{ log.username }}
                     </td>
-                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
                       {{ getErrorTypeLabel(log.errorType) }}
                     </td>
-                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-600 font-mono dark:text-gray-300">
-                      {{ log.ip }}
+                    <td class="whitespace-nowrap px-4 py-3">
+                      <code class="admin-code-bg rounded-lg px-2.5 py-1 text-xs font-mono">{{ log.ip }}</code>
                     </td>
-                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
+                    <td class="whitespace-nowrap px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
                       {{ parseBrowser(log.userAgent) }}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <div v-if="loginLogsTotal > 0" class="border-t border-gray-200 px-4 py-3 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              共 {{ loginLogsTotal }} 条记录
+            <div v-if="loginLogsTotal > 0" class="admin-log-footer px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+              <span class="inline-flex items-center gap-1.5">
+                <span>📊</span>
+                共 {{ loginLogsTotal }} 条记录
+              </span>
             </div>
           </div>
 
@@ -1538,10 +1564,13 @@ onMounted(() => {
           </h3>
 
           <div class="space-y-4">
-            <div class="farm-card border border-gray-200 rounded-2xl bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800">
-              <h4 class="mb-3 flex items-center gap-2 text-base text-gray-900 font-bold dark:text-gray-100">
-                <div class="i-carbon-settings" />
-                系统配置
+            <div class="farm-card-enhanced p-5">
+              <h4 class="mb-4 flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
+                <div class="admin-section-icon">
+                  <div class="i-carbon-settings" />
+                </div>
+                <span>系统配置</span>
+                <div class="admin-section-divider" />
               </h4>
 
               <!-- 设备预设选择 -->
@@ -1689,4 +1718,462 @@ onMounted(() => {
 </template>
 
 <style scoped lang="postcss">
+/* 标题样式 */
+.admin-title-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 70%, #000) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--theme-primary) 60%, #000),
+    0 6px 20px color-mix(in srgb, var(--theme-primary) 40%, transparent),
+    0 0 20px color-mix(in srgb, var(--theme-primary) 30%, transparent) inset;
+  animation: title-icon-pulse 3s ease-in-out infinite;
+}
+
+@keyframes title-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(3deg);
+  }
+}
+
+.admin-title-decor {
+  flex: 1;
+  height: 3px;
+  margin-left: 16px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--theme-primary) 40%, transparent) 0%,
+    color-mix(in srgb, var(--theme-primary) 20%, transparent) 50%,
+    transparent 100%
+  );
+  border-radius: 3px;
+  position: relative;
+}
+
+.admin-title-decor::before {
+  content: '🌾';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  animation: wheat-sway 3s ease-in-out infinite;
+}
+
+@keyframes wheat-sway {
+  0%,
+  100% {
+    transform: translateY(-50%) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-50%) rotate(5deg);
+  }
+}
+
+/* 选项卡样式 */
+.admin-tabs-nav {
+  background: linear-gradient(180deg, rgba(139, 105, 20, 0.04) 0%, transparent 100%);
+  border-bottom: 2px solid rgba(139, 105, 20, 0.08);
+}
+
+.dark .admin-tabs-nav {
+  background: linear-gradient(180deg, rgba(109, 191, 91, 0.06) 0%, transparent 100%);
+  border-bottom: 2px solid rgba(109, 191, 91, 0.1);
+}
+
+.admin-tab {
+  font-family: 'Nunito', sans-serif;
+  position: relative;
+}
+
+.admin-tab-inactive {
+  color: #6b7280;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .admin-tab-inactive {
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-tab-inactive:hover {
+  color: #374151;
+  background: rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.dark .admin-tab-inactive:hover {
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-tab-active {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 80%, #000) 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--theme-primary) 60%, #000),
+    0 6px 20px color-mix(in srgb, var(--theme-primary) 40%, transparent),
+    0 0 20px color-mix(in srgb, var(--theme-primary) 30%, transparent) inset;
+}
+
+.admin-tab-icon {
+  font-size: 16px;
+  animation: admin-tab-icon-bounce 2.5s ease-in-out infinite;
+}
+
+@keyframes admin-tab-icon-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+/* 信息卡片 */
+.admin-info-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-info-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--theme-primary) 8%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(30%, -30%);
+}
+
+.admin-card-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(217, 119, 6, 0.2);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.admin-info-card:hover .admin-card-icon {
+  transform: scale(1.1) rotate(-5deg);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3);
+}
+
+.admin-switch-wrap {
+  transform: scale(1.1);
+}
+
+/* 分组标题 */
+.admin-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--theme-primary) 20%, transparent) 0%,
+    color-mix(in srgb, var(--theme-primary) 10%, transparent) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-primary);
+}
+
+.admin-section-divider {
+  flex: 1;
+  height: 2px;
+  margin-left: 12px;
+  background: linear-gradient(90deg, rgba(139, 105, 20, 0.2) 0%, rgba(139, 105, 20, 0.1) 50%, transparent 100%);
+  border-radius: 2px;
+}
+
+.dark .admin-section-divider {
+  background: linear-gradient(90deg, rgba(109, 191, 91, 0.2) 0%, rgba(109, 191, 91, 0.1) 50%, transparent 100%);
+}
+
+/* 表格样式 */
+.admin-table-wrap {
+  background: linear-gradient(145deg, #ffffff 0%, #fefcf5 100%);
+  border: 2px solid rgba(139, 105, 20, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 4px 16px rgba(139, 105, 20, 0.1);
+}
+
+.dark .admin-table-wrap {
+  background: linear-gradient(145deg, rgba(45, 55, 45, 0.98) 0%, rgba(30, 40, 30, 0.95) 100%);
+  border: 2px solid rgba(109, 191, 91, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.admin-table-head {
+  background: linear-gradient(180deg, rgba(139, 105, 20, 0.08) 0%, rgba(139, 105, 20, 0.04) 100%);
+  border-bottom: 2px solid rgba(139, 105, 20, 0.15);
+}
+
+.dark .admin-table-head {
+  background: linear-gradient(180deg, rgba(109, 191, 91, 0.1) 0%, rgba(109, 191, 91, 0.05) 100%);
+  border-bottom: 2px solid rgba(109, 191, 91, 0.2);
+}
+
+.admin-table-head th {
+  color: #8b6914;
+  font-family: 'ZCOOL KuaiLe', cursive;
+  font-weight: normal;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+}
+
+.dark .admin-table-head th {
+  color: #6dbf5b;
+}
+
+.admin-table-row {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.admin-table-row.row-even {
+  background: rgba(139, 105, 20, 0.02);
+}
+
+.dark .admin-table-row.row-even {
+  background: rgba(109, 191, 91, 0.02);
+}
+
+.admin-table-row:hover {
+  background: color-mix(in srgb, var(--theme-primary) 8%, transparent);
+  transform: scale(1.002);
+  box-shadow: 0 2px 12px rgba(139, 105, 20, 0.1);
+}
+
+.dark .admin-table-row:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 徽章样式 */
+.admin-badge {
+  border: 2px solid transparent;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.badge-green {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark .badge-green {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.25) 100%);
+  color: #6ee7b7;
+}
+
+.badge-red {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.dark .badge-red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.25) 100%);
+  color: #fca5a5;
+}
+
+.badge-blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark .badge-blue {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%);
+  color: #93c5fd;
+}
+
+.badge-purple {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  color: #5b21b6;
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.dark .badge-purple {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(124, 58, 237, 0.25) 100%);
+  color: #c4b5fd;
+}
+
+/* 状态指示点 */
+.admin-status-dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-status-dot.status-online {
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.admin-status-dot.status-online::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #22c55e;
+  animation: status-ring-pulse 2s ease-out infinite;
+}
+
+@keyframes status-ring-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.admin-status-dot.status-offline {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* 代码背景 */
+.admin-code-bg {
+  background: linear-gradient(145deg, #1f2937 0%, #111827 100%);
+  color: #6ee7b7;
+  border: 1px solid rgba(75, 85, 99, 0.5);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dark .admin-code-bg {
+  background: linear-gradient(145deg, #111827 0%, #0f172a 100%);
+  color: #34d399;
+}
+
+/* 表格操作按钮 */
+.admin-table-btn {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.12);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+  background: white;
+}
+
+.dark .admin-table-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-table-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.admin-table-btn:active {
+  transform: translateY(1px) scale(0.98);
+  border-bottom-width: 2px;
+}
+
+.admin-table-btn-primary {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.2);
+  border-bottom-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.admin-table-btn-primary:hover {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  box-shadow:
+    0 4px 16px rgba(59, 130, 246, 0.3),
+    0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.dark .admin-table-btn-primary {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%);
+  color: #93c5fd;
+}
+
+.admin-table-btn-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-color: rgba(245, 158, 11, 0.2);
+  border-bottom-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+}
+
+.admin-table-btn-warning:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+  box-shadow:
+    0 4px 16px rgba(245, 158, 11, 0.3),
+    0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.dark .admin-table-btn-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.25) 100%);
+  color: #fcd34d;
+}
+
+.admin-table-btn-danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.2);
+  border-bottom-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.admin-table-btn-danger:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  box-shadow:
+    0 4px 16px rgba(239, 68, 68, 0.3),
+    0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+.dark .admin-table-btn-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.25) 100%);
+  color: #fca5a5;
+}
+
+/* 日志区域 */
+.admin-log-area {
+  position: relative;
+}
+
+.admin-log-footer {
+  background: linear-gradient(0deg, rgba(139, 105, 20, 0.05) 0%, transparent 100%);
+  border-top: 2px solid rgba(139, 105, 20, 0.08);
+}
+
+.dark .admin-log-footer {
+  background: linear-gradient(0deg, rgba(109, 191, 91, 0.06) 0%, transparent 100%);
+  border-top: 2px solid rgba(109, 191, 91, 0.1);
+}
 </style>

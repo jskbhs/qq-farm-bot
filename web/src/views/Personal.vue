@@ -9,57 +9,89 @@ const currentTab = ref<'farm' | 'bag' | 'task'>('farm')
 
 <template>
   <div class="h-full flex flex-col p-4">
-    <div class="mb-4 flex space-x-2">
-      <button
-        class="cartoon-btn rounded-2xl px-5 py-2.5 font-medium transition-all"
-        :class="currentTab === 'farm'
-          ? 'text-white shadow-md'
-          : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
-        :style="currentTab === 'farm' ? { backgroundColor: 'var(--theme-primary)' } : {}"
-        @click="currentTab = 'farm'"
-      >
-        <div class="flex items-center space-x-2">
-          <div class="i-carbon-sprout text-lg" />
+    <div class="farm-card-enhanced mb-4 overflow-hidden p-2">
+      <div class="flex gap-1.5">
+        <button
+          class="relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-300"
+          :class="currentTab === 'farm'
+            ? 'text-white shadow-md scale-105'
+            : 'hover:scale-105'"
+          :style="currentTab === 'farm'
+            ? {
+              backgroundColor: 'var(--theme-primary)',
+              boxShadow: `0 4px 12px color-mix(in srgb, var(--theme-primary), 40%, transparent)`,
+            }
+            : {
+              color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
+            }"
+          @click="currentTab = 'farm'"
+        >
+          <div class="i-carbon-sprout text-lg" :class="[{ 'animate-sparkle': currentTab === 'farm' }]" />
           <span>我的农场</span>
-        </div>
-      </button>
-      <button
-        class="cartoon-btn rounded-2xl px-5 py-2.5 font-medium transition-all"
-        :class="currentTab === 'bag'
-          ? 'text-white shadow-md'
-          : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
-        :style="currentTab === 'bag' ? { backgroundColor: 'var(--theme-primary)' } : {}"
-        @click="currentTab = 'bag'"
-      >
-        <div class="flex items-center space-x-2">
-          <div class="i-carbon-box text-lg" />
+          <div
+            v-if="currentTab === 'farm'"
+            class="pointer-events-none absolute inset-0"
+            style="background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);"
+          />
+        </button>
+        <button
+          class="relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-300"
+          :class="currentTab === 'bag'
+            ? 'text-white shadow-md scale-105'
+            : 'hover:scale-105'"
+          :style="currentTab === 'bag'
+            ? {
+              backgroundColor: 'var(--theme-primary)',
+              boxShadow: `0 4px 12px color-mix(in srgb, var(--theme-primary), 40%, transparent)`,
+            }
+            : {
+              color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
+            }"
+          @click="currentTab = 'bag'"
+        >
+          <div class="i-carbon-box text-lg" :class="[{ 'animate-sparkle': currentTab === 'bag' }]" />
           <span>我的背包</span>
-        </div>
-      </button>
-      <button
-        class="cartoon-btn rounded-2xl px-5 py-2.5 font-medium transition-all"
-        :class="currentTab === 'task'
-          ? 'text-white shadow-md'
-          : 'bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
-        :style="currentTab === 'task' ? { backgroundColor: 'var(--theme-primary)' } : {}"
-        @click="currentTab = 'task'"
-      >
-        <div class="flex items-center space-x-2">
-          <div class="i-carbon-task text-lg" />
+          <div
+            v-if="currentTab === 'bag'"
+            class="pointer-events-none absolute inset-0"
+            style="background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);"
+          />
+        </button>
+        <button
+          class="relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-300"
+          :class="currentTab === 'task'
+            ? 'text-white shadow-md scale-105'
+            : 'hover:scale-105'"
+          :style="currentTab === 'task'
+            ? {
+              backgroundColor: 'var(--theme-primary)',
+              boxShadow: `0 4px 12px color-mix(in srgb, var(--theme-primary), 40%, transparent)`,
+            }
+            : {
+              color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
+            }"
+          @click="currentTab = 'task'"
+        >
+          <div class="i-carbon-task text-lg" :class="[{ 'animate-sparkle': currentTab === 'task' }]" />
           <span>我的任务</span>
-        </div>
-      </button>
+          <div
+            v-if="currentTab === 'task'"
+            class="pointer-events-none absolute inset-0"
+            style="background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);"
+          />
+        </button>
+      </div>
     </div>
 
-    <div class="flex-1 overflow-hidden overflow-y-auto">
+    <div class="custom-scrollbar flex-1 overflow-hidden overflow-y-auto">
       <Transition
         mode="out-in"
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="transform opacity-0 scale-95"
-        enter-to-class="transform opacity-100 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="transform opacity-100 scale-100"
-        leave-to-class="transform opacity-0 scale-95"
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="transform opacity-0 translate-y-4"
+        enter-to-class="transform opacity-100 translate-y-0"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="transform opacity-100 translate-y-0"
+        leave-to-class="transform opacity-0 -translate-y-4"
       >
         <component :is="currentTab === 'farm' ? FarmPanel : (currentTab === 'bag' ? BagPanel : TaskPanel)" />
       </Transition>
