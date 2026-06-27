@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AnchorRect } from '@/composables/useModalAnchor'
 import { computed, ref, watch } from 'vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -7,6 +8,7 @@ import { useYybLoginStore } from '@/stores/yyb-login'
 
 const props = defineProps<{
   show: boolean
+  anchor?: AnchorRect | null
 }>()
 
 const emit = defineEmits(['close'])
@@ -38,6 +40,68 @@ function resetForm() {
 watch(() => props.show, (show) => {
   if (show) {
     yybStore.loadConfig().then(resetForm)
+  }
+})
+
+const panelStyle = computed(() => {
+  const anchor = props.anchor
+  if (!anchor) {
+    return {
+      background: 'var(--theme-bg)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08)',
+      maxHeight: 'min(85dvh, 700px)',
+    }
+  }
+
+  const gap = 8
+  const preferredWidth = 384
+  const minHeight = 180
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+
+  const width = Math.min(preferredWidth, vw - gap * 2)
+  let left = anchor.left
+  if (left + width > vw - gap) {
+    left = Math.max(gap, vw - width - gap)
+  }
+
+  const spaceBelow = vh - anchor.bottom - gap
+  const spaceAbove = anchor.top - gap
+
+  let position: 'below' | 'above' = 'below'
+  let maxHeight: number
+
+  if (spaceBelow >= minHeight) {
+    position = 'below'
+    maxHeight = spaceBelow
+  }
+  else if (spaceAbove >= minHeight) {
+    position = 'above'
+    maxHeight = spaceAbove
+  }
+  else {
+    if (spaceBelow >= spaceAbove) {
+      position = 'below'
+      maxHeight = spaceBelow
+    }
+    else {
+      position = 'above'
+      maxHeight = spaceAbove
+    }
+  }
+
+  maxHeight = Math.max(minHeight, Math.min(maxHeight, Math.min(600, vh - gap * 2)))
+
+  return {
+    background: 'var(--theme-bg)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08)',
+    position: 'fixed' as const,
+    left: `${left}px`,
+    top: position === 'below' ? `${anchor.bottom + gap}px` : undefined,
+    bottom: position === 'above' ? `${vh - anchor.top + gap}px` : undefined,
+    width: `${width}px`,
+    maxWidth: `${width}px`,
+    maxHeight: `${maxHeight}px`,
   }
 })
 
@@ -103,18 +167,23 @@ function close() {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div v-if="show" class="fixed inset-0 z-50">
     <div class="absolute inset-0" @click.self="close" />
     <div
-      class="relative z-10 max-h-[90vh] max-w-lg w-full overflow-hidden rounded-2xl"
-      :style="{ background: 'var(--theme-bg)', boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08)' }"
+      class="z-10 overflow-hidden rounded-2xl"
+      :class="[!anchor && 'absolute left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2']"
+      :style="panelStyle"
       @click.stop
     >
-      <!-- Header -->
       <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
-        <h3 class="text-lg font-semibold" style="color: var(--theme-primary, var(--theme-text))">
-          应用宝配置
-        </h3>
+        <div>
+          <h3 class="text-lg font-semibold" style="color: var(--theme-primary, var(--theme-text))">
+            应用宝配置
+          </h3>
+          <p class="mt-1 text-xs opacity-70" style="color: var(--theme-text)">
+            配置应用宝一键登录的 API Token 和 OpenID
+          </p>
+        </div>
         <BaseButton variant="ghost" class="!p-1" @click="close">
           <div class="i-carbon-close text-xl" :style="{ color: 'var(--theme-text)' }" />
         </BaseButton>
