@@ -367,17 +367,17 @@ body {
   animation: online-pulse 2s ease-in-out infinite;
 }
 
-/* 高级卡片效果 — 多层阴影 + 内高光 */
+/* 高级卡片效果 — 玻璃拟态风格 + 主题色适配 */
 .farm-card-enhanced {
   position: relative;
-  background: linear-gradient(145deg, rgba(255,255,255,0.98) 0%, rgba(255,252,245,0.95) 100%);
-  border: 3px solid rgba(139, 105, 20, 0.15);
+  background: color-mix(in srgb, var(--theme-bg) 65%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1.5px solid color-mix(in srgb, var(--theme-primary) 15%, transparent);
   border-radius: 24px;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.8) inset,
-    0 -1px 0 rgba(0,0,0,0.05) inset,
-    0 6px 0 rgba(139, 105, 20, 0.12),
-    0 8px 24px rgba(139, 105, 20, 0.15);
+    0 1px 0 color-mix(in srgb, white 30%, transparent) inset,
+    0 8px 32px color-mix(in srgb, var(--theme-primary) 10%, transparent);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
 }
@@ -388,41 +388,37 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%);
-  border-radius: 21px 21px 0 0;
+  height: 40%;
+  background: linear-gradient(180deg, color-mix(in srgb, white 25%, transparent) 0%, transparent 100%);
+  border-radius: 22.5px 22.5px 0 0;
   pointer-events: none;
 }
 
 .farm-card-enhanced:hover {
   transform: translateY(-4px) scale(1.01);
+  border-color: color-mix(in srgb, var(--theme-primary) 30%, transparent);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.8) inset,
-    0 -1px 0 rgba(0,0,0,0.05) inset,
-    0 10px 0 rgba(139, 105, 20, 0.15),
-    0 12px 32px rgba(139, 105, 20, 0.2);
+    0 1px 0 color-mix(in srgb, white 40%, transparent) inset,
+    0 12px 48px color-mix(in srgb, var(--theme-primary) 20%, transparent);
 }
 
 .dark .farm-card-enhanced {
-  background: linear-gradient(145deg, rgba(45, 55, 45, 0.98) 0%, rgba(30, 40, 30, 0.95) 100%);
-  border-color: rgba(109, 191, 91, 0.2);
+  background: color-mix(in srgb, var(--theme-bg) 70%, transparent);
+  border-color: color-mix(in srgb, var(--theme-primary) 20%, transparent);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.05) inset,
-    0 -1px 0 rgba(0,0,0,0.2) inset,
-    0 6px 0 rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.4);
+    0 1px 0 color-mix(in srgb, white 8%, transparent) inset,
+    0 8px 32px color-mix(in srgb, black 30%, transparent);
 }
 
 .dark .farm-card-enhanced::before {
-  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, white 8%, transparent) 0%, transparent 100%);
 }
 
 .dark .farm-card-enhanced:hover {
+  border-color: color-mix(in srgb, var(--theme-primary) 40%, transparent);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.05) inset,
-    0 -1px 0 rgba(0,0,0,0.2) inset,
-    0 10px 0 rgba(0, 0, 0, 0.35),
-    0 12px 32px rgba(0, 0, 0, 0.5);
+    0 1px 0 color-mix(in srgb, white 12%, transparent) inset,
+    0 12px 48px color-mix(in srgb, black 40%, transparent);
 }
 
 /* 精致进度条 — 斜纹流光 + 渐变 */

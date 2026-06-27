@@ -129,11 +129,13 @@ onUnmounted(() => {
     <main class="relative z-10 h-full min-w-0 flex flex-1 flex-col overflow-hidden">
       <!-- Top Bar (Mobile/Tablet only or for additional actions) -->
       <header
-        class="h-16 flex shrink-0 items-center justify-between border-b-3 px-4 lg:hidden"
+        class="h-16 flex shrink-0 items-center justify-between px-4 lg:hidden"
         :style="{
-          background: `linear-gradient(90deg, color-mix(in srgb, var(--theme-primary) 12%, var(--theme-bg)) 0%, var(--theme-bg) 100%)`,
-          borderColor: 'color-mix(in srgb, var(--theme-primary) 30%, transparent)',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+          background: `color-mix(in srgb, var(--theme-bg) 70%, transparent)`,
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          borderBottom: '1.5px solid color-mix(in srgb, var(--theme-primary) 15%, transparent)',
+          boxShadow: '0 2px 20px color-mix(in srgb, var(--theme-primary) 8%, transparent)',
         }"
       >
         <div class="flex items-center gap-2">
