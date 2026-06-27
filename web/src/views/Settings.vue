@@ -858,7 +858,7 @@ async function handleTestOffline() {
       </h1>
     </div>
 
-    <div class="farm-card border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
+    <div class="farm-card">
       <div class="border-b border-gray-200 dark:border-gray-700">
         <nav class="flex gap-1 p-2">
           <button
@@ -932,7 +932,7 @@ async function handleTestOffline() {
             <div>加载中...</div>
           </div>
 
-          <div v-else-if="accounts.length === 0" class="farm-card rounded-2xl bg-white py-12 text-center shadow-md dark:bg-gray-800">
+          <div v-else-if="accounts.length === 0" class="farm-card text-center">
             <div class="mb-4 inline-block text-4xl text-gray-400">
               👤
             </div>
@@ -1514,7 +1514,7 @@ async function handleTestOffline() {
           </h3>
 
           <div class="space-y-4">
-            <div class="farm-card border border-gray-200 rounded-2xl bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800">
+            <div class="farm-card">
               <h4 class="mb-3 flex items-center gap-2 text-base text-gray-900 font-bold dark:text-gray-100">
                 🔑 修改用户密码
               </h4>
@@ -1554,7 +1554,7 @@ async function handleTestOffline() {
               </div>
             </div>
 
-            <div class="farm-card border border-gray-200 rounded-2xl bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800">
+            <div class="farm-card">
               <h4 class="mb-3 flex items-center gap-2 text-base text-gray-900 font-bold dark:text-gray-100">
                 🔔 下线提醒
               </h4>

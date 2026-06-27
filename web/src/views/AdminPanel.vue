@@ -866,7 +866,7 @@ onMounted(() => {
       </h1>
     </div>
 
-    <div class="farm-card border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
+    <div class="farm-card">
       <div class="border-b border-gray-200 dark:border-gray-700">
         <nav class="flex gap-1 p-2">
           <button
@@ -903,7 +903,7 @@ onMounted(() => {
           </div>
 
           <!-- 卡密领取功能开关 -->
-          <div class="flex farm-card items-center justify-between border border-gray-200 rounded-2xl bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800">
+          <div class="flex farm-card items-center justify-between">
             <div>
               <h4 class="text-sm text-gray-900 font-medium dark:text-white">
                 卡密领取功能
@@ -957,7 +957,7 @@ onMounted(() => {
             </button>
           </div>
 
-          <div class="flex farm-card items-center gap-2 rounded-2xl bg-white px-2 py-1.5 shadow-md dark:bg-gray-800">
+          <div class="flex farm-card items-center gap-2">
             <input
               v-model="searchQuery"
               placeholder="搜索卡密、描述或使用者..."
@@ -1008,7 +1008,7 @@ onMounted(() => {
             <div>加载中...</div>
           </div>
 
-          <div v-else class="farm-card overflow-hidden rounded-2xl bg-white shadow-md dark:bg-gray-800">
+          <div v-else class="farm-card overflow-hidden">
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
@@ -1220,7 +1220,7 @@ onMounted(() => {
             <div>加载中...</div>
           </div>
 
-          <div v-else class="farm-card overflow-hidden border border-gray-200 rounded-2xl shadow-md dark:border-gray-700">
+          <div v-else class="farm-card overflow-hidden">
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
@@ -1429,7 +1429,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="farm-card overflow-hidden border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
+          <div class="farm-card overflow-hidden">
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-900">
@@ -1538,7 +1538,7 @@ onMounted(() => {
           </h3>
 
           <div class="space-y-4">
-            <div class="farm-card border border-gray-200 rounded-2xl bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800">
+            <div class="farm-card">
               <h4 class="mb-3 flex items-center gap-2 text-base text-gray-900 font-bold dark:text-gray-100">
                 <div class="i-carbon-settings" />
                 系统配置

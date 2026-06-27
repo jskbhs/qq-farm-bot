@@ -639,7 +639,7 @@ async function handleBatchAddKnownFriendGids() {
       <span class="animate-spin text-4xl">⏳</span>
     </div>
 
-    <div v-else-if="!currentAccountId" class="flex flex-col farm-card items-center justify-center gap-4 rounded-2xl bg-white p-12 text-center text-gray-500 shadow-md dark:bg-gray-800">
+    <div v-else-if="!currentAccountId" class="flex flex-col farm-card items-center justify-center gap-4 text-center text-gray-500">
       <span class="text-4xl text-gray-400">👤</span>
       <div>
         <div class="text-lg text-gray-700 font-medium dark:text-gray-300">
@@ -651,7 +651,7 @@ async function handleBatchAddKnownFriendGids() {
       </div>
     </div>
 
-    <div v-else-if="!status?.connection?.connected" class="flex flex-col farm-card items-center justify-center gap-4 rounded-2xl bg-white p-12 text-center text-gray-500 shadow-md dark:bg-gray-800">
+    <div v-else-if="!status?.connection?.connected" class="flex flex-col farm-card items-center justify-center gap-4 text-center text-gray-500">
       <span class="text-4xl text-gray-400">📡</span>
       <div>
         <div class="text-lg text-gray-700 font-medium dark:text-gray-300">
@@ -665,7 +665,7 @@ async function handleBatchAddKnownFriendGids() {
 
     <template v-else>
       <div v-if="activeTab === 'friends'" class="space-y-4">
-        <div v-if="currentAccountId && isQqAccount" class="mb-4 farm-card border border-amber-200 rounded-2xl bg-white p-4 shadow-md dark:border-amber-700/50 dark:bg-gray-800">
+        <div v-if="currentAccountId && isQqAccount" class="mb-4 farm-card border border-amber-200/50 dark:border-amber-700/50">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div class="flex items-center gap-2">
@@ -730,12 +730,12 @@ async function handleBatchAddKnownFriendGids() {
           </div>
         </div>
 
-        <div v-if="friends.length === 0" class="farm-card rounded-2xl bg-white p-8 text-center text-gray-500 shadow-md dark:bg-gray-800">
+        <div v-if="friends.length === 0" class="farm-card text-center text-gray-500">
           暂无好友或数据加载失败
         </div>
 
         <template v-else>
-          <div class="flex flex-wrap farm-card items-center gap-2 rounded-2xl bg-white p-3 shadow-md dark:bg-gray-800">
+          <div class="flex flex-wrap farm-card items-center gap-2">
             <div class="flex-1" />
             <button
               class="cartoon-btn rounded-xl bg-gray-100 px-3 py-1.5 text-sm text-gray-600 transition dark:bg-gray-700 hover:bg-gray-200 dark:text-gray-300 disabled:opacity-50 dark:hover:bg-gray-600"
@@ -923,13 +923,13 @@ async function handleBatchAddKnownFriendGids() {
       </div>
 
       <div v-else-if="activeTab === 'blacklist'" class="space-y-4">
-        <div class="farm-card rounded-2xl bg-white p-4 shadow-md dark:bg-gray-800">
+        <div class="farm-card">
           <p class="text-sm text-gray-500 dark:text-gray-400">
             加入黑名单的好友在自动偷菜和帮助时会被跳过。
           </p>
         </div>
 
-        <div v-if="blacklist.length === 0" class="farm-card rounded-2xl bg-white p-8 text-center text-gray-500 shadow-md dark:bg-gray-800">
+        <div v-if="blacklist.length === 0" class="farm-card text-center text-gray-500">
           <div class="mx-auto mb-3 text-4xl text-gray-300">
             🚫
           </div>
@@ -995,7 +995,7 @@ async function handleBatchAddKnownFriendGids() {
           {{ interactError }}
         </div>
 
-        <div v-else-if="visibleInteractRecords.length === 0" class="farm-card rounded-2xl bg-white p-8 text-center text-gray-500 shadow-md dark:bg-gray-800">
+        <div v-else-if="visibleInteractRecords.length === 0" class="farm-card text-center text-gray-500">
           <div class="mx-auto mb-3 text-4xl text-gray-300">
             👀
           </div>

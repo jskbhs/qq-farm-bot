@@ -304,7 +304,7 @@ function getSeedNameById(seedId: number) {
 
     <div>
       <div v-if="activeTab === 'strategy'" class="space-y-4">
-        <div class="farm-card overflow-hidden border border-blue-200 rounded-2xl from-blue-50 to-indigo-50 bg-gradient-to-r shadow-md dark:border-blue-800 dark:from-blue-900/20 dark:to-indigo-900/20">
+        <div class="farm-card overflow-hidden border border-blue-300/40 bg-blue-500/10 dark:border-blue-400/20 dark:bg-blue-500/10">
           <div class="p-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -354,7 +354,7 @@ function getSeedNameById(seedId: number) {
           </div>
         </div>
 
-        <div class="farm-card overflow-hidden border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
+        <div class="farm-card overflow-hidden">
           <div class="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/50">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -455,7 +455,7 @@ function getSeedNameById(seedId: number) {
         </div>
       </div>
 
-      <div v-if="activeTab === 'blacklist'" class="farm-card overflow-hidden border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <div v-if="activeTab === 'blacklist'" class="farm-card overflow-hidden">
         <div class="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/50">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">

@@ -417,9 +417,9 @@ async function copyToken() {
 
 <template>
   <aside
-    class="fixed inset-y-0 left-0 z-50 h-full w-64 flex flex-col border-r-3 border-[#8b6914]/20 rounded-r-2xl transition-transform duration-300 lg:static lg:translate-x-0 dark:border-gray-700/40"
+    class="fixed inset-y-0 left-0 z-50 h-full w-64 flex flex-col rounded-r-2xl border-r border-white/30 bg-white/25 backdrop-blur-xl transition-transform duration-300 lg:static lg:translate-x-0 dark:border-white/10 dark:bg-gray-900/25"
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-    :style="{ background: 'var(--theme-bg)', color: 'var(--theme-text)' }"
+    :style="{ color: 'var(--theme-text)' }"
   >
     <!-- Farm Illustration Header -->
     <div class="farm-scene-banner relative h-24 shrink-0 overflow-hidden border-b border-gray-200/30 dark:border-gray-700/30">
