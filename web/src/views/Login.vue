@@ -21,6 +21,7 @@ const loading = ref(false)
 const showPasswordStrength = ref(false)
 const lockoutRemaining = ref(0)
 const rateLimitRemaining = ref(0)
+const rememberMe = ref(false)
 
 const cardClaimEnabled = ref(false)
 const cardClaimLoading = ref(false)
@@ -142,6 +143,12 @@ async function handleSubmit() {
     if (isLogin.value) {
       const result = await userStore.login(username.value, password.value)
       if (result.ok) {
+        if (rememberMe.value) {
+          localStorage.setItem('remembered_username', username.value)
+        }
+        else {
+          localStorage.removeItem('remembered_username')
+        }
         if (result.data?.mustChangePassword) {
           success.value = '登录成功！请修改默认密码以确保账户安全'
         }
@@ -279,6 +286,11 @@ function closeClaimModal() {
 onMounted(() => {
   checkCardClaimStatus()
   fetchGameVersion()
+  const savedUsername = localStorage.getItem('remembered_username')
+  if (savedUsername) {
+    username.value = savedUsername
+    rememberMe.value = true
+  }
 })
 
 async function fetchGameVersion() {
@@ -344,6 +356,24 @@ async function fetchGameVersion() {
 
       <!-- 表单区域 -->
       <form class="form-area" @submit.prevent="handleSubmit">
+        <!-- 消息提示（移到表单顶部） -->
+        <div v-if="error" class="message error-message">
+          <span class="message-icon">⚠️</span>
+          <div class="message-content">
+            {{ error }}
+            <span v-if="lockoutRemaining > 0" class="lockout-timer">
+              ({{ lockoutRemaining }} 分钟后解锁)
+            </span>
+            <span v-if="rateLimitRemaining > 0" class="lockout-timer">
+              ({{ rateLimitRemaining }} 秒后可重试)
+            </span>
+          </div>
+        </div>
+        <div v-if="success" class="message success-message">
+          <span class="message-icon">✅</span>
+          {{ success }}
+        </div>
+
         <div class="form-group">
           <label class="form-label font-body">
             <span class="label-icon">👤</span>
@@ -384,22 +414,21 @@ async function fetchGameVersion() {
               {{ passwordStrength.level }}
             </span>
           </div>
-          <div v-if="error" class="message error-message">
-            <span class="message-icon">⚠️</span>
-            <div class="message-content">
-              {{ error }}
-              <span v-if="lockoutRemaining > 0" class="lockout-timer">
-                ({{ lockoutRemaining }} 分钟后解锁)
-              </span>
-              <span v-if="rateLimitRemaining > 0" class="lockout-timer">
-                ({{ rateLimitRemaining }} 秒后可重试)
-              </span>
-            </div>
-          </div>
-          <div v-if="success" class="message success-message">
-            <span class="message-icon">✅</span>
-            {{ success }}
-          </div>
+        </div>
+
+        <!-- 记住我 & 忘记密码 -->
+        <div v-if="isLogin" class="form-options">
+          <label class="remember-me font-body">
+            <input
+              v-model="rememberMe"
+              type="checkbox"
+              class="remember-checkbox"
+            >
+            <span>记住我</span>
+          </label>
+          <button type="button" class="forgot-password font-body">
+            忘记密码？
+          </button>
         </div>
 
         <div v-if="!isLogin" class="form-group">
@@ -515,6 +544,7 @@ async function fetchGameVersion() {
 <style scoped>
 .login-container {
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   align-items: center;
@@ -522,6 +552,8 @@ async function fetchGameVersion() {
   background: linear-gradient(180deg, #b8e4f7 0%, #87ceeb 30%, #6dbf5b 60%, #4a8c3f 100%);
   position: relative;
   overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
 }
 
 /* 背景装饰 */
@@ -966,6 +998,48 @@ async function fetchGameVersion() {
     0 1px 4px rgba(74, 140, 63, 0.2);
 }
 
+/* 记住我 & 忘记密码 */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -4px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: #37474f;
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--theme-primary);
+  cursor: pointer;
+}
+
+.forgot-password {
+  background: none;
+  border: none;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--theme-primary) 80%, white);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.forgot-password:hover {
+  background: color-mix(in srgb, var(--theme-primary) 10%, transparent);
+  color: var(--theme-primary);
+}
+
 /* 切换区域 */
 .switch-area {
   text-align: center;
@@ -994,6 +1068,7 @@ async function fetchGameVersion() {
   text-align: center;
   margin-top: 24px;
   padding-top: 20px;
+  padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid color-mix(in srgb, var(--theme-primary) 20%, transparent);
   color: color-mix(in srgb, var(--theme-primary) 70%, white);
   font-size: 0.8rem;
@@ -1089,6 +1164,10 @@ async function fetchGameVersion() {
   }
 
   .form-label {
+    color: #a5d6a7;
+  }
+
+  .remember-me {
     color: #a5d6a7;
   }
 
