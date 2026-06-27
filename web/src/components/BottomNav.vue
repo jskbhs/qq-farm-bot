@@ -26,13 +26,13 @@ watch(() => route.path, () => {
 <template>
   <nav class="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 lg:hidden">
     <div
-      class="flex items-center justify-around rounded-2xl px-2 py-2 shadow-lg"
+      class="flex items-center justify-around rounded-2xl px-2 py-2"
       style="
-        background: color-mix(in srgb, var(--theme-bg) 65%, transparent);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1.5px solid color-mix(in srgb, var(--theme-primary) 15%, transparent);
-        box-shadow: 0 -4px 24px color-mix(in srgb, var(--theme-primary) 10%, transparent), 0 -1px 0 color-mix(in srgb, white 25%, transparent) inset;
+        background: color-mix(in srgb, var(--theme-bg) 35%, transparent);
+        backdrop-filter: blur(24px) saturate(200%);
+        -webkit-backdrop-filter: blur(24px) saturate(200%);
+        border: 1px solid color-mix(in srgb, var(--theme-primary) 12%, transparent);
+        box-shadow: 0 -4px 24px color-mix(in srgb, var(--theme-primary) 5%, transparent), 0 -1px 0 color-mix(in srgb, white 15%, transparent) inset;
       "
     >
       <RouterLink

@@ -131,11 +131,11 @@ onUnmounted(() => {
       <header
         class="h-16 flex shrink-0 items-center justify-between px-4 lg:hidden"
         :style="{
-          background: `color-mix(in srgb, var(--theme-bg) 70%, transparent)`,
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderBottom: '1.5px solid color-mix(in srgb, var(--theme-primary) 15%, transparent)',
-          boxShadow: '0 2px 20px color-mix(in srgb, var(--theme-primary) 8%, transparent)',
+          background: `color-mix(in srgb, var(--theme-bg) 35%, transparent)`,
+          backdropFilter: 'blur(24px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+          borderBottom: '1px solid color-mix(in srgb, var(--theme-primary) 12%, transparent)',
+          boxShadow: '0 2px 20px color-mix(in srgb, var(--theme-primary) 5%, transparent)',
         }"
       >
         <div class="flex items-center gap-2">
