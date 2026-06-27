@@ -69,6 +69,11 @@ body {
   overflow: hidden; /* App handles scrolling */
 }
 
+/* 移除所有链接的默认下划线 */
+a {
+  text-decoration: none;
+}
+
 /* NProgress Customization — 农场绿 */
 #nprogress .bar {
   background: linear-gradient(90deg, #4a8c3f, #6dbf5b) !important;
