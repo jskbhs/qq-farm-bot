@@ -103,8 +103,13 @@ function close() {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div class="max-h-[90vh] max-w-lg w-full overflow-hidden rounded-2xl" :style="{ background: 'var(--theme-bg)', boxShadow: 'var(--theme-shadow-lg, 0 8px 32px rgba(0,0,0,0.16))' }">
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0" @click.self="close" />
+    <div
+      class="relative z-10 max-h-[90vh] max-w-lg w-full overflow-hidden rounded-2xl"
+      :style="{ background: 'var(--theme-bg)', boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08)' }"
+      @click.stop
+    >
       <!-- Header -->
       <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
         <h3 class="text-lg font-semibold" style="color: var(--theme-primary, var(--theme-text))">
