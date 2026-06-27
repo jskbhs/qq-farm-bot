@@ -55,7 +55,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-screen flex overflow-hidden" style="height: 100dvh;">
+  <div class="w-screen flex overflow-hidden bg-[#fef9ef] dark:bg-gray-900" style="height: 100dvh;">
     <!-- Mobile Sidebar Overlay -->
     <div
       v-if="sidebarOpen"
@@ -68,10 +68,10 @@ onUnmounted(() => {
     <main class="relative h-full min-w-0 flex flex-1 flex-col overflow-hidden">
       <!-- Top Bar (Mobile/Tablet only or for additional actions) -->
       <header
-        class="h-16 flex shrink-0 items-center justify-between border-b px-4 backdrop-blur-xl lg:hidden"
+        class="h-16 flex shrink-0 items-center justify-between border-b-3 bg-gradient-to-r px-4 lg:hidden"
         :style="{
-          backgroundColor: 'color-mix(in srgb, var(--theme-bg) 70%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--theme-primary) 25%, transparent)',
+          background: 'linear-gradient(90deg, color-mix(in srgb, var(--theme-bg) 92%, var(--theme-primary)) 0%, var(--theme-bg) 100%)',
+          borderColor: 'color-mix(in srgb, var(--theme-primary) 30%, transparent)',
         }"
       >
         <div class="text-lg font-display" style="color: var(--theme-primary)">

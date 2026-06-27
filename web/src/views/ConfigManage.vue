@@ -529,7 +529,7 @@ function formatPrice(price: number, priceId?: number): string {
         <div v-if="filteredSeeds.length === 0" class="py-16 text-center text-gray-400">
           {{ searchKeyword ? '没有匹配的种子' : '暂无种子数据' }}
         </div>
-        <div v-else class="hidden farm-card overflow-hidden sm:block">
+        <div v-else class="hidden farm-card overflow-hidden border border-gray-200 rounded-2xl shadow-sm sm:block dark:border-gray-700">
           <div class="overflow-x-auto">
             <table class="w-full whitespace-nowrap text-left text-sm">
               <thead class="border-b bg-gray-50 text-xs text-gray-500 uppercase dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">
@@ -679,7 +679,7 @@ function formatPrice(price: number, priceId?: number): string {
         <div v-if="filteredFruits.length === 0" class="py-16 text-center text-gray-400">
           {{ searchKeyword ? '没有匹配的果实' : '暂无果实数据' }}
         </div>
-        <div v-else class="hidden farm-card overflow-hidden sm:block">
+        <div v-else class="hidden farm-card overflow-hidden border border-gray-200 rounded-2xl shadow-sm sm:block dark:border-gray-700">
           <div class="overflow-x-auto">
             <table class="w-full whitespace-nowrap text-left text-sm">
               <thead class="border-b bg-gray-50 text-xs text-gray-500 uppercase dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">
@@ -813,7 +813,7 @@ function formatPrice(price: number, priceId?: number): string {
         <div v-if="filteredItems.length === 0" class="py-16 text-center text-gray-400">
           {{ searchKeyword || itemTypeFilter ? '没有匹配的道具' : '暂无道具数据' }}
         </div>
-        <div v-else class="hidden farm-card overflow-hidden sm:block">
+        <div v-else class="hidden farm-card overflow-hidden border border-gray-200 rounded-2xl shadow-sm sm:block dark:border-gray-700">
           <div class="overflow-x-auto">
             <table class="w-full whitespace-nowrap text-left text-sm">
               <thead class="border-b bg-gray-50 text-xs text-gray-500 uppercase dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">

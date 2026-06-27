@@ -21,7 +21,8 @@ function isActive(path: string) {
 <template>
   <nav class="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 lg:hidden">
     <div
-      class="flex items-center justify-around rounded-2xl border border-white/30 bg-white/25 px-2 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-gray-900/25"
+      class="flex items-center justify-around border border-[#8b6914]/20 rounded-2xl bg-white/95 px-2 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-sm dark:border-gray-700/40 dark:bg-gray-900/95"
+      style="background: var(--theme-bg, rgba(255,255,255,0.95))"
     >
       <RouterLink
         v-for="item in visibleItems"

@@ -19,7 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-glass-bg relative h-screen w-screen overflow-hidden" :style="{ color: 'var(--theme-text)' }">
+  <div class="h-screen w-screen overflow-hidden" :style="{ background: 'var(--theme-bg)', color: 'var(--theme-text)' }">
     <RouterView />
     <ToastContainer />
   </div>
@@ -29,16 +29,7 @@ onMounted(() => {
 /* Global styles */
 body {
   margin: 0;
-  font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-}
-
-/* App background with soft gradient blobs for glassmorphism */
-.app-glass-bg {
-  background:
-    radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--theme-primary) 18%, transparent) 0%, transparent 35%),
-    radial-gradient(circle at 85% 25%, color-mix(in srgb, var(--theme-secondary) 14%, transparent) 0%, transparent 30%),
-    radial-gradient(circle at 55% 85%, color-mix(in srgb, var(--theme-primary) 12%, transparent) 0%, transparent 40%),
-    var(--theme-bg);
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* Color theme variables */

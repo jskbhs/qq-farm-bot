@@ -108,9 +108,9 @@ onUnmounted(() => {
 
 <template>
   <div class="space-y-5">
-    <div class="farm-card">
+    <div class="cartoon-card farm-card rounded-2xl bg-white shadow-lg dark:bg-gray-800">
       <!-- Header with Title and Actions -->
-      <div class="flex flex-col items-center justify-between gap-4 border-b border-white/30 p-5 sm:flex-row dark:border-white/10">
+      <div class="flex flex-col items-center justify-between gap-4 border-b border-gray-100 p-5 sm:flex-row dark:border-gray-700">
         <h3 class="flex items-center gap-2 text-xl font-bold font-display">
           🌾 土地详情
         </h3>
@@ -130,7 +130,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Summary -->
-      <div class="flex flex-wrap gap-4 border-b border-white/30 bg-white/10 p-5 text-sm dark:border-white/10">
+      <div class="flex flex-wrap gap-4 border-b border-gray-100 from-green-50 to-yellow-50 bg-gradient-to-r p-5 text-sm dark:border-gray-700 dark:bg-gray-900/50">
         <div class="flex farm-card items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-orange-700 shadow-sm dark:bg-orange-900/30 dark:text-orange-400">
           <span>🌾</span>
           <div class="i-carbon-clean" />
@@ -141,7 +141,7 @@ onUnmounted(() => {
           <div class="i-carbon-sprout" />
           <span class="font-body font-semibold">生长: {{ summary?.growing || 0 }}</span>
         </div>
-        <div class="flex farm-card items-center gap-2 px-4 py-1.5 text-gray-700 dark:text-gray-400">
+        <div class="flex farm-card items-center gap-2 rounded-full bg-gray-100 px-4 py-1.5 text-gray-700 shadow-sm dark:bg-gray-800 dark:text-gray-400">
           <span>🟫</span>
           <div class="i-carbon-checkbox" />
           <span class="font-body font-semibold">空闲: {{ summary?.empty || 0 }}</span>
@@ -159,7 +159,7 @@ onUnmounted(() => {
           <div class="i-svg-spinners-90-ring-with-bg text-4xl text-green-500" />
         </div>
 
-        <div v-else-if="!currentAccountId" class="flex flex-col farm-card items-center justify-center gap-4 text-center text-gray-500">
+        <div v-else-if="!currentAccountId" class="flex flex-col farm-card items-center justify-center gap-4 rounded-2xl bg-white p-12 text-center text-gray-500 shadow-md dark:bg-gray-800">
           <div class="text-5xl">
             🧑‍🌾
           </div>
@@ -173,7 +173,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-else-if="!status?.connection?.connected" class="flex flex-col farm-card items-center justify-center gap-4 text-center text-gray-500">
+        <div v-else-if="!status?.connection?.connected" class="flex flex-col farm-card items-center justify-center gap-4 rounded-2xl bg-white p-12 text-center text-gray-500 shadow-md dark:bg-gray-800">
           <div class="text-5xl">
             📡
           </div>
