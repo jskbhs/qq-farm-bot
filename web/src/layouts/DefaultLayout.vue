@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import AccountModal from '@/components/AccountModal.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import Sidebar from '@/components/Sidebar.vue'
@@ -19,6 +19,14 @@ const showAccountModal = ref(false)
 const showYybConfig = ref(false)
 const showYybLogin = ref(false)
 const accountToEdit = ref<any>(null)
+const accountTriggerRef = ref<HTMLElement | null>(null)
+const accountDropdownRef = ref<HTMLElement | null>(null)
+const dropdownStyle = ref<Record<string, string>>({
+  top: '0px',
+  right: '0px',
+  backgroundColor: '',
+  border: '',
+})
 
 const platform = computed(() => getPlatformLabel(currentAccount.value?.platform))
 const displayName = computed(() => {
@@ -45,12 +53,54 @@ function handleAccountSaved() {
   accountToEdit.value = null
 }
 
+function updateDropdownPosition() {
+  if (!accountTriggerRef.value || !showAccountDropdown.value)
+    return
+  nextTick(() => {
+    const trigger = accountTriggerRef.value
+    if (!trigger)
+      return
+    const rect = trigger.getBoundingClientRect()
+    let right = window.innerWidth - rect.right
+    if (right < 8)
+      right = 8
+    dropdownStyle.value = {
+      top: `${rect.bottom + 8}px`,
+      right: `${right}px`,
+      backgroundColor: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)',
+      border: '2px solid color-mix(in srgb, var(--theme-primary) 20%, transparent)',
+    }
+  })
+}
+
+watch(showAccountDropdown, (val) => {
+  if (val)
+    updateDropdownPosition()
+})
+
+function handleClickOutside(e: MouseEvent) {
+  if (!showAccountDropdown.value)
+    return
+  const trigger = accountTriggerRef.value
+  const dropdown = accountDropdownRef.value
+  if (
+    trigger && !trigger.contains(e.target as Node)
+    && dropdown && !dropdown.contains(e.target as Node)
+  ) {
+    showAccountDropdown.value = false
+  }
+}
+
 onMounted(() => {
-  // 移除了强制警告弹窗
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener('resize', updateDropdownPosition)
+  window.addEventListener('scroll', updateDropdownPosition, true)
 })
 
 onUnmounted(() => {
-  // 清理逻辑
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('resize', updateDropdownPosition)
+  window.removeEventListener('scroll', updateDropdownPosition, true)
 })
 </script>
 
@@ -96,6 +146,7 @@ onUnmounted(() => {
         <div class="flex items-center gap-2">
           <div
             v-if="currentAccount"
+            ref="accountTriggerRef"
             class="relative max-w-[180px] flex cursor-pointer items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all duration-200 hover:scale-105"
             :style="{
               backgroundColor: 'color-mix(in srgb, var(--theme-primary) 8%, var(--theme-bg))',
@@ -145,98 +196,98 @@ onUnmounted(() => {
             />
 
             <!-- Account Dropdown Menu -->
-            <div
-              v-if="showAccountDropdown"
-              class="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl py-1 shadow-2xl backdrop-blur-md"
-              :style="{
-                backgroundColor: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)',
-                border: '2px solid color-mix(in srgb, var(--theme-primary) 20%, transparent)',
-              }"
-              @click.stop
-            >
-              <div class="custom-scrollbar max-h-60 overflow-y-auto">
-                <template v-if="accounts.length > 0">
-                  <button
-                    v-for="acc in accounts"
-                    :key="acc.id || acc.uin"
-                    class="mx-1 w-full flex items-center gap-3 rounded-xl px-4 py-2 transition-all duration-200 hover:scale-[1.02]"
-                    :style="{
-                      backgroundColor: currentAccount?.id === acc.id ? 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' : undefined,
-                      color: 'var(--theme-text)',
-                    }"
-                    @click="selectAccount(acc)"
-                  >
-                    <div
-                      class="h-6 w-6 flex shrink-0 items-center justify-center overflow-hidden rounded-full shadow-sm"
-                      :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' }"
+            <Teleport to="body">
+              <div
+                v-if="showAccountDropdown"
+                ref="accountDropdownRef"
+                class="fixed z-[100] w-64 overflow-hidden rounded-2xl py-1 shadow-2xl backdrop-blur-md"
+                :style="dropdownStyle"
+                @click.stop
+              >
+                <div class="custom-scrollbar max-h-60 overflow-y-auto">
+                  <template v-if="accounts.length > 0">
+                    <button
+                      v-for="acc in accounts"
+                      :key="acc.id || acc.uin"
+                      class="mx-1 w-full flex items-center gap-3 rounded-xl px-4 py-2 transition-all duration-200 hover:scale-[1.02]"
+                      :style="{
+                        backgroundColor: currentAccount?.id === acc.id ? 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' : undefined,
+                        color: 'var(--theme-text)',
+                      }"
+                      @click="selectAccount(acc)"
                     >
-                      <img
-                        v-if="acc.uin"
-                        :src="`https://q1.qlogo.cn/g?b=qq&nk=${acc.uin}&s=100`"
-                        class="h-full w-full object-cover"
-                        @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
+                      <div
+                        class="h-6 w-6 flex shrink-0 items-center justify-center overflow-hidden rounded-full shadow-sm"
+                        :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-primary) 10%, transparent)' }"
                       >
-                      <div v-else class="i-carbon-user" :style="{ color: 'var(--theme-primary)' }" />
-                    </div>
-                    <div class="min-w-0 flex flex-1 flex-col items-start">
-                      <span class="w-full truncate text-left text-sm font-bold" style="color: 'var(--theme-text)'">
-                        {{ acc.name || acc.nick || acc.uin || acc.id }}
-                      </span>
-                      <div class="flex items-center gap-1.5">
-                        <span
-                          v-if="getPlatformLabel(acc.platform)"
-                          class="rounded-lg px-1.5 py-0.2 text-[10px] font-bold leading-tight"
-                          :class="getPlatformClass(acc.platform)"
+                        <img
+                          v-if="acc.uin"
+                          :src="`https://q1.qlogo.cn/g?b=qq&nk=${acc.uin}&s=100`"
+                          class="h-full w-full object-cover"
+                          @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
                         >
-                          {{ getPlatformLabel(acc.platform) }}
-                        </span>
-                        <span
-                          v-if="acc.level"
-                          class="rounded-lg px-1.5 py-0.2 text-[10px] font-bold leading-tight"
-                          :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 15%, transparent)', color: 'var(--theme-secondary)' }"
-                        >
-                          Lv.{{ acc.level }}
-                        </span>
-                        <span class="text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">{{ acc.uin || acc.id }}</span>
+                        <div v-else class="i-carbon-user" :style="{ color: 'var(--theme-primary)' }" />
                       </div>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <button
-                        class="rounded-full p-1 transition-colors hover:bg-black/5"
-                        title="编辑账号"
-                        :style="{ color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)' }"
-                        @click.stop="openAccountEditModal(acc)"
-                      >
-                        <div class="i-carbon-edit" />
-                      </button>
-                      <div v-if="currentAccount?.id === acc.id" class="i-carbon-checkmark" :style="{ color: 'var(--theme-primary)' }" />
-                    </div>
+                      <div class="min-w-0 flex flex-1 flex-col items-start">
+                        <span class="w-full truncate text-left text-sm font-bold" style="color: 'var(--theme-text)'">
+                          {{ acc.name || acc.nick || acc.uin || acc.id }}
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                          <span
+                            v-if="getPlatformLabel(acc.platform)"
+                            class="rounded-lg px-1.5 py-0.2 text-[10px] font-bold leading-tight"
+                            :class="getPlatformClass(acc.platform)"
+                          >
+                            {{ getPlatformLabel(acc.platform) }}
+                          </span>
+                          <span
+                            v-if="acc.level"
+                            class="rounded-lg px-1.5 py-0.2 text-[10px] font-bold leading-tight"
+                            :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 15%, transparent)', color: 'var(--theme-secondary)' }"
+                          >
+                            Lv.{{ acc.level }}
+                          </span>
+                          <span class="text-xs" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">{{ acc.uin || acc.id }}</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button
+                          class="rounded-full p-1 transition-colors hover:bg-black/5"
+                          title="编辑账号"
+                          :style="{ color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)' }"
+                          @click.stop="openAccountEditModal(acc)"
+                        >
+                          <div class="i-carbon-edit" />
+                        </button>
+                        <div v-if="currentAccount?.id === acc.id" class="i-carbon-checkmark" :style="{ color: 'var(--theme-primary)' }" />
+                      </div>
+                    </button>
+                  </template>
+                  <div v-else class="px-4 py-3 text-center text-sm" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+                    暂无账号
+                  </div>
+                </div>
+                <div class="mt-1 border-t pt-1" style="borderColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)'">
+                  <button
+                    class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors hover:scale-[1.02]"
+                    :style="{ color: 'var(--theme-primary)' }"
+                    @click="showAccountModal = true; showAccountDropdown = false"
+                  >
+                    <div class="i-carbon-add" />
+                    <span>添加账号</span>
                   </button>
-                </template>
-                <div v-else class="px-4 py-3 text-center text-sm" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
-                  暂无账号
+                  <router-link
+                    to="/settings"
+                    class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors hover:scale-[1.02]"
+                    :style="{ color: 'var(--theme-primary)' }"
+                    @click="showAccountDropdown = false"
+                  >
+                    <div class="i-carbon-add-alt" />
+                    <span>管理账号</span>
+                  </router-link>
                 </div>
               </div>
-              <div class="mt-1 border-t pt-1" style="borderColor: 'color-mix(in srgb, var(--theme-text) 10%, transparent)'">
-                <button
-                  class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors hover:scale-[1.02]"
-                  :style="{ color: 'var(--theme-primary)' }"
-                  @click="showAccountModal = true; showAccountDropdown = false"
-                >
-                  <div class="i-carbon-add" />
-                  <span>添加账号</span>
-                </button>
-                <router-link
-                  to="/settings"
-                  class="mx-1 w-full flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-colors hover:scale-[1.02]"
-                  :style="{ color: 'var(--theme-primary)' }"
-                  @click="showAccountDropdown = false"
-                >
-                  <div class="i-carbon-add-alt" />
-                  <span>管理账号</span>
-                </router-link>
-              </div>
-            </div>
+            </Teleport>
           </div>
           <button
             class="flex items-center justify-center rounded-xl p-2 transition-all duration-200 hover:scale-110"
