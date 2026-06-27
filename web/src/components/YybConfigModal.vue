@@ -103,9 +103,9 @@ function close() {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div class="max-h-[90vh] max-w-md w-full overflow-hidden rounded-2xl" :style="{ background: 'var(--theme-bg)', boxShadow: 'var(--theme-shadow-lg, 0 8px 32px rgba(0,0,0,0.16))' }">
-      <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" style="padding-bottom: max(1rem, env(safe-area-inset-bottom, 0))" @click.self="close">
+    <div class="max-h-[min(85dvh,700px)] max-w-md w-full overflow-hidden rounded-2xl flex flex-col" :style="{ background: 'var(--theme-bg)', boxShadow: 'var(--theme-shadow-lg, 0 8px 32px rgba(0,0,0,0.16))' }">
+      <div class="flex items-center justify-between p-4 shrink-0" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
         <div>
           <h3 class="text-lg font-semibold" style="color: var(--theme-primary, var(--theme-text))">
             应用宝配置
@@ -119,7 +119,7 @@ function close() {
         </BaseButton>
       </div>
 
-      <div class="max-h-[calc(90vh-80px)] overflow-y-auto p-4 space-y-4">
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
         <BaseInput
           v-model="form.apiToken"
           label="API Token"
@@ -210,14 +210,15 @@ function close() {
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 border-t pt-3 dark:border-gray-700">
-          <BaseButton variant="outline" class="cartoon-btn" @click="close">
-            取消
-          </BaseButton>
-          <BaseButton variant="primary" class="cartoon-btn" :loading="saving" @click="handleSave">
-            保存
-          </BaseButton>
-        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 border-t p-4 shrink-0 dark:border-gray-700" style="border-top-color: color-mix(in srgb, var(--theme-text) 10%, transparent)">
+        <BaseButton variant="outline" class="cartoon-btn" @click="close">
+          取消
+        </BaseButton>
+        <BaseButton variant="primary" class="cartoon-btn" :loading="saving" @click="handleSave">
+          保存
+        </BaseButton>
       </div>
     </div>
   </div>
