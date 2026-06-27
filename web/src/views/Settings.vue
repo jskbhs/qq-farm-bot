@@ -858,26 +858,40 @@ async function handleTestOffline() {
       </h1>
     </div>
 
-    <div class="farm-card border border-gray-200 rounded-2xl bg-white shadow-md dark:border-gray-700 dark:bg-gray-800">
-      <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="flex gap-1 p-2">
+    <div class="farm-card-enhanced p-0 overflow-hidden">
+      <div class="border-b" :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 15%, transparent)' }">
+        <nav class="flex gap-1.5 p-2.5">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="flex cartoon-btn items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all"
+            class="relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300 overflow-hidden"
             :class="activeTab === tab.key
-              ? 'text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'"
-            :style="activeTab === tab.key ? { backgroundColor: 'var(--theme-primary)' } : {}"
+              ? 'text-white shadow-md scale-105'
+              : 'hover:scale-105'"
+            :style="activeTab === tab.key
+              ? {
+                  backgroundColor: 'var(--theme-primary)',
+                  boxShadow: `0 4px 12px color-mix(in srgb, var(--theme-primary), 40%, transparent)`,
+                }
+              : {
+                  color: 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
+                }"
             @click="activeTab = tab.key"
           >
-            <div :class="tab.icon" />
+            <div
+              :class="[tab.icon, { 'animate-sparkle': activeTab === tab.key }]"
+            />
             {{ tab.label }}
+            <div
+              v-if="activeTab === tab.key"
+              class="absolute inset-0 pointer-events-none"
+              style="background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);"
+            />
           </button>
         </nav>
       </div>
 
-      <div class="p-4">
+      <div class="p-5">
         <!-- 账号管理 -->
         <div v-if="activeTab === 'account'" class="space-y-4">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

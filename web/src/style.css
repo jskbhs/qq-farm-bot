@@ -23,36 +23,35 @@ textarea * {
 
 /* Global Scrollbar Customization — 农场木纹风格 */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5e6c8;
-  border-radius: 10px;
+  background: color-mix(in srgb, var(--theme-primary) 8%, transparent);
+  border-radius: 9999px;
+  margin: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #c9a96e 0%, #a16207 50%, #8b6914 100%);
-  border-radius: 10px;
-  border: 2px solid #f5e6c8;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-primary) 60%, white) 0%, var(--theme-primary) 50%, color-mix(in srgb, var(--theme-primary) 80%, black) 100%);
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--theme-primary) 8%, transparent);
+  background-clip: padding-box;
+  transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #deb887 0%, #8b6914 50%, #6b4f0e 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-primary) 80%, white) 0%, var(--theme-primary) 50%, color-mix(in srgb, var(--theme-primary) 60%, black) 100%);
+  border-width: 2px;
 }
 
-.dark ::-webkit-scrollbar-track {
-  background: #2a3a2a;
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 80%, black) 100%);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #6b8f60 0%, #4a6b3f 100%);
-  border-color: #2a3a2a;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #8bb67e 0%, #5a8b4f 100%);
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* 暗色模式下 select option 文字可见（仅 farm-input 下拉框） */

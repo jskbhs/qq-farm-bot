@@ -213,6 +213,12 @@ const navItems = computed(() => {
     }))
 })
 
+function isActiveRoute(path: string) {
+  if (path === '/')
+    return route.path === '/'
+  return route.path === path || route.path.startsWith(`${path}/`)
+}
+
 function selectAccount(acc: any) {
   accountStore.setCurrentAccount(acc)
   showAccountDropdown.value = false
@@ -694,16 +700,38 @@ async function copyToken() {
         v-for="item in navItems"
         :key="item.path"
         :to="item.path"
-        class="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200 hover:animate-[bounce-hover_0.3s_ease] hover:bg-[#4a8c3f]/10 dark:hover:bg-[#6dbf5b]/10"
-        :active-class="item.path === '/' ? '' : 'font-medium'"
+        class="group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-300 overflow-hidden"
+        :active-class="item.path === '/' ? '' : 'font-bold'"
         :style="{
           color: 'var(--theme-text)',
-          opacity: '0.85',
+          opacity: isActiveRoute(item.path) ? '1' : '0.75',
         }"
         :data-nav="item.path"
       >
-        <span class="select-none text-xl transition-transform duration-200 group-hover:scale-110">{{ item.icon }}</span>
-        <span class="font-body">{{ item.label }}</span>
+        <div
+          v-if="isActiveRoute(item.path)"
+          class="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full"
+          :style="{ backgroundColor: 'var(--theme-primary)', boxShadow: '0 0 8px var(--theme-primary)' }"
+        />
+        <div
+          v-if="isActiveRoute(item.path)"
+          class="absolute inset-0 rounded-2xl"
+          :style="{
+            background: `linear-gradient(90deg, color-mix(in srgb, var(--theme-primary) 15%, transparent) 0%, color-mix(in srgb, var(--theme-primary) 5%, transparent) 100%)`,
+          }"
+        />
+        <span
+          class="relative z-10 select-none text-xl transition-all duration-300"
+          :class="isActiveRoute(item.path) ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-6'"
+        >{{ item.icon }}</span>
+        <span class="relative z-10 font-body font-bold">{{ item.label }}</span>
+        <div
+          v-if="isActiveRoute(item.path)"
+          class="relative z-10 ml-auto text-xs"
+          :style="{ color: 'var(--theme-primary)' }"
+        >
+          <div class="i-carbon-chevron-right" />
+        </div>
       </router-link>
     </nav>
 
@@ -786,32 +814,43 @@ async function copyToken() {
       <!-- 主题选择弹出面板 -->
       <div
         v-show="showThemeDropdown"
-        class="absolute bottom-full left-0 right-0 z-50 grid grid-cols-4 mb-14 gap-1.5 rounded-2xl bg-white p-2 shadow-lg dark:bg-gray-800"
+        class="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-2xl border-2 p-2 shadow-2xl"
+        :style="{
+          backgroundColor: 'var(--theme-bg)',
+          borderColor: 'color-mix(in srgb, var(--theme-primary) 25%, transparent)',
+        }"
       >
-        <button
-          v-for="(t, theme) in appStore.themes"
-          :key="theme"
-          class="group relative flex flex-col items-center justify-center gap-1 rounded-xl p-2 transition-all hover:scale-105"
-          :class="{
-            'ring-2 ring-offset-1': appStore.currentTheme === theme,
-          }"
-          :style="{
-            'background': t.gradient,
-            '--tw-ring-color': t.primary,
-            '--tw-ring-offset-color': 'var(--theme-bg)',
-          }"
-          :title="t.name"
-          @click="appStore.applyTheme(theme as any); showThemeDropdown = false"
-        >
-          <div :class="t.icon" class="text-base text-white" />
-          <span class="text-[10px] text-white font-medium leading-tight">{{ t.name }}</span>
-          <div
-            v-if="appStore.currentTheme === theme"
-            class="absolute right-1 top-1 h-3 w-3 flex items-center justify-center rounded-full bg-white shadow"
+        <div class="mb-1 px-2 py-1 text-center text-xs font-bold" :style="{ color: 'var(--theme-primary)' }">
+          🎨 选择主题
+        </div>
+        <div class="grid grid-cols-4 gap-1.5">
+          <button
+            v-for="(t, theme) in appStore.themes"
+            :key="theme"
+            class="group relative flex flex-col items-center justify-center gap-1 rounded-xl p-2 transition-all duration-300 hover:scale-110"
+            :class="{
+              'ring-2 ring-offset-2 scale-105': appStore.currentTheme === theme,
+            }"
+            :style="{
+              'background': t.gradient,
+              '--tw-ring-color': t.primary,
+              '--tw-ring-offset-color': 'var(--theme-bg)',
+              'boxShadow': appStore.currentTheme === theme ? `0 4px 12px ${t.primary}40` : 'none',
+            }"
+            :title="t.name"
+            @click="appStore.applyTheme(theme as any); showThemeDropdown = false"
           >
-            <div class="i-carbon-checkmark text-xs" :style="{ color: t.primary }" />
-          </div>
-        </button>
+            <div :class="[t.icon, 'text-lg', { 'animate-sparkle': appStore.currentTheme === theme }]" :style="{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }" />
+            <span class="text-[9px] font-bold leading-tight" style="color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3)">{{ t.name }}</span>
+            <div
+              v-if="appStore.currentTheme === theme"
+              class="absolute -right-1 -top-1 h-4 w-4 flex items-center justify-center rounded-full shadow-md animate-bounce-in"
+              :style="{ backgroundColor: t.primary }"
+            >
+              <div class="i-carbon-checkmark text-[10px] text-white" />
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   </aside>
