@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { AnchorRect } from '@/composables/useModalAnchor'
 import { reactive, ref, watch } from 'vue'
 import api from '@/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -12,23 +11,11 @@ const props = defineProps<{
   editData?: any
 }>()
 
-const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'saved'): void
-  (e: 'yyb-login'): void
-  (e: 'yyb-config', anchor: AnchorRect | null): void
-}>()
+const emit = defineEmits(['close', 'saved', 'yyb-login', 'yyb-config'])
 
 const loading = ref(false)
 const yybLoading = ref(false)
 const errorMessage = ref('')
-
-function openYybConfig(event: MouseEvent | TouchEvent) {
-  const target = event.currentTarget as HTMLElement | null
-  const anchor = target ? (target.getBoundingClientRect() as AnchorRect) : null
-  emit('yyb-config', anchor)
-  close()
-}
 
 const yybStore = useYybLoginStore()
 
@@ -234,7 +221,7 @@ watch(() => props.show, (newVal) => {
               <BaseButton
                 variant="ghost"
                 size="sm"
-                @click="openYybConfig"
+                @click="emit('yyb-config'); close()"
               >
                 配置
               </BaseButton>
