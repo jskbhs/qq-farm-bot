@@ -462,6 +462,15 @@ onMounted(async () => {
   scrollToBottom()
 })
 
+function formatNumber(num: number | string | undefined | null): string {
+  if (num === undefined || num === null)
+    return '0'
+  const n = Number(num)
+  if (Number.isNaN(n))
+    return '0'
+  return n.toLocaleString('zh-CN')
+}
+
 // Auto refresh fallback every 10s (WS 断开或筛选条件启用时会回退 HTTP)
 useIntervalFn(refresh, 10000)
 // Countdown timer (every 1s)
@@ -473,149 +482,148 @@ useIntervalFn(updateCountdowns, 1000)
     <!-- Status Cards -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:grid-cols-2">
       <!-- Account & Exp -->
-      <div class="flex flex-col farm-card rounded-2xl bg-white p-5 shadow-md dark:bg-gray-800">
-        <div class="mb-2 flex items-start justify-between">
-          <div class="flex items-center gap-1.5 text-sm text-gray-500">
-            <div class="i-fas-user-circle" />
+      <div class="farm-card-enhanced flex flex-col p-5 animate-fade-in-up animate-stagger-1">
+        <div class="mb-3 flex items-start justify-between">
+          <div class="flex items-center gap-2 text-sm font-bold" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
+            <div class="i-fas-user-circle" style="color: var(--theme-primary)" />
             账号
           </div>
-          <div class="farm-badge rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+          <div class="level-badge">
             Lv.{{ status?.status?.level || 0 }}
           </div>
         </div>
-        <div class="mb-1 truncate text-xl font-bold" :title="displayName">
+        <div class="mb-3 truncate text-xl font-bold font-display" :title="displayName" style="color: var(--theme-text)">
           {{ displayName }}
         </div>
 
         <!-- Level Progress -->
         <div class="mt-auto">
-          <div class="mb-1 flex justify-between text-xs text-gray-500">
-            <div class="flex items-center gap-1">
-              <div class="i-fas-bolt text-blue-400" />
+          <div class="mb-2 flex justify-between text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
+            <div class="flex items-center gap-1.5">
+              <div class="i-fas-bolt" style="color: #3b82f6" />
               <span>EXP</span>
             </div>
-            <span>{{ status?.levelProgress?.current || 0 }} / {{ status?.levelProgress?.needed || '?' }}</span>
+            <span class="asset-number">{{ formatNumber(status?.levelProgress?.current || 0) }} / {{ formatNumber(status?.levelProgress?.needed || 0) }}</span>
           </div>
-          <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+          <div class="farm-progress-bar">
             <div
-              class="h-full rounded-full bg-blue-500 transition-all duration-500"
+              class="farm-progress-bar-fill"
               :style="{ width: `${getExpPercent(status?.levelProgress)}%` }"
             />
           </div>
-          <div class="mt-2 flex justify-between text-xs text-gray-400">
-            <span>效率: {{ expRate }}</span>
-            <span>{{ timeToLevel }}</span>
+          <div class="mt-2 flex justify-between text-xs font-medium" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+            <span>⚡ 效率: {{ expRate }}</span>
+            <span v-if="timeToLevel">⏱️ {{ timeToLevel }}</span>
           </div>
         </div>
       </div>
 
       <!-- Assets & Status -->
-      <div class="flex flex-col farm-card justify-between rounded-2xl bg-white p-5 shadow-md dark:bg-gray-800">
-        <div class="flex justify-between">
-          <div>
-            <div class="flex items-center gap-1.5 text-xs text-gray-500">
-              <div class="i-fas-coins text-yellow-500" />
-              金币
+      <div class="farm-card-enhanced flex flex-col justify-between p-5 animate-fade-in-up animate-stagger-2">
+        <div class="grid grid-cols-3 gap-2">
+          <div class="flex flex-col items-center">
+            <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)">
+              <span class="text-xl">🪙</span>
             </div>
-            <div class="text-2xl text-yellow-600 font-bold dark:text-yellow-500">
-              {{ status?.status?.gold || 0 }}
+            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">金币</div>
+            <div class="asset-number text-xl font-extrabold" style="color: #d97706">
+              {{ formatNumber(status?.status?.gold || 0) }}
             </div>
             <div
               v-if="(status?.sessionGoldGained || 0) !== 0"
-              class="text-[10px]"
+              class="gain-number"
               :class="(status?.sessionGoldGained || 0) > 0 ? 'text-green-500' : 'text-red-500'"
             >
-              {{ (status?.sessionGoldGained || 0) > 0 ? '+' : '' }}{{ status?.sessionGoldGained || 0 }}
+              {{ (status?.sessionGoldGained || 0) > 0 ? '↑' : '↓' }}{{ formatNumber(Math.abs(status?.sessionGoldGained || 0)) }}
             </div>
           </div>
-          <div class="text-right">
-            <div class="flex items-center justify-end gap-1.5 text-xs text-gray-500">
-              <div class="i-fas-ticket-alt text-emerald-400" />
-              点券
+          <div class="flex flex-col items-center">
+            <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)">
+              <span class="text-xl">🎫</span>
             </div>
-            <div class="text-2xl text-emerald-500 font-bold dark:text-emerald-400">
-              {{ status?.status?.coupon || 0 }}
+            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">点券</div>
+            <div class="asset-number text-xl font-extrabold" style="color: #059669">
+              {{ formatNumber(status?.status?.coupon || 0) }}
             </div>
             <div
               v-if="(status?.sessionCouponGained || 0) !== 0"
-              class="text-[10px]"
+              class="gain-number"
               :class="(status?.sessionCouponGained || 0) > 0 ? 'text-green-500' : 'text-red-500'"
             >
-              {{ (status?.sessionCouponGained || 0) > 0 ? '+' : '' }}{{ status?.sessionCouponGained || 0 }}
+              {{ (status?.sessionCouponGained || 0) > 0 ? '↑' : '↓' }}{{ formatNumber(Math.abs(status?.sessionCouponGained || 0)) }}
             </div>
           </div>
-          <div class="text-right">
-            <div class="flex items-center justify-end gap-1.5 text-xs text-gray-500">
-              <span class="text-amber-500">🫘</span>
-              金豆豆
+          <div class="flex flex-col items-center">
+            <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%)">
+              <span class="text-xl">🫘</span>
             </div>
-            <div class="text-2xl text-amber-500 font-bold dark:text-amber-400">
-              {{ status?.status?.goldBean || 0 }}
+            <div class="text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">金豆豆</div>
+            <div class="asset-number text-xl font-extrabold" style="color: #b45309">
+              {{ formatNumber(status?.status?.goldBean || 0) }}
             </div>
           </div>
         </div>
-        <div class="mt-4 border-t border-gray-100 pt-3 dark:border-gray-700">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="h-2.5 w-2.5 rounded-full" :class="status?.connection?.connected ? 'bg-green-500' : 'bg-red-500'" />
-              <span class="text-xs font-bold">{{ status?.connection?.connected ? '在线' : '离线' }}</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-xs text-gray-400">
-              <span class="text-purple-400">🕐</span>
-              {{ formatDuration(localUptime) }}
-            </div>
+        <div class="decorative-divider my-3" />
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div :class="status?.connection?.connected ? 'status-dot-online' : 'h-3 w-3 rounded-full bg-red-500'" />
+            <span class="text-sm font-bold" style="color: var(--theme-text)">{{ status?.connection?.connected ? '在线运行中' : '离线' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs font-bold" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+            <span>⏱️</span>
+            {{ formatDuration(localUptime) }}
           </div>
         </div>
       </div>
 
       <!-- Items (Fertilizer & Collection) -->
-      <div class="flex flex-col farm-card justify-between rounded-2xl bg-white p-5 shadow-md dark:bg-gray-800">
-        <div class="mb-2 flex items-center gap-1.5 text-sm text-gray-500">
-          <div class="i-fas-flask text-emerald-400" />
+      <div class="farm-card-enhanced flex flex-col justify-between p-5 animate-fade-in-up animate-stagger-3">
+        <div class="mb-3 flex items-center gap-2 text-sm font-bold" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
+          <div class="i-fas-flask" style="color: #10b981" />
           化肥容器
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <div class="flex items-center gap-1 text-xs text-gray-400">
-              <div class="i-fas-flask text-emerald-400" />
-              普通
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-xl p-3" style="background: color-mix(in srgb, #10b981 8%, transparent)">
+            <div class="mb-1 flex items-center gap-1.5 text-xs font-bold" style="color: #059669">
+              <div class="i-fas-flask" />
+              普通化肥
             </div>
-            <div class="font-bold">
+            <div class="asset-number text-lg font-extrabold" style="color: var(--theme-text)">
               {{ formatBucketTime(fertilizerNormal) }}
             </div>
           </div>
-          <div>
-            <div class="flex items-center gap-1 text-xs text-gray-400">
-              <div class="i-fas-vial text-emerald-400" />
-              有机
+          <div class="rounded-xl p-3" style="background: color-mix(in srgb, #10b981 8%, transparent)">
+            <div class="mb-1 flex items-center gap-1.5 text-xs font-bold" style="color: #059669">
+              <div class="i-fas-vial" />
+              有机肥
             </div>
-            <div class="font-bold">
+            <div class="asset-number text-lg font-extrabold" style="color: var(--theme-text)">
               {{ formatBucketTime(fertilizerOrganic) }}
             </div>
           </div>
         </div>
-        <div class="my-2 border-t border-gray-100 dark:border-gray-700" />
-        <div class="mb-1 flex items-center gap-1.5 text-sm text-gray-500">
-          <div class="i-fas-star text-emerald-400" />
+        <div class="decorative-divider my-3" />
+        <div class="mb-3 flex items-center gap-2 text-sm font-bold" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
+          <div class="i-fas-star" style="color: #f59e0b" />
           收藏点
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <div class="flex items-center gap-1 text-xs text-gray-400">
-              <div class="i-fas-bookmark text-emerald-400" />
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-xl p-3" style="background: color-mix(in srgb, #f59e0b 8%, transparent)">
+            <div class="mb-1 flex items-center gap-1.5 text-xs font-bold" style="color: #d97706">
+              <div class="i-fas-bookmark" />
               普通
             </div>
-            <div class="font-bold">
-              {{ collectionNormal?.count || 0 }}
+            <div class="asset-number text-lg font-extrabold" style="color: var(--theme-text)">
+              {{ formatNumber(collectionNormal?.count || 0) }}
             </div>
           </div>
-          <div>
-            <div class="flex items-center gap-1 text-xs text-gray-400">
-              <div class="i-fas-gem text-emerald-400" />
+          <div class="rounded-xl p-3" style="background: color-mix(in srgb, #8b5cf6 10%, transparent)">
+            <div class="mb-1 flex items-center gap-1.5 text-xs font-bold" style="color: #7c3aed">
+              <div class="i-fas-gem" />
               典藏
             </div>
-            <div class="font-bold">
-              {{ collectionRare?.count || 0 }}
+            <div class="asset-number text-lg font-extrabold" style="color: var(--theme-text)">
+              {{ formatNumber(collectionRare?.count || 0) }}
             </div>
           </div>
         </div>
@@ -627,10 +635,11 @@ useIntervalFn(updateCountdowns, 1000)
       <!-- Logs (Left Column) -->
       <div class="flex flex-1 flex-col gap-6 md:w-3/4">
         <!-- Logs -->
-        <div class="flex flex-1 flex-col farm-card rounded-2xl bg-white p-6 shadow-md md:overflow-hidden dark:bg-gray-800">
+        <div class="farm-card-enhanced flex flex-1 flex-col p-6 md:overflow-hidden animate-fade-in-up animate-stagger-4">
           <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h3 class="flex items-center gap-2 text-lg font-medium font-display">
-              📋 <span>运行日志</span>
+            <h3 class="flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
+              <span class="text-xl">📋</span>
+              <span>运行日志</span>
             </h3>
 
             <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -687,10 +696,10 @@ useIntervalFn(updateCountdowns, 1000)
             <div v-if="!allLogs.length" class="py-8 text-center" :style="{ color: 'color-mix(in srgb, var(--theme-text) 40%, transparent)' }">
               暂无日志
             </div>
-            <div v-for="log in allLogs" :key="log.ts + log.msg" class="mb-1 break-all">
+            <div v-for="log in allLogs" :key="log.ts + log.msg" class="mb-1.5 break-all">
               <span class="mr-2 select-none" :style="{ color: 'color-mix(in srgb, var(--theme-text) 40%, transparent)' }">[{{ formatLogTime(log.time) }}]</span>
-              <span class="mr-2 rounded-full px-1.5 py-0.5 text-xs font-bold" :style="getLogTagStyle(log.tag)">{{ log.tag }}</span>
-              <span v-if="log.meta?.event" class="mr-2 rounded-full px-1.5 py-0.5 text-xs" :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 12%, transparent)', color: 'var(--theme-secondary)' }">{{ getEventLabel(log.meta.event) }}</span>
+              <span class="mr-2 rounded-full px-2 py-0.5 text-xs font-bold" :style="getLogTagStyle(log.tag)">{{ log.tag }}</span>
+              <span v-if="log.meta?.event" class="mr-2 rounded-full px-2 py-0.5 text-xs font-medium" :style="{ backgroundColor: 'color-mix(in srgb, var(--theme-secondary) 12%, transparent)', color: 'var(--theme-secondary)' }">{{ getEventLabel(log.meta.event) }}</span>
               <span :style="getLogMsgStyle(log.tag)">{{ log.msg }}</span>
             </div>
           </div>
@@ -700,35 +709,36 @@ useIntervalFn(updateCountdowns, 1000)
       <!-- Right Column Stack -->
       <div class="flex flex-col gap-6 md:w-1/4">
         <!-- Next Checks -->
-        <div class="flex flex-col farm-card rounded-2xl bg-white p-6 shadow-md dark:bg-gray-800">
-          <h3 class="mb-4 flex items-center gap-2 text-lg font-medium font-display">
-            ⏳ <span>下次巡查倒计时</span>
+        <div class="farm-card-enhanced flex flex-col p-6 animate-fade-in-up animate-stagger-5">
+          <h3 class="mb-4 flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
+            <span class="text-xl">⏳</span>
+            <span>下次巡查倒计时</span>
           </h3>
-          <div class="flex flex-col justify-center gap-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                <span class="text-lg text-green-500">🌱</span>
-                <span>农场</span>
+          <div class="flex flex-col justify-center gap-3">
+            <div class="flex items-center justify-between rounded-xl p-3" style="background: color-mix(in srgb, #22c55e 8%, transparent)">
+              <div class="flex items-center gap-2.5" style="color: var(--theme-text)">
+                <span class="text-xl">🌱</span>
+                <span class="font-bold">农场巡查</span>
               </div>
-              <div class="text-lg font-bold font-mono">
+              <div class="text-base font-extrabold font-mono" style="color: #16a34a">
                 {{ nextFarmCheck }}
               </div>
             </div>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                <span class="text-lg text-blue-500">🤝</span>
-                <span>帮助</span>
+            <div class="flex items-center justify-between rounded-xl p-3" style="background: color-mix(in srgb, #3b82f6 8%, transparent)">
+              <div class="flex items-center gap-2.5" style="color: var(--theme-text)">
+                <span class="text-xl">🤝</span>
+                <span class="font-bold">帮助好友</span>
               </div>
-              <div class="text-lg font-bold font-mono">
+              <div class="text-base font-extrabold font-mono" style="color: #2563eb">
                 {{ nextHelpCheck }}
               </div>
             </div>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                <span class="text-lg text-orange-500">🏃</span>
-                <span>偷菜</span>
+            <div class="flex items-center justify-between rounded-xl p-3" style="background: color-mix(in srgb, #f97316 8%, transparent)">
+              <div class="flex items-center gap-2.5" style="color: var(--theme-text)">
+                <span class="text-xl">🏃</span>
+                <span class="font-bold">偷菜巡查</span>
               </div>
-              <div class="text-lg font-bold font-mono">
+              <div class="text-base font-extrabold font-mono" style="color: #ea580c">
                 {{ nextStealCheck }}
               </div>
             </div>
@@ -736,35 +746,37 @@ useIntervalFn(updateCountdowns, 1000)
         </div>
 
         <!-- Operations Grid -->
-        <div class="flex-1 farm-card rounded-2xl bg-white p-5 shadow-md dark:bg-gray-800">
-          <h3 class="mb-3 flex items-center gap-2 text-lg font-medium font-display">
-            📊 <span>今日统计</span>
+        <div class="farm-card-enhanced flex-1 p-5 animate-fade-in-up animate-stagger-6">
+          <h3 class="mb-4 flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
+            <span class="text-xl">📊</span>
+            <span>今日统计</span>
           </h3>
-          <div v-if="!status?.connection?.connected" class="flex flex-col farm-card items-center justify-center gap-4 rounded-2xl bg-white p-12 text-center text-gray-500 shadow-md dark:bg-gray-800">
-            <span class="text-4xl text-gray-400">📡</span>
+          <div v-if="!status?.connection?.connected" class="flex flex-col items-center justify-center gap-4 rounded-2xl p-12 text-center">
+            <span class="text-5xl opacity-50">📡</span>
             <div class="flex flex-col">
-              <div class="text-lg text-gray-700 font-medium dark:text-gray-300">
+              <div class="text-lg font-bold" style="color: var(--theme-text)">
                 账号未登录
               </div>
-              <div class="mt-1 text-sm text-gray-400">
+              <div class="mt-1 text-sm" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
                 请先运行账号或检查网络连接
               </div>
             </div>
           </div>
-          <div v-else class="grid grid-cols-2 gap-2 2xl:gap-3">
+          <div v-else class="grid grid-cols-2 gap-2.5 2xl:gap-3">
             <div
               v-for="(val, key) in filteredOperations"
               :key="key"
-              class="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 transition-transform hover:scale-105 dark:bg-gray-700/30"
+              class="flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-200 hover:scale-105 hover:shadow-md"
+              style="background: color-mix(in srgb, var(--theme-primary) 6%, transparent)"
             >
               <div class="flex items-center gap-2">
-                <span class="select-none text-base 2xl:text-lg">{{ getOpIcon(key) }}</span>
-                <div class="text-xs text-gray-500 2xl:text-sm">
+                <span class="select-none text-lg 2xl:text-xl">{{ getOpIcon(key) }}</span>
+                <div class="text-xs font-bold 2xl:text-sm" style="color: var(--theme-text)">
                   {{ getOpName(key) }}
                 </div>
               </div>
-              <div class="text-sm font-bold 2xl:text-base">
-                {{ val }}
+              <div class="asset-number text-sm font-extrabold 2xl:text-base" style="color: var(--theme-primary)">
+                {{ formatNumber(val) }}
               </div>
             </div>
           </div>

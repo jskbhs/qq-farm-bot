@@ -4,7 +4,7 @@ import api from '@/api'
 
 const THEME_KEY = 'ui_theme'
 
-export type Theme = 'light-blue' | 'light-green' | 'light-pink' | 'dark-blue' | 'dark-purple' | 'dark-teal' | 'dark-orange' | 'dark-red' | 'farm-light' | 'farm-dark'
+export type Theme = 'light-blue' | 'light-green' | 'light-pink' | 'dark-blue' | 'dark-purple' | 'dark-teal' | 'dark-orange' | 'dark-red' | 'farm-light' | 'farm-dark' | 'spring-sakura' | 'autumn-harvest' | 'winter-snow'
 
 export const useAppStore = defineStore('app', () => {
   const sidebarOpen = ref(false)
@@ -130,6 +130,39 @@ export const useAppStore = defineStore('app', () => {
       secondary: '#f0c040',
       gradient: 'linear-gradient(135deg, #86efac 0%, #4a8c3f 100%)',
       icon: 'i-carbon-tree',
+    },
+    // 春日樱花主题
+    'spring-sakura': {
+      name: '春日樱花',
+      isDark: false,
+      bg: '#fff5f7',
+      text: '#831843',
+      primary: '#ec4899',
+      secondary: '#f472b6',
+      gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
+      icon: 'i-carbon-favorite',
+    },
+    // 秋日丰收主题
+    'autumn-harvest': {
+      name: '秋日丰收',
+      isDark: false,
+      bg: '#fffbeb',
+      text: '#78350f',
+      primary: '#f59e0b',
+      secondary: '#d97706',
+      gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+      icon: 'i-carbon-wheat',
+    },
+    // 冬日雪景主题
+    'winter-snow': {
+      name: '冬日雪景',
+      isDark: false,
+      bg: '#f0f9ff',
+      text: '#0c4a6e',
+      primary: '#0ea5e9',
+      secondary: '#0284c7',
+      gradient: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+      icon: 'i-carbon-snow',
     },
   }
 
