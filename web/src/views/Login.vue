@@ -45,6 +45,14 @@ const forgotError = ref('')
 const forgotSuccess = ref('')
 const showForgotPasswordStrength = ref(false)
 
+// 账号续费弹窗
+const showRenew = ref(false)
+const renewUsername = ref('')
+const renewCardCode = ref('')
+const renewLoading = ref(false)
+const renewError = ref('')
+const renewSuccess = ref('')
+
 function calcPasswordStrength(pwd: string) {
   if (!pwd)
     return { score: 0, level: '', valid: false }
@@ -392,6 +400,70 @@ watch(forgotNewPassword, () => {
   }
 })
 
+// 账号续费
+function openRenew() {
+  showRenew.value = true
+  renewUsername.value = username.value || ''
+  renewCardCode.value = ''
+  renewLoading.value = false
+  renewError.value = ''
+  renewSuccess.value = ''
+}
+
+function closeRenew() {
+  showRenew.value = false
+}
+
+function validateRenewForm(): boolean {
+  if (!renewUsername.value) {
+    renewError.value = '请输入用户名'
+    return false
+  }
+
+  if (!renewCardCode.value) {
+    renewError.value = '请输入卡密'
+    return false
+  }
+
+  return true
+}
+
+async function handleRenew() {
+  if (!validateRenewForm())
+    return
+
+  renewLoading.value = true
+  renewError.value = ''
+  renewSuccess.value = ''
+
+  try {
+    const res = await api.post('/api/user/renew-public', {
+      username: renewUsername.value,
+      cardCode: renewCardCode.value,
+    })
+
+    if (res.data.ok) {
+      renewSuccess.value = '续费成功，请使用账号密码登录'
+      setTimeout(() => {
+        closeRenew()
+        username.value = renewUsername.value
+        password.value = ''
+        isLogin.value = true
+      }, 1500)
+    }
+    else {
+      renewError.value = res.data.error || '续费失败'
+    }
+  }
+  catch (e: any) {
+    const data = e.response?.data
+    renewError.value = data?.error || e.message || '操作异常'
+  }
+  finally {
+    renewLoading.value = false
+  }
+}
+
 onMounted(() => {
   checkCardClaimStatus()
   fetchGameVersion()
@@ -529,7 +601,7 @@ async function fetchGameVersion() {
           </div>
         </div>
 
-        <!-- 记住我 & 忘记密码 -->
+        <!-- 记住我 & 忘记密码 & 账号续费 -->
         <div v-if="isLogin" class="form-options">
           <label class="remember-me font-body">
             <input
@@ -539,9 +611,14 @@ async function fetchGameVersion() {
             >
             <span>记住我</span>
           </label>
-          <button type="button" class="forgot-password font-body" @click="openForgotPassword">
-            忘记密码？
-          </button>
+          <div class="form-options-links">
+            <button type="button" class="forgot-password font-body" @click="openRenew">
+              账号续费
+            </button>
+            <button type="button" class="forgot-password font-body" @click="openForgotPassword">
+              忘记密码？
+            </button>
+          </div>
         </div>
 
         <div v-if="!isLogin" class="form-group">
@@ -747,6 +824,81 @@ async function fetchGameVersion() {
                 <span v-else>确认重置</span>
               </button>
               <button class="claim-modal-btn-secondary" @click="closeForgotPassword">
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- 账号续费弹窗 -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="showRenew"
+          class="claim-modal-overlay"
+          @click.self="closeRenew"
+        >
+          <div class="claim-modal forgot-modal">
+            <div class="claim-modal-header">
+              <span class="claim-modal-icon">🔄</span>
+              <h3 class="claim-modal-title">
+                账号续费
+              </h3>
+            </div>
+            <div class="claim-modal-body">
+              <p class="claim-modal-message font-body">
+                输入用户名和新卡密为账号续费
+              </p>
+
+              <div v-if="renewError" class="message error-message mb-3">
+                <span class="message-icon">⚠️</span>
+                {{ renewError }}
+              </div>
+              <div v-if="renewSuccess" class="message success-message mb-3">
+                <span class="message-icon">✅</span>
+                {{ renewSuccess }}
+              </div>
+
+              <form @submit.prevent="handleRenew">
+                <div class="form-group">
+                  <label class="form-label font-body">
+                    <span class="label-icon">👤</span>
+                    用户名
+                  </label>
+                  <BaseInput
+                    v-model="renewUsername"
+                    type="text"
+                    placeholder="请输入用户名"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label font-body">
+                    <span class="label-icon">🎫</span>
+                    卡密
+                  </label>
+                  <BaseInput
+                    v-model="renewCardCode"
+                    type="text"
+                    placeholder="请输入新卡密"
+                    required
+                  />
+                </div>
+              </form>
+            </div>
+            <div class="claim-modal-footer">
+              <button
+                class="claim-modal-btn"
+                :disabled="renewLoading"
+                @click="handleRenew"
+              >
+                <span v-if="renewLoading" class="i-svg-spinners-90-ring-with-bg" />
+                <span v-else>确认续费</span>
+              </button>
+              <button class="claim-modal-btn-secondary" @click="closeRenew">
                 取消
               </button>
             </div>
@@ -1301,6 +1453,12 @@ async function fetchGameVersion() {
   align-items: center;
   justify-content: space-between;
   margin-top: -4px;
+}
+
+.form-options-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .remember-me {

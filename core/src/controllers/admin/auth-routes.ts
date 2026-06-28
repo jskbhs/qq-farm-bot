@@ -19,6 +19,7 @@ const userStore = require('../../models/user-store');
 const tokenStore = require('../../models/user-store/token-store');
 const auditLog = require('../../models/audit-log');
 const ipBlacklist = require('../../models/ip-blacklist');
+const auth = require('../../models/user-store/auth');
 
 const {
     getClientIp,
@@ -271,6 +272,40 @@ function mountAuthRoutes(app: Application, ctx: AdminContext): void {
         res.json({ ok: true, data: { card: result.card, accountLimit: result.accountLimit, cardType: result.cardType } });
     });
 
+    // 公开账号续费接口（登录页使用，无需登录）
+    app.post('/api/user/renew-public', (req: Request, res: Response) => {
+        const { username, cardCode } = req.body || {};
+        const clientIp = getClientIp(req);
+
+        if (!username || !cardCode) {
+            return res.status(400).json({ ok: false, error: '请填写用户名和卡密' });
+        }
+
+        auth.loadLoginAttempts();
+        const rateLimitResult = auth.checkRateLimit(clientIp);
+        if (!rateLimitResult.allowed) {
+            return res.status(429).json({
+                ok: false,
+                error: rateLimitResult.message || '请求过于频繁，请稍后重试',
+                errorType: 'rate_limit',
+                remainingMs: rateLimitResult.remainingMs
+            });
+        }
+
+        const result = userStore.renewUser(username, cardCode);
+        if (!result.ok) {
+            return res.status(400).json(result);
+        }
+
+        adminLogger.info('账号续费成功', { username, ip: clientIp, cardType: result.cardType });
+        auditLog.log('user_renewed_public', username, clientIp, {
+            cardCode,
+            cardType: result.cardType,
+        });
+
+        res.json({ ok: true, data: { card: result.card, accountLimit: result.accountLimit, cardType: result.cardType } });
+    });
+
     // 修改密码接口
     app.post('/api/user/change-password', checkUserAccess, (req: Request, res: Response) => {
         const { oldPassword, newPassword } = req.body || {};
@@ -310,7 +345,7 @@ function mountAuthRoutes(app: Application, ctx: AdminContext): void {
     });
 
     app.use('/api', (req: Request, res: Response, next: any) => {
-        if (req.path === '/login' || req.path === '/qr/create' || req.path === '/qr/check' || req.path === '/card-claim/status' || req.path === '/card-claim/claim' || req.path === '/game-version') return next();
+        if (req.path === '/login' || req.path === '/qr/create' || req.path === '/qr/check' || req.path === '/card-claim/status' || req.path === '/card-claim/claim' || req.path === '/game-version' || req.path === '/user/renew-public') return next();
         return authRequired(req, res, next);
     });
 
