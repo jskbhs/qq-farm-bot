@@ -92,6 +92,7 @@ const editingAccount = ref<any>(null)
 const accountToDelete = ref<any>(null)
 const showClearStoppedConfirm = ref(false)
 const clearStoppedLoading = ref(false)
+const startAllLoading = ref(false)
 
 const isAccountOpsDisabled = computed(() => !userStore.isAdmin && userStore.isExpired)
 const quotaLimit = computed(() => {
@@ -220,6 +221,36 @@ async function confirmClearStopped() {
   }
   finally {
     clearStoppedLoading.value = false
+  }
+}
+
+async function startAllAccounts() {
+  const targets = stoppedAccounts.value
+  if (targets.length === 0) {
+    showAlert('没有已停止的账号需要启动', 'primary')
+    return
+  }
+  if (isAccountOpsDisabled.value) {
+    showAlert('账号已到期，无法启动账号', 'danger')
+    return
+  }
+  startAllLoading.value = true
+  let successCount = 0
+  try {
+    for (const acc of targets) {
+      try {
+        await accountStore.startAccount(acc.id)
+        successCount++
+      }
+      catch (e) {
+        console.error(`启动账号 ${acc.id} 失败:`, e)
+      }
+    }
+    showAlert(`一键启动完成，成功 ${successCount}/${targets.length}`, 'primary')
+    await accountStore.fetchAccounts()
+  }
+  finally {
+    startAllLoading.value = false
   }
 }
 
@@ -958,6 +989,17 @@ async function handleTestOffline() {
               >
                 <span class="mr-2">➕</span>
                 添加账号
+              </BaseButton>
+              <BaseButton
+                variant="success"
+                size="sm"
+                :loading="startAllLoading"
+                :disabled="stoppedAccountsCount === 0 || isAccountOpsDisabled"
+                @click="startAllAccounts"
+              >
+                <span class="mr-2">▶️</span>
+                一键启动
+                <span v-if="stoppedAccountsCount > 0" class="ml-1">({{ stoppedAccountsCount }})</span>
               </BaseButton>
             </div>
           </div>

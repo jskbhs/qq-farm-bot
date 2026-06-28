@@ -19,33 +19,40 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity" @click="emit('cancel')">
-    <div class="max-w-sm w-full scale-100 transform border-4 border-[#8b6914] rounded-2xl bg-[#fef9ef] p-6 transition-all dark:border-gray-600 dark:bg-gray-800" style="box-shadow: 0 6px 0 #6b4f0e, 0 8px 24px rgba(0,0,0,0.2)" @click.stop>
-      <h3 class="mb-3 text-xl text-[#3d2b1f] font-bold font-display dark:text-[#f0c040]">
-        {{ title || '确认操作' }}
-      </h3>
-      <p class="mb-8 whitespace-pre-line text-[#5a4a3a] leading-relaxed dark:text-gray-300">
-        {{ message || '确定要执行此操作吗？' }}
-      </p>
-      <div class="flex justify-end gap-3">
-        <BaseButton
-          v-if="!isAlert"
-          variant="secondary"
-          class="cartoon-btn"
-          :disabled="loading"
-          @click="emit('cancel')"
-        >
-          {{ cancelText || '取消' }}
-        </BaseButton>
-        <BaseButton
-          :variant="type === 'danger' ? 'danger' : 'primary'"
-          class="cartoon-btn"
-          :loading="loading"
-          @click="emit('confirm')"
-        >
-          {{ confirmText || '确定' }}
-        </BaseButton>
+  <Teleport to="body">
+    <div v-if="show" class="fixed inset-0 z-50">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click.self="!loading && emit('cancel')" />
+      <div
+        class="z-10 absolute left-1/2 top-1/2 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl p-6"
+        style="background: var(--theme-bg); box-shadow: 0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08);"
+        @click.stop
+      >
+        <h3 class="mb-3 text-xl font-bold" style="color: var(--theme-primary, var(--theme-text));">
+          {{ title || '确认操作' }}
+        </h3>
+        <p class="mb-8 whitespace-pre-line leading-relaxed" style="color: var(--theme-text);">
+          {{ message || '确定要执行此操作吗？' }}
+        </p>
+        <div class="flex justify-end gap-3">
+          <BaseButton
+            v-if="!isAlert"
+            variant="outline"
+            class="cartoon-btn"
+            :disabled="loading"
+            @click="emit('cancel')"
+          >
+            {{ cancelText || '取消' }}
+          </BaseButton>
+          <BaseButton
+            :variant="type === 'danger' ? 'danger' : 'primary'"
+            class="cartoon-btn"
+            :loading="loading"
+            @click="emit('confirm')"
+          >
+            {{ confirmText || '确定' }}
+          </BaseButton>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
