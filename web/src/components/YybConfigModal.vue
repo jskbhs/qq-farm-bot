@@ -171,12 +171,12 @@ function close() {
     <div v-if="show" class="fixed inset-0 z-50">
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click.self="close" />
       <div
-        class="z-10 overflow-hidden rounded-2xl"
+        class="z-10 flex flex-col rounded-2xl"
         :class="[!anchor && 'absolute left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2']"
         :style="panelStyle"
         @click.stop
       >
-        <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
+        <div class="flex shrink-0 items-center justify-between p-4" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
           <div>
             <h3 class="text-lg font-semibold" style="color: var(--theme-primary, var(--theme-text))">
               应用宝配置
@@ -190,7 +190,7 @@ function close() {
           </BaseButton>
         </div>
 
-        <div class="overflow-y-auto p-4" :style="{ maxHeight: anchor ? undefined : 'calc(90vh - 80px)' }">
+        <div class="min-h-0 flex-1 overflow-y-auto p-4">
           <div class="space-y-4">
             <BaseInput
               v-model="form.apiToken"
