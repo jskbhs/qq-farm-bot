@@ -263,6 +263,39 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
+    // ============ 仪表盘 API（仅管理员） ============
+    app.get('/api/admin/dashboard', authRequired, adminRequired, (_req: Request, res: Response) => {
+        try {
+            const allUsers = userStore.getAllUsers();
+            const onlineUsers = allUsers.filter((u: any) => tokenStore.isUserOnline(u.username)).length;
+            const accountData = ctx.provider && typeof ctx.provider.getAccounts === 'function'
+                ? ctx.provider.getAccounts()
+                : store.getAccounts();
+            const accounts = accountData?.accounts || [];
+            const onlineAccounts = accounts.filter((a: any) => a.running).length;
+            const mem = process.memoryUsage();
+
+            res.json({
+                ok: true,
+                data: {
+                    totalUsers: allUsers.length,
+                    onlineUsers,
+                    totalAccounts: accounts.length,
+                    onlineAccounts,
+                    uptime: process.uptime(),
+                    memory: {
+                        used: mem.heapUsed,
+                        total: mem.heapTotal,
+                        rss: mem.rss,
+                    },
+                    version: process.env.npm_package_version || '',
+                },
+            });
+        } catch (e: any) {
+            res.status(500).json({ ok: false, error: e.message });
+        }
+    });
+
     // ============ 用户管理 API（仅管理员） ============
     // 获取所有用户
     app.get('/api/admin/users', authRequired, adminRequired, (_req: Request, res: Response) => {

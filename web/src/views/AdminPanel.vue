@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Card, UserCard } from '@/stores/user'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import api from '@/api'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -12,8 +12,8 @@ import { useUserStore } from '@/stores/user'
 const userStore = useUserStore()
 const toast = useToastStore()
 
-const activeTab = ref<'card' | 'user' | 'log' | 'system'>(
-  (localStorage.getItem('admin-active-tab') as 'card' | 'user' | 'log' | 'system') || 'card',
+const activeTab = ref<'dashboard' | 'card' | 'user' | 'log' | 'system'>(
+  (localStorage.getItem('admin-active-tab') as 'dashboard' | 'card' | 'user' | 'log' | 'system') || 'dashboard',
 )
 
 watch(activeTab, (newTab) => {
@@ -21,6 +21,7 @@ watch(activeTab, (newTab) => {
 })
 
 const tabs = [
+  { key: 'dashboard', label: '仪表盘', icon: 'i-carbon-dashboard' },
   { key: 'card', label: '卡密', icon: 'i-carbon-ticket' },
   { key: 'user', label: '用户', icon: 'i-carbon-user-admin' },
   { key: 'log', label: '日志', icon: 'i-carbon-document' },
@@ -384,6 +385,76 @@ function toggleSelectCard(code: string) {
     if (filteredCards.value.every(card => selectedCards.value.has(card.code))) {
       selectAll.value = true
     }
+  }
+}
+
+// ========== 仪表盘 ==========
+interface DashboardData {
+  totalUsers: number
+  onlineUsers: number
+  totalAccounts: number
+  onlineAccounts: number
+  uptime: number
+  memory: {
+    used: number
+    total: number
+    rss: number
+  }
+  version: string
+}
+
+const dashboard = ref<DashboardData | null>(null)
+const dashboardLoading = ref(false)
+const dashboardTimer = ref<number | null>(null)
+
+function formatDuration(seconds: number): string {
+  const s = Math.floor(seconds)
+  const d = Math.floor(s / 86400)
+  const h = Math.floor((s % 86400) / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  if (d > 0)
+    return `${d}天 ${h}小时`
+  if (h > 0)
+    return `${h}小时 ${m}分`
+  return `${m}分 ${sec}秒`
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024)
+    return `${bytes} B`
+  if (bytes < 1024 * 1024)
+    return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}
+
+async function fetchDashboard() {
+  dashboardLoading.value = true
+  try {
+    const res = await api.get('/api/admin/dashboard')
+    if (res.data?.ok) {
+      dashboard.value = res.data.data
+    }
+  }
+  catch (e: any) {
+    console.error('获取仪表盘失败', e)
+  }
+  finally {
+    dashboardLoading.value = false
+  }
+}
+
+function startDashboardTimer() {
+  stopDashboardTimer()
+  dashboardTimer.value = window.setInterval(fetchDashboard, 10000)
+}
+
+function stopDashboardTimer() {
+  if (dashboardTimer.value) {
+    clearInterval(dashboardTimer.value)
+    dashboardTimer.value = null
   }
 }
 
@@ -844,12 +915,30 @@ async function handleResetSystemConfig() {
 }
 
 onMounted(() => {
+  fetchDashboard()
+  if (activeTab.value === 'dashboard') {
+    startDashboardTimer()
+  }
   fetchCards()
   fetchUsers()
   fetchLoginLogs()
   loadSystemConfig()
   loadDevicePresets()
   fetchCardClaimStatus()
+})
+
+onUnmounted(() => {
+  stopDashboardTimer()
+})
+
+watch(activeTab, (tab) => {
+  if (tab === 'dashboard') {
+    fetchDashboard()
+    startDashboardTimer()
+  }
+  else {
+    stopDashboardTimer()
+  }
 })
 </script>
 
@@ -884,6 +973,98 @@ onMounted(() => {
       </div>
 
       <div class="p-4">
+        <!-- 仪表盘 -->
+        <div v-if="activeTab === 'dashboard'" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg text-gray-800 font-semibold dark:text-gray-200">
+              系统仪表盘
+            </h3>
+            <BaseButton variant="secondary" size="sm" :loading="dashboardLoading" @click="fetchDashboard">
+              刷新
+            </BaseButton>
+          </div>
+
+          <div v-if="!dashboard" class="py-8 text-center text-gray-500">
+            <div i-svg-spinners-90-ring-with-bg class="mb-2 inline-block text-2xl" />
+            <div>加载中...</div>
+          </div>
+
+          <div v-else class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div
+              class="farm-card rounded-2xl border border-gray-200 p-4 shadow-md dark:border-gray-700"
+              :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)', background: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)' }"
+            >
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                总用户数
+              </div>
+              <div class="mt-1 text-2xl font-bold" style="color: var(--theme-primary)">
+                {{ dashboard.totalUsers }}
+              </div>
+            </div>
+            <div
+              class="farm-card rounded-2xl border border-gray-200 p-4 shadow-md dark:border-gray-700"
+              :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)', background: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)' }"
+            >
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                在线用户
+              </div>
+              <div class="mt-1 text-2xl font-bold" style="color: var(--theme-primary)">
+                {{ dashboard.onlineUsers }}
+              </div>
+            </div>
+            <div
+              class="farm-card rounded-2xl border border-gray-200 p-4 shadow-md dark:border-gray-700"
+              :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)', background: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)' }"
+            >
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                总账号数
+              </div>
+              <div class="mt-1 text-2xl font-bold" style="color: var(--theme-primary)">
+                {{ dashboard.totalAccounts }}
+              </div>
+            </div>
+            <div
+              class="farm-card rounded-2xl border border-gray-200 p-4 shadow-md dark:border-gray-700"
+              :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)', background: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)' }"
+            >
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                运行中账号
+              </div>
+              <div class="mt-1 text-2xl font-bold" style="color: var(--theme-primary)">
+                {{ dashboard.onlineAccounts }}
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="dashboard"
+            class="farm-card rounded-2xl border border-gray-200 p-4 shadow-md dark:border-gray-700"
+            :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 20%, transparent)', background: 'color-mix(in srgb, var(--theme-bg) 95%, transparent)' }"
+          >
+            <h4 class="mb-3 text-base font-semibold" style="color: var(--theme-primary)">
+              服务状态
+            </h4>
+            <div class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div class="flex justify-between">
+                <span class="text-gray-500 dark:text-gray-400">运行时长</span>
+                <span class="font-medium" style="color: var(--theme-text)">{{ formatDuration(dashboard.uptime) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 dark:text-gray-400">内存使用</span>
+                <span class="font-medium" style="color: var(--theme-text)">{{ formatBytes(dashboard.memory.used) }} / {{ formatBytes(dashboard.memory.rss) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 dark:text-gray-400">堆内存</span>
+                <span class="font-medium" style="color: var(--theme-text)">{{ formatBytes(dashboard.memory.used) }} / {{ formatBytes(dashboard.memory.total) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 dark:text-gray-400">版本号</span>
+                <span class="font-medium" style="color: var(--theme-text)">{{ dashboard.version || '-' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 卡密管理 -->
         <div v-if="activeTab === 'card'" class="space-y-4">
           <div class="flex items-center justify-between">
