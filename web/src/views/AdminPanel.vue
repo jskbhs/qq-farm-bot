@@ -393,6 +393,8 @@ interface UserInfo {
   role: string
   card: UserCard | null
   accountLimit: number
+  online?: boolean
+  lastActivityAt?: number | null
 }
 
 interface EditForm {
@@ -1260,6 +1262,9 @@ onMounted(() => {
                     <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
                       状态
                     </th>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      在线状态
+                    </th>
                     <th class="px-3 py-2 text-right text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
                       操作
                     </th>
@@ -1302,6 +1307,15 @@ onMounted(() => {
                       </span>
                       <span v-else class="text-gray-500 dark:text-gray-400">-</span>
                     </td>
+                    <td class="whitespace-nowrap px-3 py-2">
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 text-xs font-semibold leading-5"
+                        :class="user.online ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'"
+                      >
+                        <span class="h-1.5 w-1.5 rounded-full" :class="user.online ? 'bg-green-500' : 'bg-gray-400'" />
+                        {{ user.online ? '在线' : '离线' }}
+                      </span>
+                    </td>
                     <td class="whitespace-nowrap px-3 py-2 text-right text-sm font-medium">
                       <button
                         class="mr-3 text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
@@ -1326,7 +1340,7 @@ onMounted(() => {
                     </td>
                   </tr>
                   <tr v-if="users.length === 0">
-                    <td colspan="8" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="9" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
                       暂无用户
                     </td>
                   </tr>

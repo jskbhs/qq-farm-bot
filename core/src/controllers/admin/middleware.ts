@@ -72,6 +72,7 @@ function createAuthRequired(ctx: AdminContext) {
 
         req.adminToken = token;
         req.currentUser = entry.user;
+        tokenStore.updateActivity(token);
 
         // 管理员不检查封禁和过期
         if (req.currentUser && req.currentUser.role !== 'admin') {

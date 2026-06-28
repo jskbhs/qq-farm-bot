@@ -10,6 +10,7 @@ import type { AdminContext } from './context';
 const { updateRuntimeConfig, getRuntimeConfig, getDefaultSystemConfig, getDevicePresets } = require('../../config/config');
 const store = require('../../models/store');
 const userStore = require('../../models/user-store');
+const tokenStore = require('../../models/user-store/token-store');
 
 const {
     createAuthRequired,
@@ -266,7 +267,11 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     // 获取所有用户
     app.get('/api/admin/users', authRequired, adminRequired, (_req: Request, res: Response) => {
         try {
-            const users = userStore.getAllUsers();
+            const users = userStore.getAllUsers().map((u: any) => ({
+                ...u,
+                online: tokenStore.isUserOnline(u.username),
+                lastActivityAt: tokenStore.getUserLastActivity(u.username),
+            }));
             res.json({ ok: true, data: users });
         } catch (e: any) {
             res.status(500).json({ ok: false, error: e.message });

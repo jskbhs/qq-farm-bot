@@ -16,6 +16,7 @@ interface TokenEntry {
     user: any;
     createdAt: number;
     expiresAt: number;
+    lastActivityAt?: number;
 }
 
 interface TokenStoreData {
@@ -24,6 +25,7 @@ interface TokenStoreData {
 
 let tokens: Record<string, TokenEntry> = {};
 let cleanupTimer: any = null;
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 分钟内活跃视为在线
 
 function loadTokens(): void {
     try {
@@ -69,6 +71,7 @@ function addToken(user: any): TokenEntry {
         user,
         createdAt: now,
         expiresAt: now + TOKEN_TTL_MS,
+        lastActivityAt: now,
     };
     tokens[token] = entry;
     saveTokens();
@@ -140,11 +143,40 @@ function getTokenCount(): number {
     return Object.keys(tokens).length;
 }
 
+function updateActivity(token: string): void {
+    const entry = tokens[token];
+    if (!entry)
+        return;
+    entry.lastActivityAt = Date.now();
+}
+
+function isUserOnline(username: string): boolean {
+    const now = Date.now();
+    return Object.values(tokens).some(entry =>
+        entry.user?.username === username
+        && (entry.lastActivityAt || entry.createdAt) > now - ONLINE_THRESHOLD_MS
+    );
+}
+
+function getUserLastActivity(username: string): number | null {
+    let last: number | null = null;
+    for (const entry of Object.values(tokens)) {
+        if (entry.user?.username === username) {
+            const t = entry.lastActivityAt || entry.createdAt;
+            if (t && (last === null || t > last)) {
+                last = t;
+            }
+        }
+    }
+    return last;
+}
+
 loadTokens();
 startCleanupTimer();
 
 module.exports = {
     TOKEN_TTL_MS,
+    ONLINE_THRESHOLD_MS,
     addToken,
     getToken,
     removeToken,
@@ -152,4 +184,7 @@ module.exports = {
     cleanupExpired,
     getAllTokens,
     getTokenCount,
+    updateActivity,
+    isUserOnline,
+    getUserLastActivity,
 };
