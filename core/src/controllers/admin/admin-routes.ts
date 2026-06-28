@@ -16,6 +16,7 @@ const userStore = require('../../models/user-store');
 const tokenStore = require('../../models/user-store/token-store');
 const auditLog = require('../../models/audit-log');
 const ipBlacklist = require('../../models/ip-blacklist');
+const cleanup = require('../../services/cleanup');
 
 const {
     createAuthRequired,
@@ -656,6 +657,26 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
             ipBlacklist.clear();
             audit('ip_blacklist_cleared', req);
             res.json({ ok: true });
+        } catch (e: any) {
+            res.status(500).json({ ok: false, error: e.message });
+        }
+    });
+
+    // ============ 清理工具 API（仅管理员） ============
+    app.post('/api/admin/cleanup', authRequired, adminRequired, (req: Request, res: Response) => {
+        try {
+            const { logRetentionDays } = req.body || {};
+            const days = Number.isFinite(Number(logRetentionDays)) && Number(logRetentionDays) > 0
+                ? Number(logRetentionDays)
+                : cleanup.DEFAULT_LOG_RETENTION_DAYS;
+            const result = cleanup.runCleanup({ logRetentionDays: days });
+            audit('cleanup_run', req, {
+                expiredTokens: result.expiredTokens,
+                invalidAccounts: result.invalidAccounts.deletedCount,
+                oldLogs: result.oldLogs,
+                logRetentionDays: days,
+            });
+            res.json({ ok: true, data: result });
         } catch (e: any) {
             res.status(500).json({ ok: false, error: e.message });
         }

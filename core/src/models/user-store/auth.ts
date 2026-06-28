@@ -109,6 +109,17 @@ function clearLoginLogs(): { ok: boolean } {
     return { ok: true };
 }
 
+function cleanOldLogs(cutoffTimestamp: number): number {
+    loadLoginLogs();
+    const before = loginLogs.length;
+    loginLogs = loginLogs.filter(log => log.timestamp >= cutoffTimestamp);
+    const removed = before - loginLogs.length;
+    if (removed > 0) {
+        saveLoginLogs();
+    }
+    return removed;
+}
+
 function loadLoginAttempts(): void {
     try {
         ensureDataDir();
@@ -302,6 +313,7 @@ module.exports = {
     addLoginLog,
     getLoginLogs,
     clearLoginLogs,
+    cleanOldLogs,
     loadLoginAttempts,
     saveLoginAttempts,
     cleanExpiredAttempts,

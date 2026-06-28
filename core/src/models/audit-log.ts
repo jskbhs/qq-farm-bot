@@ -65,9 +65,21 @@ function clearLogs(): void {
     saveLogs({ logs: [] });
 }
 
+function cleanOldLogs(cutoffTimestamp: number): number {
+    const data = loadLogs();
+    const before = data.logs.length;
+    data.logs = data.logs.filter(log => log.timestamp >= cutoffTimestamp);
+    const removed = before - data.logs.length;
+    if (removed > 0) {
+        saveLogs(data);
+    }
+    return removed;
+}
+
 module.exports = {
     log,
     getLogs,
     getLogCount,
     clearLogs,
+    cleanOldLogs,
 };

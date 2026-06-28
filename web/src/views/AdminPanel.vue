@@ -1324,6 +1324,55 @@ function formatRemainingTime(expiresAt: number | null): string {
   return `${minutes}分钟`
 }
 
+// ========== 清理工具 ==========
+interface InvalidAccountResult {
+  deletedCount: number
+  deletedIds: string[]
+}
+
+interface OldLogsResult {
+  loginLogs: number
+  auditLogs: number
+  ipBlacklist: number
+}
+
+interface CleanupResult {
+  expiredTokens: number
+  invalidAccounts: InvalidAccountResult
+  oldLogs: OldLogsResult
+}
+
+const cleanupLoading = ref(false)
+const cleanupResult = ref<CleanupResult | null>(null)
+const logRetentionDays = ref(30)
+const showCleanupConfirm = ref(false)
+
+async function runCleanup() {
+  cleanupLoading.value = true
+  cleanupResult.value = null
+  try {
+    const res = await api.post('/api/admin/cleanup', { logRetentionDays: logRetentionDays.value })
+    if (res.data?.ok) {
+      cleanupResult.value = res.data.data
+      toast.success('清理完成')
+      // 刷新相关数据
+      await fetchLoginLogs()
+      await fetchAuditLogs()
+      await fetchIpBlacklist()
+    }
+    else {
+      toast.error(res.data?.error || '清理失败')
+    }
+  }
+  catch (e: any) {
+    toast.error(e?.response?.data?.error || e?.message || '清理失败')
+  }
+  finally {
+    cleanupLoading.value = false
+    showCleanupConfirm.value = false
+  }
+}
+
 onMounted(() => {
   fetchDashboard()
   if (activeTab.value === 'dashboard') {
@@ -2806,6 +2855,129 @@ watch(activeTab, (tab) => {
                     @click="confirmClearBlacklist"
                   >
                     确认清空
+                  </BaseButton>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 清理工具 -->
+          <div class="farm-card-enhanced p-5">
+            <h4 class="mb-4 flex items-center gap-2 text-lg font-bold font-display" style="color: var(--theme-text)">
+              <div class="admin-section-icon">
+                <div class="i-carbon-clean" />
+              </div>
+              <span>清理工具</span>
+              <div class="admin-section-divider" />
+            </h4>
+
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
+                  <p class="text-sm text-gray-700 font-medium dark:text-gray-300">
+                    清理内容
+                  </p>
+                  <ul class="mt-2 text-xs space-y-1" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
+                    <li class="flex items-center gap-1.5">
+                      <span class="i-carbon-checkmark" />
+                      过期 Token
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                      <span class="i-carbon-checkmark" />
+                      无效账号（无关联用户或无登录标识）
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                      <span class="i-carbon-checkmark" />
+                      超过保留天数的登录日志、审计日志
+                    </li>
+                    <li class="flex items-center gap-1.5">
+                      <span class="i-carbon-checkmark" />
+                      已过期的 IP 黑名单记录
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="flex flex-col justify-center gap-3 rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
+                  <div>
+                    <label class="mb-1.5 block text-sm text-gray-700 font-medium dark:text-gray-300">
+                      日志保留天数
+                    </label>
+                    <BaseInput
+                      v-model.number="logRetentionDays"
+                      type="number"
+                      min="1"
+                      max="365"
+                      placeholder="默认 30 天"
+                    />
+                  </div>
+                  <BaseButton
+                    variant="danger"
+                    size="sm"
+                    :loading="cleanupLoading"
+                    @click="showCleanupConfirm = true"
+                  >
+                    执行清理
+                  </BaseButton>
+                </div>
+              </div>
+
+              <div v-if="cleanupResult" class="border border-green-200 rounded-xl bg-green-50 p-4 dark:border-green-900 dark:bg-green-900/20">
+                <p class="mb-2 text-sm text-green-800 font-bold dark:text-green-300">
+                  清理完成
+                </p>
+                <div class="grid grid-cols-2 gap-2 text-xs text-green-700 sm:grid-cols-4 dark:text-green-400">
+                  <div class="rounded-lg bg-white/60 p-2 dark:bg-black/20">
+                    <div class="text-lg font-bold">
+                      {{ cleanupResult.expiredTokens }}
+                    </div>
+                    <div>过期 Token</div>
+                  </div>
+                  <div class="rounded-lg bg-white/60 p-2 dark:bg-black/20">
+                    <div class="text-lg font-bold">
+                      {{ cleanupResult.invalidAccounts.deletedCount }}
+                    </div>
+                    <div>无效账号</div>
+                  </div>
+                  <div class="rounded-lg bg-white/60 p-2 dark:bg-black/20">
+                    <div class="text-lg font-bold">
+                      {{ cleanupResult.oldLogs.loginLogs + cleanupResult.oldLogs.auditLogs }}
+                    </div>
+                    <div>旧日志</div>
+                  </div>
+                  <div class="rounded-lg bg-white/60 p-2 dark:bg-black/20">
+                    <div class="text-lg font-bold">
+                      {{ cleanupResult.oldLogs.ipBlacklist }}
+                    </div>
+                    <div>过期黑名单</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 执行清理确认弹窗 -->
+            <div
+              v-if="showCleanupConfirm"
+              class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+              @click.self="showCleanupConfirm = false"
+            >
+              <div class="max-w-md w-full rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-800" @click.stop>
+                <h2 class="mb-4 text-lg text-gray-900 font-bold dark:text-white">
+                  确认执行清理
+                </h2>
+                <p class="mb-4 text-gray-600 dark:text-gray-300">
+                  将清理过期 Token、无效账号、超过 {{ logRetentionDays }} 天的日志以及过期 IP 黑名单。此操作不可恢复。
+                </p>
+                <div class="flex justify-end space-x-3">
+                  <BaseButton variant="secondary" size="sm" @click="showCleanupConfirm = false">
+                    取消
+                  </BaseButton>
+                  <BaseButton
+                    variant="danger"
+                    size="sm"
+                    :loading="cleanupLoading"
+                    @click="runCleanup"
+                  >
+                    确认清理
                   </BaseButton>
                 </div>
               </div>

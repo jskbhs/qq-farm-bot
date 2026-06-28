@@ -41,31 +41,31 @@ function save(): void {
     writeJsonFileAtomic(BLACKLIST_FILE, data);
 }
 
-function cleanExpired(): void {
+function cleanExpired(): number {
     const now = Date.now();
-    let changed = false;
+    let removed = 0;
 
-    const validBlacklist: BlacklistEntry[] = [];
-    for (const entry of data.blacklist) {
+    const beforeBlacklist = data.blacklist.length;
+    data.blacklist = data.blacklist.filter((entry) => {
         if (entry.expiresAt && entry.expiresAt <= now) {
-            changed = true;
-            continue;
+            removed++;
+            return false;
         }
-        validBlacklist.push(entry);
-    }
-    data.blacklist = validBlacklist;
+        return true;
+    });
 
     for (const ip of Object.keys(data.failedAttempts)) {
         const attempt = data.failedAttempts[ip];
         if (now - attempt.firstAttempt > AUTO_BLOCK_WINDOW_MS) {
             delete data.failedAttempts[ip];
-            changed = true;
+            removed++;
         }
     }
 
-    if (changed) {
+    if (removed > 0 || data.blacklist.length !== beforeBlacklist) {
         save();
     }
+    return removed;
 }
 
 function isBlocked(ip: string): { blocked: boolean; reason?: string; remainingMs?: number } {
@@ -175,6 +175,7 @@ load();
 module.exports = {
     load,
     save,
+    cleanExpired,
     isBlocked,
     add,
     remove,
