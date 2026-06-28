@@ -838,13 +838,29 @@ const activeLogTab = ref<'login' | 'audit'>('login')
 const auditLogs = ref<AuditLog[]>([])
 const auditLogsLoading = ref(false)
 const auditLogsTotal = ref(0)
+const auditLogsPage = ref(1)
+const auditLogsPageSize = ref(10)
+const auditEventFilter = ref('')
+const auditUsernameFilter = ref('')
+const auditIpFilter = ref('')
 const showClearAuditLogsConfirm = ref(false)
 const clearAuditLogsLoading = ref(false)
+
+const auditEventOptions = computed(() => {
+  const events = new Set(auditLogs.value.map(log => log.event))
+  return Array.from(events).sort()
+})
 
 async function fetchAuditLogs() {
   auditLogsLoading.value = true
   try {
-    const res = await api.get('/api/admin/audit-logs', { params: { limit: 100, offset: 0 } })
+    const offset = (auditLogsPage.value - 1) * auditLogsPageSize.value
+    const res = await api.get('/api/admin/audit-logs', {
+      params: {
+        limit: auditLogsPageSize.value,
+        offset,
+      },
+    })
     if (res.data?.ok) {
       auditLogs.value = res.data.data.logs || []
       auditLogsTotal.value = res.data.data.total || 0
@@ -860,6 +876,31 @@ async function fetchAuditLogs() {
     auditLogsLoading.value = false
   }
 }
+
+function resetAuditFilters() {
+  auditEventFilter.value = ''
+  auditUsernameFilter.value = ''
+  auditIpFilter.value = ''
+  auditLogsPage.value = 1
+}
+
+const filteredAuditLogs = computed(() => {
+  return auditLogs.value.filter((log) => {
+    if (auditEventFilter.value && log.event !== auditEventFilter.value)
+      return false
+    if (auditUsernameFilter.value && !log.username.toLowerCase().includes(auditUsernameFilter.value.toLowerCase()))
+      return false
+    if (auditIpFilter.value && !log.ip.includes(auditIpFilter.value))
+      return false
+    return true
+  })
+})
+
+const auditTotalPages = computed(() => Math.ceil(auditLogsTotal.value / auditLogsPageSize.value) || 1)
+
+watch([auditEventFilter, auditUsernameFilter, auditIpFilter], () => {
+  auditLogsPage.value = 1
+})
 
 function openClearAuditLogsConfirm() {
   if (auditLogsTotal.value === 0) {
@@ -936,7 +977,46 @@ function formatAuditDetails(details?: Record<string, any>): string {
   const entries = Object.entries(details)
   if (entries.length === 0)
     return '-'
-  return entries.map(([key, value]) => `${key}: ${value}`).join(', ')
+
+  const keyLabels: Record<string, string> = {
+    accountId: '账号ID',
+    accountName: '账号名称',
+    code: '卡密',
+    codes: '卡密列表',
+    content: '内容',
+    count: '数量',
+    days: '天数',
+    description: '描述',
+    durationMinutes: '时长(分钟)',
+    enabled: '状态',
+    errorType: '错误类型',
+    files: '文件',
+    ip: 'IP地址',
+    logRetentionDays: '日志保留天数',
+    newUsername: '新用户名',
+    platform: '平台',
+    reason: '原因',
+    remark: '备注',
+    serverUrl: '服务器地址',
+    showOnce: '只显示一次',
+    targetUser: '目标用户',
+    theme: '主题',
+    type: '类型',
+    updates: '更新内容',
+    userAgent: '浏览器',
+  }
+
+  return entries.map(([key, value]) => {
+    const label = keyLabels[key] || key
+    let displayValue = value
+    if (Array.isArray(value))
+      displayValue = value.join(', ')
+    else if (typeof value === 'boolean')
+      displayValue = value ? '是' : '否'
+    else if (value === null || value === undefined || value === '')
+      displayValue = '-'
+    return `${label}: ${displayValue}`
+  }).join('；')
 }
 
 // ========== 系统配置 ==========
@@ -2375,7 +2455,37 @@ watch(activeTab, (tab) => {
 
           <!-- 审计日志 -->
           <div v-else-if="activeLogTab === 'audit'" class="space-y-4">
-            <div class="flex items-center justify-end">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <select
+                  v-model="auditEventFilter"
+                  class="border farm-input border-gray-300 rounded-xl bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">
+                    全部事件
+                  </option>
+                  <option v-for="evt in auditEventOptions" :key="evt" :value="evt">
+                    {{ getAuditEventLabel(evt) }}
+                  </option>
+                </select>
+                <input
+                  v-model="auditUsernameFilter"
+                  placeholder="搜索用户"
+                  class="h-8 w-32 border farm-input border-gray-300 rounded-xl bg-white px-3 text-sm text-gray-900 outline-none transition-all dark:border-gray-600 focus:border-green-500 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500/20"
+                >
+                <input
+                  v-model="auditIpFilter"
+                  placeholder="搜索IP"
+                  class="h-8 w-36 border farm-input border-gray-300 rounded-xl bg-white px-3 text-sm text-gray-900 outline-none transition-all dark:border-gray-600 focus:border-green-500 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500/20"
+                >
+                <button
+                  v-if="auditEventFilter || auditUsernameFilter || auditIpFilter"
+                  class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  @click="resetAuditFilters"
+                >
+                  重置
+                </button>
+              </div>
               <BaseButton
                 variant="danger"
                 size="sm"
@@ -2390,19 +2500,19 @@ watch(activeTab, (tab) => {
                 <table class="admin-table min-w-full text-left text-sm">
                   <thead class="admin-table-head">
                     <tr>
-                      <th class="px-4 py-3 font-bold">
+                      <th class="w-44 px-3 py-2.5 font-bold">
                         🕐 时间
                       </th>
-                      <th class="px-4 py-3 font-bold">
+                      <th class="w-28 px-3 py-2.5 font-bold">
                         📋 事件
                       </th>
-                      <th class="px-4 py-3 font-bold">
+                      <th class="w-24 px-3 py-2.5 font-bold">
                         👤 用户
                       </th>
-                      <th class="px-4 py-3 font-bold">
+                      <th class="w-32 px-3 py-2.5 font-bold">
                         🌐 IP地址
                       </th>
-                      <th class="px-4 py-3 font-bold">
+                      <th class="px-3 py-2.5 font-bold">
                         📝 详情
                       </th>
                     </tr>
@@ -2413,41 +2523,59 @@ watch(activeTab, (tab) => {
                         加载中...
                       </td>
                     </tr>
-                    <tr v-else-if="auditLogs.length === 0">
+                    <tr v-else-if="filteredAuditLogs.length === 0">
                       <td colspan="5" class="px-4 py-8 text-center" style="color: color-mix(in srgb, var(--theme-text) 40%, transparent)">
                         暂无审计日志
                       </td>
                     </tr>
-                    <tr v-for="(log, index) in auditLogs" :key="log.id" class="admin-table-row" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
-                      <td class="whitespace-nowrap px-4 py-3 text-sm font-mono" style="color: var(--theme-text)">
+                    <tr v-for="(log, index) in filteredAuditLogs" :key="log.id" class="admin-table-row" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
+                      <td class="whitespace-nowrap px-3 py-2.5 text-xs font-mono" style="color: var(--theme-text)">
                         {{ formatLogTime(log.timestamp) }}
                       </td>
-                      <td class="whitespace-nowrap px-4 py-3">
+                      <td class="whitespace-nowrap px-3 py-2.5">
                         <span
-                          class="admin-badge inline-flex rounded-full px-2.5 py-1 text-xs font-bold"
+                          class="admin-badge inline-flex rounded-full px-2 py-0.5 text-xs font-bold"
                           :class="log.event.includes('_deleted') || log.event.includes('_failed') || log.event === 'ip_blacklisted' ? 'badge-red' : 'badge-blue'"
                         >
                           {{ getAuditEventLabel(log.event) }}
                         </span>
                       </td>
-                      <td class="whitespace-nowrap px-4 py-3 font-bold" style="color: var(--theme-text)">
+                      <td class="whitespace-nowrap px-3 py-2.5 text-sm font-medium" style="color: var(--theme-text)">
                         {{ log.username }}
                       </td>
-                      <td class="whitespace-nowrap px-4 py-3">
-                        <code class="admin-code-bg rounded-lg px-2.5 py-1 text-xs font-mono">{{ log.ip }}</code>
+                      <td class="whitespace-nowrap px-3 py-2.5">
+                        <code class="admin-code-bg rounded-lg px-2 py-0.5 text-xs font-mono">{{ log.ip }}</code>
                       </td>
-                      <td class="max-w-xs whitespace-normal break-all px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
+                      <td class="max-w-xs whitespace-normal break-all px-3 py-2.5 text-xs leading-relaxed" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
                         {{ formatAuditDetails(log.details) }}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              <div v-if="auditLogsTotal > 0" class="admin-log-footer px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
+              <div v-if="auditLogsTotal > 0" class="admin-log-footer flex flex-wrap items-center justify-between gap-3 px-3 py-2.5 text-sm" style="color: color-mix(in srgb, var(--theme-text) 50%, transparent)">
                 <span class="inline-flex items-center gap-1.5">
                   <span>📊</span>
-                  共 {{ auditLogsTotal }} 条记录
+                  共 {{ auditLogsTotal }} 条记录，第 {{ auditLogsPage }} / {{ auditTotalPages }} 页
                 </span>
+                <div class="flex items-center gap-2">
+                  <BaseButton
+                    variant="secondary"
+                    size="sm"
+                    :disabled="auditLogsPage <= 1"
+                    @click="auditLogsPage--; fetchAuditLogs()"
+                  >
+                    上一页
+                  </BaseButton>
+                  <BaseButton
+                    variant="secondary"
+                    size="sm"
+                    :disabled="auditLogsPage >= auditTotalPages"
+                    @click="auditLogsPage++; fetchAuditLogs()"
+                  >
+                    下一页
+                  </BaseButton>
+                </div>
               </div>
             </div>
 
