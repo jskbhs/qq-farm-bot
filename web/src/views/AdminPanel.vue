@@ -845,6 +845,20 @@ const auditUsernameFilter = ref('')
 const auditIpFilter = ref('')
 const showClearAuditLogsConfirm = ref(false)
 const clearAuditLogsLoading = ref(false)
+const expandedAuditLogIds = ref<Set<string>>(new Set())
+
+function isAuditLogExpanded(id: string): boolean {
+  return expandedAuditLogIds.value.has(id)
+}
+
+function toggleAuditLogExpanded(id: string) {
+  const set = new Set(expandedAuditLogIds.value)
+  if (set.has(id))
+    set.delete(id)
+  else
+    set.add(id)
+  expandedAuditLogIds.value = set
+}
 
 const auditEventOptions = computed(() => {
   const events = new Set(auditLogs.value.map(log => log.event))
@@ -900,6 +914,11 @@ const auditTotalPages = computed(() => Math.ceil(auditLogsTotal.value / auditLog
 
 watch([auditEventFilter, auditUsernameFilter, auditIpFilter], () => {
   auditLogsPage.value = 1
+  expandedAuditLogIds.value.clear()
+})
+
+watch(auditLogsPage, () => {
+  expandedAuditLogIds.value.clear()
 })
 
 function openClearAuditLogsConfirm() {
@@ -930,6 +949,39 @@ async function confirmClearAuditLogs() {
   finally {
     clearAuditLogsLoading.value = false
   }
+}
+
+function isAuditEventSuccess(event: string): boolean {
+  return [
+    'login_success',
+    'account_added',
+    'account_started',
+    'card_created',
+    'cards_created_batch',
+    'backup_imported',
+    'ip_unblocked',
+    'user_renewed',
+    'user_renewed_public',
+    'user_renewed_by_admin',
+    'announcement_updated',
+  ].includes(event)
+}
+
+function isAuditEventDanger(event: string): boolean {
+  return [
+    'login_failed',
+    'account_deleted',
+    'account_stopped',
+    'card_deleted',
+    'cards_deleted_batch',
+    'ip_blacklisted',
+    'ip_blacklist_cleared',
+    'audit_logs_cleared',
+    'user_deleted',
+    'system_config_reset',
+    'cleanup_run',
+    'password_reset',
+  ].includes(event)
 }
 
 function getAuditEventLabel(event: string): string {
@@ -2497,22 +2549,22 @@ watch(activeTab, (tab) => {
 
             <div class="admin-log-area farm-card-enhanced overflow-hidden">
               <div class="overflow-x-auto">
-                <table class="admin-table min-w-full text-left text-sm">
+                <table class="admin-table min-w-[640px] w-full text-left text-sm">
                   <thead class="admin-table-head">
                     <tr>
-                      <th class="w-44 px-3 py-2.5 font-bold">
+                      <th class="w-44 whitespace-nowrap px-3 py-2.5 font-bold">
                         🕐 时间
                       </th>
-                      <th class="w-28 px-3 py-2.5 font-bold">
+                      <th class="w-28 whitespace-nowrap px-3 py-2.5 font-bold">
                         📋 事件
                       </th>
-                      <th class="w-24 px-3 py-2.5 font-bold">
+                      <th class="w-24 whitespace-nowrap px-3 py-2.5 font-bold">
                         👤 用户
                       </th>
-                      <th class="w-32 px-3 py-2.5 font-bold">
+                      <th class="w-40 whitespace-nowrap px-3 py-2.5 font-bold">
                         🌐 IP地址
                       </th>
-                      <th class="px-3 py-2.5 font-bold">
+                      <th class="w-24 whitespace-nowrap px-3 py-2.5 text-right font-bold">
                         📝 详情
                       </th>
                     </tr>
@@ -2528,28 +2580,51 @@ watch(activeTab, (tab) => {
                         暂无审计日志
                       </td>
                     </tr>
-                    <tr v-for="(log, index) in filteredAuditLogs" :key="log.id" class="admin-table-row" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
-                      <td class="whitespace-nowrap px-3 py-2.5 text-xs font-mono" style="color: var(--theme-text)">
-                        {{ formatLogTime(log.timestamp) }}
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-2.5">
-                        <span
-                          class="admin-badge inline-flex rounded-full px-2 py-0.5 text-xs font-bold"
-                          :class="log.event.includes('_deleted') || log.event.includes('_failed') || log.event === 'ip_blacklisted' ? 'badge-red' : 'badge-blue'"
-                        >
-                          {{ getAuditEventLabel(log.event) }}
-                        </span>
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-2.5 text-sm font-medium" style="color: var(--theme-text)">
-                        {{ log.username }}
-                      </td>
-                      <td class="whitespace-nowrap px-3 py-2.5">
-                        <code class="admin-code-bg rounded-lg px-2 py-0.5 text-xs font-mono">{{ log.ip }}</code>
-                      </td>
-                      <td class="max-w-xs whitespace-normal break-all px-3 py-2.5 text-xs leading-relaxed" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
-                        {{ formatAuditDetails(log.details) }}
-                      </td>
-                    </tr>
+                    <template v-for="(log, index) in filteredAuditLogs" :key="log.id">
+                      <tr class="admin-table-row" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
+                        <td class="whitespace-nowrap px-3 py-2.5 text-xs font-mono" style="color: var(--theme-text)">
+                          {{ formatLogTime(log.timestamp) }}
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-2.5">
+                          <span class="admin-status-wrap inline-flex items-center gap-1.5">
+                            <span
+                              class="admin-status-dot"
+                              :class="isAuditEventDanger(log.event) ? 'status-offline' : (isAuditEventSuccess(log.event) ? 'status-online' : '')"
+                              :style="!isAuditEventDanger(log.event) && !isAuditEventSuccess(log.event) ? { background: '#3b82f6', boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)' } : {}"
+                            />
+                            <span
+                              class="admin-badge inline-flex rounded-full px-2 py-0.5 text-xs font-bold"
+                              :class="isAuditEventDanger(log.event) ? 'badge-red' : (isAuditEventSuccess(log.event) ? 'badge-green' : 'badge-blue')"
+                            >
+                              {{ getAuditEventLabel(log.event) }}
+                            </span>
+                          </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-2.5 text-sm font-medium" style="color: var(--theme-text)">
+                          {{ log.username }}
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-2.5">
+                          <code class="admin-code-bg rounded-lg px-2 py-0.5 text-xs font-mono">{{ log.ip }}</code>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-2.5 text-right">
+                          <button
+                            v-if="log.details && Object.keys(log.details).length > 0"
+                            class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            @click="toggleAuditLogExpanded(log.id)"
+                          >
+                            {{ isAuditLogExpanded(log.id) ? '收起' : '查看' }}
+                          </button>
+                          <span v-else class="text-xs text-gray-400">-</span>
+                        </td>
+                      </tr>
+                      <tr v-if="isAuditLogExpanded(log.id)" class="admin-table-row" :class="index % 2 === 0 ? 'row-even' : 'row-odd'">
+                        <td colspan="5" class="px-3 pb-3 pt-0">
+                          <div class="rounded-xl bg-white/70 p-3 text-xs leading-relaxed dark:bg-black/20" style="color: color-mix(in srgb, var(--theme-text) 70%, transparent)">
+                            {{ formatAuditDetails(log.details) }}
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
                   </tbody>
                 </table>
               </div>
