@@ -2344,21 +2344,21 @@ watch(activeTab, (tab) => {
                     </td>
                     <td class="whitespace-nowrap px-3 py-2 text-right text-sm font-medium">
                       <button
-                        v-if="userStore.hasPermission('user:write')"
+                        v-if="userStore.hasPermission('user:write') && user.role !== 'admin'"
                         class="mr-3 text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                         @click="openEditModal(user)"
                       >
                         编辑
                       </button>
                       <button
-                        v-if="userStore.hasPermission('user:write') && user.card"
+                        v-if="userStore.hasPermission('user:write') && user.role !== 'admin' && user.card"
                         class="mr-3 text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-300"
                         @click="toggleUserStatus(user)"
                       >
                         {{ user.card.enabled === false ? '解封' : '封禁' }}
                       </button>
                       <button
-                        v-if="userStore.hasPermission('user:write') && user.username !== currentUsername"
+                        v-if="userStore.hasPermission('user:write') && user.role !== 'admin' && user.username !== currentUsername"
                         class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                         @click="deleteUser(user)"
                       >
@@ -2692,6 +2692,12 @@ watch(activeTab, (tab) => {
                       >
                         当前会话
                       </button>
+                      <span
+                        v-else-if="session.role === 'admin'"
+                        class="text-xs text-gray-400"
+                      >
+                        超级管理员
+                      </span>
                       <button
                         v-else-if="userStore.hasPermission('session:delete')"
                         class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"

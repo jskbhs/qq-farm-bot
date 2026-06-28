@@ -586,9 +586,9 @@ function mountAuthRoutes(app: Application, ctx: AdminContext): void {
                 return res.status(400).json({ ok: false, error: '不能强制下线当前会话' });
             }
 
-            // operator/viewer 不能踢 admin
-            if (session.user?.role === 'admin' && currentUser?.role !== 'admin') {
-                return res.status(403).json({ ok: false, error: '权限不足' });
+            // 不能强制下线超级管理员会话
+            if (session.user?.role === 'admin') {
+                return res.status(403).json({ ok: false, error: '不能强制下线超级管理员' });
             }
 
             tokenStore.revokeToken(token);
@@ -624,10 +624,10 @@ function mountAuthRoutes(app: Application, ctx: AdminContext): void {
                 return res.status(400).json({ ok: false, error: '不能强制下线自己的全部会话' });
             }
 
-            // operator/viewer 不能踢 admin
+            // 不能强制下线超级管理员
             const targetSessions = tokenStore.getActiveSessions().filter((s: any) => s.username === username);
-            if (targetSessions.some((s: any) => s.role === 'admin') && currentUser?.role !== 'admin') {
-                return res.status(403).json({ ok: false, error: '权限不足' });
+            if (targetSessions.some((s: any) => s.role === 'admin')) {
+                return res.status(403).json({ ok: false, error: '不能强制下线超级管理员' });
             }
 
             const count = tokenStore.revokeTokensByUser(username);

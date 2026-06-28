@@ -404,6 +404,14 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         try {
             const { username } = req.params;
             const updates = req.body || {};
+            const currentUser = (req as any).currentUser;
+
+            // 不能对其他超级管理员进行状态修改（如封禁/解禁）
+            const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
+            if (targetUser?.role === 'admin' && currentUser?.username !== username) {
+                return res.status(403).json({ ok: false, error: '不能修改其他超级管理员的信息' });
+            }
+
             const user = userStore.updateUser(username, updates);
             if (!user) {
                 return res.status(404).json({ ok: false, error: '用户不存在' });
@@ -425,6 +433,12 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
             // 非超级管理员不能修改用户角色为 admin，也不能把 admin 降级
             if (role !== undefined && currentUser?.role !== 'admin') {
                 return res.status(403).json({ ok: false, error: '只有超级管理员可以修改用户角色' });
+            }
+
+            // 超级管理员之间不能互相修改信息，防止被其他 admin 篡改/降级
+            const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
+            if (targetUser?.role === 'admin' && currentUser?.username !== username) {
+                return res.status(403).json({ ok: false, error: '不能修改其他超级管理员的信息' });
             }
 
             const result = userStore.editUser(username, {
@@ -474,7 +488,12 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
                 return res.status(400).json({ ok: false, error: '不能删除自己的账号' });
             }
 
-            // 管理员可以删除其他管理员
+            // 不能删除超级管理员
+            const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
+            if (targetUser?.role === 'admin') {
+                return res.status(403).json({ ok: false, error: '不能删除超级管理员' });
+            }
+
             const result = userStore.deleteUser(username, true);
             if (!result.ok) {
                 return res.status(400).json(result);
