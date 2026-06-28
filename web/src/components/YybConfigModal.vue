@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AnchorRect } from '@/composables/useModalAnchor'
+import { computeAnchorStyle } from '@/composables/useModalAnchor'
 import { computed, ref, watch } from 'vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -44,64 +45,17 @@ watch(() => props.show, (show) => {
 })
 
 const panelStyle = computed(() => {
-  const anchor = props.anchor
-  if (!anchor) {
-    return {
-      background: 'var(--theme-bg)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08)',
-      maxHeight: 'min(85dvh, 700px)',
-    }
-  }
-
-  const gap = 8
-  const preferredWidth = 384
-  const minHeight = 180
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-
-  const width = Math.min(preferredWidth, vw - gap * 2)
-  let left = anchor.left
-  if (left + width > vw - gap) {
-    left = Math.max(gap, vw - width - gap)
-  }
-
-  const spaceBelow = vh - anchor.bottom - gap
-  const spaceAbove = anchor.top - gap
-
-  let position: 'below' | 'above' = 'below'
-  let maxHeight: number
-
-  if (spaceBelow >= minHeight) {
-    position = 'below'
-    maxHeight = spaceBelow
-  }
-  else if (spaceAbove >= minHeight) {
-    position = 'above'
-    maxHeight = spaceAbove
-  }
-  else {
-    if (spaceBelow >= spaceAbove) {
-      position = 'below'
-      maxHeight = spaceBelow
-    }
-    else {
-      position = 'above'
-      maxHeight = spaceAbove
-    }
-  }
-
-  maxHeight = Math.max(minHeight, Math.min(maxHeight, Math.min(600, vh - gap * 2)))
-
-  return {
+  const base = {
     background: 'var(--theme-bg)',
     boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08)',
-    position: 'fixed' as const,
-    left: `${left}px`,
-    top: position === 'below' ? `${anchor.bottom + gap}px` : undefined,
-    bottom: position === 'above' ? `${vh - anchor.top + gap}px` : undefined,
-    width: `${width}px`,
-    maxWidth: `${width}px`,
-    maxHeight: `${maxHeight}px`,
+  }
+  const anchored = computeAnchorStyle(props.anchor)
+  if (anchored) {
+    return { ...base, ...anchored }
+  }
+  return {
+    ...base,
+    maxHeight: 'min(85dvh, 700px)',
   }
 })
 

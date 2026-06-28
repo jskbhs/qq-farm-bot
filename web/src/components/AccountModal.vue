@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AnchorRect } from '@/composables/useModalAnchor'
-import { reactive, ref, watch } from 'vue'
+import { computeAnchorStyle } from '@/composables/useModalAnchor'
+import { computed, reactive, ref, watch } from 'vue'
 import api from '@/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -10,6 +11,7 @@ import { useYybLoginStore } from '@/stores/yyb-login'
 const props = defineProps<{
   show: boolean
   editData?: any
+  anchor?: AnchorRect | null
 }>()
 
 const emit = defineEmits<{
@@ -143,6 +145,21 @@ function close() {
   emit('close')
 }
 
+const panelStyle = computed(() => {
+  const base = {
+    background: 'var(--theme-bg)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 0 0 1px rgba(0,0,0,0.08)',
+  }
+  const anchored = computeAnchorStyle(props.anchor)
+  if (anchored) {
+    return { ...base, ...anchored }
+  }
+  return {
+    ...base,
+    maxHeight: 'min(85dvh, 700px)',
+  }
+})
+
 watch(() => props.show, (newVal) => {
   if (newVal) {
     errorMessage.value = ''
@@ -161,112 +178,118 @@ watch(() => props.show, (newVal) => {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="max-h-[90vh] max-w-md w-full overflow-hidden rounded-2xl" :style="{ background: 'var(--theme-bg)', boxShadow: 'var(--theme-shadow-lg, 0 8px 32px rgba(0,0,0,0.16))' }">
-      <!-- Header -->
-      <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
-        <h3 class="text-lg font-semibold" style="color: var(--theme-primary, var(--theme-text))">
-          {{ editData ? '编辑账号' : '添加账号' }}
-        </h3>
-        <BaseButton variant="ghost" class="!p-1" @click="close">
-          <div class="i-carbon-close text-xl" :style="{ color: 'var(--theme-text)' }" />
-        </BaseButton>
-      </div>
-
-      <div class="max-h-[calc(90vh-80px)] overflow-y-auto p-4">
-        <!-- 错误信息 -->
-        <div v-if="errorMessage" class="mb-4 rounded-xl p-3 text-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444">
-          {{ errorMessage }}
+  <Teleport to="body">
+    <div v-if="show" class="fixed inset-0 z-50">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click.self="close" />
+      <div
+        class="z-10 flex flex-col rounded-2xl"
+        :class="[!anchor && 'absolute left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2']"
+        :style="panelStyle"
+        @click.stop
+      >
+        <div class="flex shrink-0 items-center justify-between p-4" style="border-bottom: 1px solid color-mix(in srgb, var(--theme-text) 10%, transparent)">
+          <h3 class="text-lg font-semibold" style="color: var(--theme-primary, var(--theme-text))">
+            {{ editData ? '编辑账号' : '添加账号' }}
+          </h3>
+          <BaseButton variant="ghost" class="!p-1" @click="close">
+            <div class="i-carbon-close text-xl" :style="{ color: 'var(--theme-text)' }" />
+          </BaseButton>
         </div>
 
-        <div class="space-y-4">
-          <BaseInput
-            v-model="form.name"
-            label="账号备注（可选）"
-            placeholder="留空默认账号"
-            class="farm-input"
-          />
-
-          <BaseTextarea
-            v-model="form.code"
-            label="Code"
-            placeholder="请输入登录 Code"
-            :rows="3"
-            class="farm-input"
-          />
-
-          <div v-if="!editData" class="flex gap-4">
-            <label class="flex cursor-pointer items-center gap-2">
-              <input
-                v-model="form.platform"
-                type="radio"
-                value="qq"
-                class="h-4 w-4"
-                :style="{ accentColor: 'var(--theme-primary)' }"
-              >
-              <span class="text-sm" :style="{ color: 'var(--theme-text)' }">QQ小程序</span>
-            </label>
-            <label class="flex cursor-pointer items-center gap-2">
-              <input
-                v-model="form.platform"
-                type="radio"
-                value="wx"
-                class="h-4 w-4"
-                :style="{ accentColor: 'var(--theme-primary)' }"
-              >
-              <span class="text-sm" :style="{ color: 'var(--theme-text)' }">微信小程序</span>
-            </label>
+        <div class="min-h-0 flex-1 overflow-y-auto p-4">
+          <div v-if="errorMessage" class="mb-4 rounded-xl p-3 text-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444">
+            {{ errorMessage }}
           </div>
 
-          <div v-if="!editData" class="border rounded-xl border-dashed p-3 dark:border-gray-600" style="border-color: color-mix(in srgb, var(--theme-text) 15%, transparent)">
-            <p class="mb-2 text-xs opacity-70" :style="{ color: 'var(--theme-text)' }">
-              其他登录方式
-            </p>
-            <div class="flex gap-2">
+          <div class="space-y-4">
+            <BaseInput
+              v-model="form.name"
+              label="账号备注（可选）"
+              placeholder="留空默认账号"
+              class="farm-input"
+            />
+
+            <BaseTextarea
+              v-model="form.code"
+              label="Code"
+              placeholder="请输入登录 Code"
+              :rows="3"
+              class="farm-input"
+            />
+
+            <div v-if="!editData" class="flex gap-4">
+              <label class="flex cursor-pointer items-center gap-2">
+                <input
+                  v-model="form.platform"
+                  type="radio"
+                  value="qq"
+                  class="h-4 w-4"
+                  :style="{ accentColor: 'var(--theme-primary)' }"
+                >
+                <span class="text-sm" :style="{ color: 'var(--theme-text)' }">QQ小程序</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input
+                  v-model="form.platform"
+                  type="radio"
+                  value="wx"
+                  class="h-4 w-4"
+                  :style="{ accentColor: 'var(--theme-primary)' }"
+                >
+                <span class="text-sm" :style="{ color: 'var(--theme-text)' }">微信小程序</span>
+              </label>
+            </div>
+
+            <div v-if="!editData" class="border rounded-xl border-dashed p-3 dark:border-gray-600" style="border-color: color-mix(in srgb, var(--theme-text) 15%, transparent)">
+              <p class="mb-2 text-xs opacity-70" :style="{ color: 'var(--theme-text)' }">
+                其他登录方式
+              </p>
+              <div class="flex gap-2">
+                <BaseButton
+                  variant="outline"
+                  size="sm"
+                  class="flex-1"
+                  @click="emit('yyb-login'); close()"
+                >
+                  应用宝一键登录
+                </BaseButton>
+                <BaseButton
+                  variant="ghost"
+                  size="sm"
+                  @click="openYybConfig"
+                >
+                  配置
+                </BaseButton>
+              </div>
+            </div>
+
+            <div v-if="editData" class="border rounded-xl border-dashed p-3 dark:border-gray-600" style="border-color: color-mix(in srgb, var(--theme-text) 15%, transparent)">
+              <p class="mb-2 text-xs opacity-70" :style="{ color: 'var(--theme-text)' }">
+                应用宝登录
+              </p>
               <BaseButton
                 variant="outline"
                 size="sm"
-                class="flex-1"
-                @click="emit('yyb-login'); close()"
+                class="w-full"
+                :loading="yybLoading"
+                :disabled="!editData.openid"
+                @click="reloginYyb"
               >
-                应用宝一键登录
-              </BaseButton>
-              <BaseButton
-                variant="ghost"
-                size="sm"
-                @click="openYybConfig"
-              >
-                配置
+                {{ editData.openid ? '应用宝一键登录' : '未绑定应用宝 OpenID' }}
               </BaseButton>
             </div>
-          </div>
 
-          <div v-if="editData" class="border rounded-xl border-dashed p-3 dark:border-gray-600" style="border-color: color-mix(in srgb, var(--theme-text) 15%, transparent)">
-            <p class="mb-2 text-xs opacity-70" :style="{ color: 'var(--theme-text)' }">
-              应用宝登录
-            </p>
-            <BaseButton
-              variant="outline"
-              size="sm"
-              class="w-full"
-              :loading="yybLoading"
-              :disabled="!editData.openid"
-              @click="reloginYyb"
-            >
-              {{ editData.openid ? '应用宝一键登录' : '未绑定应用宝 OpenID' }}
-            </BaseButton>
-          </div>
-
-          <div class="flex justify-end gap-2 pt-4">
-            <BaseButton variant="outline" class="cartoon-btn" @click="close">
-              取消
-            </BaseButton>
-            <BaseButton variant="primary" class="cartoon-btn" :loading="loading" @click="submitManual">
-              {{ editData ? '保存' : '添加' }}
-            </BaseButton>
+            <div class="flex justify-end gap-2 pt-4">
+              <BaseButton variant="outline" class="cartoon-btn" @click="close">
+                取消
+              </BaseButton>
+              <BaseButton variant="primary" class="cartoon-btn" :loading="loading" @click="submitManual">
+                {{ editData ? '保存' : '添加' }}
+              </BaseButton>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>

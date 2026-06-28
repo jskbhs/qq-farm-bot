@@ -29,6 +29,8 @@ const yybStore = useYybLoginStore()
 const showYybConfig = ref(false)
 const yybConfigAnchor = ref<AnchorRect | null>(null)
 const showYybLogin = ref(false)
+const yybLoginAnchor = ref<AnchorRect | null>(null)
+const accountModalAnchor = ref<AnchorRect | null>(null)
 
 function openYybConfig(event: MouseEvent | TouchEvent) {
   const target = event.currentTarget as HTMLElement | null
@@ -42,6 +44,32 @@ function closeYybConfig() {
   showYybConfig.value = false
   yybConfigAnchor.value = null
   yybStore.loadConfig()
+}
+
+function openYybLogin(event: MouseEvent | TouchEvent) {
+  const target = event.currentTarget as HTMLElement | null
+  if (target) {
+    yybLoginAnchor.value = target.getBoundingClientRect() as AnchorRect
+  }
+  showYybLogin.value = true
+}
+
+function closeYybLogin() {
+  showYybLogin.value = false
+  yybLoginAnchor.value = null
+}
+
+function openAddModalFromEvent(event: MouseEvent | TouchEvent) {
+  const target = event.currentTarget as HTMLElement | null
+  if (target) {
+    accountModalAnchor.value = target.getBoundingClientRect() as AnchorRect
+  }
+  openAddModal()
+}
+
+function closeAccountModal() {
+  showModal.value = false
+  accountModalAnchor.value = null
 }
 
 const activeTab = ref<'account' | 'strategy' | 'automation' | 'user'>(
@@ -927,7 +955,7 @@ async function handleTestOffline() {
                 variant="secondary"
                 size="sm"
                 :disabled="yybStore.config.openIds.length === 0"
-                @click="showYybLogin = true"
+                @click="openYybLogin"
               >
                 <span class="mr-2">🔑</span>
                 一键登录
@@ -949,7 +977,7 @@ async function handleTestOffline() {
                 size="sm"
                 :disabled="isAddAccountDisabled"
                 :title="addAccountDisabledReason"
-                @click="openAddModal"
+                @click="openAddModalFromEvent"
               >
                 <span class="mr-2">➕</span>
                 添加账号
@@ -974,7 +1002,7 @@ async function handleTestOffline() {
               size="sm"
               :disabled="isAddAccountDisabled"
               :title="addAccountDisabledReason"
-              @click="openAddModal"
+              @click="openAddModalFromEvent"
             >
               立即添加
             </BaseButton>
@@ -1078,9 +1106,10 @@ async function handleTestOffline() {
           <AccountModal
             :show="showModal"
             :edit-data="editingAccount"
-            @close="showModal = false"
+            :anchor="accountModalAnchor"
+            @close="closeAccountModal"
             @saved="handleSaved"
-            @yyb-login="showModal = false; showYybLogin = true"
+            @yyb-login="showModal = false; yybLoginAnchor = null; showYybLogin = true"
             @yyb-config="(anchor) => { showModal = false; yybConfigAnchor = anchor; showYybConfig = true }"
           />
 
@@ -1116,7 +1145,8 @@ async function handleTestOffline() {
 
           <YybLoginModal
             :show="showYybLogin"
-            @close="showYybLogin = false"
+            :anchor="yybLoginAnchor"
+            @close="closeYybLogin"
             @saved="accountStore.fetchAccounts()"
           />
         </div>
