@@ -320,7 +320,18 @@ async function copySelectedCards() {
 function formatDate(timestamp: number | null) {
   if (!timestamp)
     return '-'
-  return new Date(timestamp).toLocaleString('zh-CN')
+  return formatDateTimeCN(timestamp)
+}
+
+function formatDateTimeCN(timestamp: number): string {
+  const date = new Date(timestamp)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 function formatDateForFile(timestamp: number) {
@@ -768,8 +779,7 @@ async function confirmClearLogs() {
 }
 
 function formatLogTime(timestamp: number): string {
-  const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN')
+  return formatDateTimeCN(timestamp)
 }
 
 function getEventLabel(event: string): string {
@@ -886,6 +896,7 @@ function getAuditEventLabel(event: string): string {
     login_success: '登录成功',
     login_failed: '登录失败',
     password_changed: '修改密码',
+    password_reset: '重置密码',
     account_added: '添加账号',
     account_updated: '更新账号',
     account_deleted: '删除账号',
@@ -896,6 +907,8 @@ function getAuditEventLabel(event: string): string {
     user_updated: '更新用户',
     user_edited: '编辑用户',
     user_deleted: '删除用户',
+    user_renewed: '用户续费',
+    user_renewed_public: '用户自助续费',
     user_renewed_by_admin: '管理员续费用户',
     system_config_updated: '更新系统配置',
     system_config_reset: '重置系统配置',
@@ -911,6 +924,8 @@ function getAuditEventLabel(event: string): string {
     ip_unblocked: '解封IP',
     ip_blacklist_cleared: '清空IP黑名单',
     audit_logs_cleared: '清空审计日志',
+    cleanup_run: '执行系统清理',
+    theme_changed: '切换主题',
   }
   return labels[event] || event
 }
@@ -1761,10 +1776,10 @@ watch(activeTab, (tab) => {
                       {{ card.usedBy || '-' }}
                     </td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
-                      {{ card.createdAt ? new Date(card.createdAt).toLocaleString() : '-' }}
+                      {{ formatDate(card.createdAt || null) }}
                     </td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm" style="color: color-mix(in srgb, var(--theme-text) 60%, transparent)">
-                      {{ card.usedAt ? new Date(card.usedAt).toLocaleString() : '-' }}
+                      {{ formatDate(card.usedAt || null) }}
                     </td>
                     <td class="whitespace-nowrap px-4 py-3 text-right text-sm">
                       <div class="flex items-center justify-end gap-1.5">
