@@ -406,10 +406,10 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
             const updates = req.body || {};
             const currentUser = (req as any).currentUser;
 
-            // 不能对其他超级管理员进行状态修改（如封禁/解禁）
+            // 保护最高管理员账号（用户名 admin）不被其他管理员封禁/解禁
             const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
-            if (targetUser?.role === 'admin' && currentUser?.username !== username) {
-                return res.status(403).json({ ok: false, error: '不能修改其他超级管理员的信息' });
+            if (targetUser?.username === 'admin' && currentUser?.username !== 'admin') {
+                return res.status(403).json({ ok: false, error: '不能修改最高管理员的信息' });
             }
 
             const user = userStore.updateUser(username, updates);
@@ -435,10 +435,10 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
                 return res.status(403).json({ ok: false, error: '只有超级管理员可以修改用户角色' });
             }
 
-            // 超级管理员之间不能互相修改信息，防止被其他 admin 篡改/降级
+            // 保护最高管理员账号（用户名 admin）不被其他管理员修改/降级
             const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
-            if (targetUser?.role === 'admin' && currentUser?.username !== username) {
-                return res.status(403).json({ ok: false, error: '不能修改其他超级管理员的信息' });
+            if (targetUser?.username === 'admin' && currentUser?.username !== 'admin') {
+                return res.status(403).json({ ok: false, error: '不能修改最高管理员的信息' });
             }
 
             const result = userStore.editUser(username, {
@@ -488,10 +488,9 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
                 return res.status(400).json({ ok: false, error: '不能删除自己的账号' });
             }
 
-            // 不能删除超级管理员
-            const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
-            if (targetUser?.role === 'admin') {
-                return res.status(403).json({ ok: false, error: '不能删除超级管理员' });
+            // 不能删除最高管理员账号（用户名 admin）
+            if (username === 'admin') {
+                return res.status(403).json({ ok: false, error: '不能删除最高管理员' });
             }
 
             const result = userStore.deleteUser(username, true);
