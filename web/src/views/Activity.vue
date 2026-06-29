@@ -53,6 +53,32 @@ function parseExtra(extra: any): any {
   catch { return null }
 }
 
+// 把 result 状态码转成中文提示
+function resultText(result: number | string): string {
+  const r = Number(result)
+  const map: Record<number, string> = {
+    0: '操作成功',
+    1: '活动未开始或已结束',
+    2: '今日次数已用完',
+    3: '货币（点券/金币/活动币）不足',
+    4: '参数错误',
+    5: '奖励已领取',
+    6: '背包已满',
+    7: '需要消耗点券或付费次数不足',
+  }
+  return map[r] || `服务器返回状态码 ${r}`
+}
+
+// 错误信息简单中文化
+function friendlyError(msg: string): string {
+  if (!msg) return '操作失败'
+  if (msg.includes('code=1034016')) return '抽奖次数已用完'
+  if (msg.includes('code=1034005')) return '活动参数错误，请检查兑换参数或商品编号'
+  if (msg.includes('code=1000020')) return '请求参数错误'
+  if (msg.includes('Internal Server Error')) return '服务器内部错误，请刷新页面或查看日志'
+  return msg
+}
+
 // 获取 accountId
 function getAccountId(): string {
   return localStorage.getItem('current_account_id') || ''
@@ -105,33 +131,22 @@ async function fetchSolarTerms() {
 }
 
 // 抽奖按钮点击
-function onDrawClick(activityId: number, operateType: number) {
-  const count = operateType === 9 ? 4 : 1
+function onDrawClick(activityId: number, count: number) {
   // drawInfo 未加载或免费次数还有，直接抽
-  if (!drawInfo.value || freeRemain.value > 0) {
-    doOperate(activityId, operateType, count)
+  if (!drawInfo.value || freeRemain.value >= count) {
+    doOperate(activityId, 7, count)
     return
   }
   // 免费用完，需要付费确认
   pendingActivityId.value = activityId
-  pendingDrawType.value = operateType
+  pendingDrawType.value = count
   showPaidConfirm.value = true
 }
 
 // 确认付费抽奖
 function confirmPaidDraw() {
   showPaidConfirm.value = false
-  const count = paidDrawCount(pendingDrawType.value)
-  doOperate(pendingActivityId.value, pendingDrawType.value, count)
-}
-
-// 付费次数
-function paidDrawCount(operateType: number): number {
-  if (operateType === 7)
-    return 1
-  if (operateType === 9)
-    return Math.min(drawInfo.value?.paidRemaining || 0, 4)
-  return 1
+  doOperate(pendingActivityId.value, 7, pendingDrawType.value)
 }
 
 // 活动操作
@@ -159,7 +174,7 @@ async function doOperate(activityId: number, operateType: number, param: number 
   }
   catch (e: any) {
     const errData = e.response?.data
-    toast.error(errData?.error || e.message || '网络错误')
+    toast.error(friendlyError(errData?.error || e.message || '网络错误'))
   }
   operateLoading.value = false
 }
@@ -266,17 +281,17 @@ onMounted(() => {
             <div v-if="totalRemaining > 0" class="card-actions">
               <button
                 class="btn btn-primary"
-                :disabled="operateLoading"
-                @click="onDrawClick(act.activityId, 7)"
+                :disabled="operateLoading || (freeRemain + paidRemain) < 1"
+                @click="onDrawClick(act.activityId, 1)"
               >
-                {{ operateLoading ? '抽奖中...' : '单抽' }}
+                {{ operateLoading ? '抽奖中...' : (freeRemain > 0 ? '免费单抽' : '30点券单抽') }}
               </button>
               <button
                 class="btn btn-accent"
-                :disabled="operateLoading"
-                @click="onDrawClick(act.activityId, 9)"
+                :disabled="operateLoading || (freeRemain + paidRemain) < 4"
+                @click="onDrawClick(act.activityId, 4)"
               >
-                {{ operateLoading ? '抽奖中...' : '连抽' }}
+                {{ operateLoading ? '抽奖中...' : (freeRemain >= 4 ? '免费连抽' : '120点券连抽') }}
               </button>
             </div>
             <div v-else class="draw-empty">
@@ -291,9 +306,9 @@ onMounted(() => {
                     确认抽奖
                   </div>
                   <div class="modal-body">
-                    当前免费次数已用完，将消耗付费次数。
+                    当前免费次数已用完，将消耗点券。
                     <br><br>
-                    本次抽奖将花费 <b>{{ paidDrawCount(pendingDrawType) * 30 }}</b> 点券
+                    本次抽奖将花费 <b>{{ pendingDrawType * 30 }}</b> 点券
                   </div>
                   <div class="modal-actions">
                     <button class="btn btn-secondary" @click="showPaidConfirm = false">
@@ -337,11 +352,14 @@ onMounted(() => {
               抽奖结果
             </div>
             <div class="result-data">
+              <div class="result-status" :class="`status-${operateResult.result}`">
+                {{ resultText(operateResult.result) }}
+              </div>
               <template v-if="operateResult.rewards?.length">
                 获得: {{ operateResult.rewards.map((p: any) => (p.seedName || `#${p.seedId}`) + (p.count > 1 ? ` x${p.count}` : '')).join(', ') }}
               </template>
-              <template v-else>
-                操作成功
+              <template v-else-if="operateResult.result === 0">
+                未获得奖励
               </template>
             </div>
           </div>
@@ -792,5 +810,24 @@ onMounted(() => {
 .result-data {
   font-size: 14px;
   color: #15803d;
+}
+
+.result-status {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.result-status.status-0 {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.result-status:not(.status-0) {
+  color: #b91c1c;
+  background: #fee2e2;
 }
 </style>
