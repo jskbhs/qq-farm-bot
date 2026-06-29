@@ -174,6 +174,22 @@ async function fetchActivityGroup() {
   loading.value = false
 }
 
+// 轻量刷新抽奖次数 (不修改 loading 状态，避免抽奖中闪烁)
+async function refreshDrawInfo() {
+  try {
+    const { data } = await api.get(`/api/activity/group/${groupId.value}`, {
+      headers: { 'x-account-id': getAccountId() },
+    })
+    if (data.ok) {
+      const lottery = (data.data || []).find((a: any) => a.type === 8)
+      if (lottery?.drawInfo) {
+        drawInfo.value = lottery.drawInfo
+      }
+    }
+  }
+  catch {}
+}
+
 // 获取赛季信息
 async function fetchSeasonInfo() {
   try {
@@ -234,8 +250,9 @@ async function onDrawClick(activityId: number, count: number) {
   // 免费次数足够 → 直接抽 (param=0 让服务器自动用免费次数)
   if (!drawInfo.value || freeRemain.value >= count) {
     if (count > 1) {
-      // 连抽：逐次单抽
+      // 连抽：逐次单抽，实时检查剩余次数
       for (let i = 0; i < count; i++) {
+        if (freeRemain.value < 1) break
         await doOperate(activityId, OPERATE_DRAW, 0)
         if (operateResult.value?.result !== 0) break
       }
@@ -415,6 +432,11 @@ async function doOperate(activityId: number, operateType: number, param: number 
       // 更新抽奖信息
       if (data.data?.drawInfo) {
         drawInfo.value = data.data.drawInfo
+      }
+      // 抽奖操作后强制刷新最新的免费/付费剩余次数
+      // (失败时服务器返回的 drawInfo 可能为空，需要重新拉取活动组)
+      if (operateType === OPERATE_DRAW) {
+        await refreshDrawInfo()
       }
       // 刷新货币
       await fetchCurrency()
@@ -705,7 +727,7 @@ onMounted(() => {
             </div>
             <div class="result-data">
               <div class="result-status" :class="`status-${operateResult.result}`">
-                {{ resultText(operateResult.result) }}
+                {{ resultText(operateResult.result) }} <span class="result-code">(code: {{ operateResult.result }})</span>
               </div>
               <div v-if="operateResult.rewards?.length" class="result-rewards">
                 <div v-for="(p, idx) in operateResult.rewards" :key="idx" class="result-reward-item">
@@ -1892,6 +1914,13 @@ onMounted(() => {
 .result-status.status-0 {
   color: #15803d;
   background: #dcfce7;
+}
+
+.result-code {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 4px;
 }
 
 .result-status:not(.status-0) {
