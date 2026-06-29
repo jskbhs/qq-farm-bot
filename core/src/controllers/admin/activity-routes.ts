@@ -69,6 +69,25 @@ function mountActivityRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
+    // 自动抽奖（后端自动探测正确参数组合，无需前端传 operateType/param）
+    app.post('/api/activity/draw-auto', async (req: Request, res: Response) => {
+        const id = getAccId(ctx, req);
+        if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });
+        if (!checkAccountAccess(ctx, req as any, id)) {
+            return res.status(403).json({ ok: false, error: 'Forbidden' });
+        }
+        try {
+            const { activityId, count = 1 } = req.body || {};
+            if (!activityId) {
+                return res.status(400).json({ ok: false, error: '缺少 activityId' });
+            }
+            const data = await ctx.provider.drawAuto(id, Number(activityId), Number(count) || 1);
+            res.json({ ok: true, data });
+        } catch (e: any) {
+            handleApiError(res, e);
+        }
+    });
+
     // 获取节令活动
     app.get('/api/activity/solar-terms', async (req: Request, res: Response) => {
         const id = getAccId(ctx, req);

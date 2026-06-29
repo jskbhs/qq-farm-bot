@@ -783,6 +783,11 @@ async function handleApiCall(msg: any): Promise<void> {
                 result = await _op(args[0], args[1], args[2]);
                 break;
             }
+            case 'drawAuto': {
+                const { drawAuto: _drawAuto } = require('../services/activity');
+                result = await _drawAuto(args[0], args[1]);
+                break;
+            }
             case 'getSolarTerms': {
                 const { sendMsgAsync } = require('../utils/network');
                 const { types } = require('../utils/proto');

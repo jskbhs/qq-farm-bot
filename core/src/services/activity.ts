@@ -68,6 +68,73 @@ async function operateActivity(activityId: number, operateType: number = 0, para
     return { ...reply.toJSON(), drawInfo, rewards };
 }
 
+// 缓存：activityId -> 成功的 (operateType, param) 组合
+const drawParamCache: Map<number, { operateType: number, param: number }> = new Map();
+
+/**
+ * 自动抽奖：遍历参数组合找到能成功的，缓存结果
+ * 优先用缓存的参数，缓存失效则重新探测
+ */
+async function drawAuto(activityId: number, count: number = 1): Promise<any> {
+    const tryCount = count > 1 ? 4 : 1;
+    let lastResult: any = null;
+
+    // 候选参数组合：按经验排序，op=7 param=0 最可能成功
+    const candidates: { operateType: number, param: number }[] = [
+        { operateType: 7, param: 0 },
+        { operateType: 7, param: 1 },
+        { operateType: 7, param: 2 },
+        { operateType: 9, param: 0 },
+        { operateType: 9, param: 1 },
+        { operateType: 9, param: 4 },
+        { operateType: 0, param: 0 },
+        { operateType: 1, param: 0 },
+        { operateType: 10, param: 0 },
+    ];
+
+    // 1) 优先用缓存的参数尝试
+    const cached = drawParamCache.get(activityId);
+    if (cached) {
+        candidates.unshift(cached);
+    }
+
+    // 2) 逐个尝试，找到 result=0 且有 rewards 的组合
+    for (let i = 0; i < tryCount; i++) {
+        let success = false;
+        for (const c of candidates) {
+            try {
+                const reply = await operateActivity(activityId, c.operateType, c.param);
+                const result = Number(reply.result) || 0;
+                lastResult = reply;
+                const rewards = reply.rewards || [];
+                // result=0 且有奖励 = 成功
+                if (result === 0 && rewards.length > 0) {
+                    drawParamCache.set(activityId, { operateType: c.operateType, param: c.param });
+                    console.log(`[Activity] drawAuto 成功: activityId=${activityId} op=${c.operateType} param=${c.param}`);
+                    success = true;
+                    break;
+                }
+                // result=0 但无奖励也可能是成功（已抽过/空奖励池）
+                if (result === 0) {
+                    drawParamCache.set(activityId, { operateType: c.operateType, param: c.param });
+                    console.log(`[Activity] drawAuto 部分成功(无奖励): activityId=${activityId} op=${c.operateType} param=${c.param}`);
+                    success = true;
+                    break;
+                }
+                // 其他 result 值继续尝试下一个组合
+                console.log(`[Activity] drawAuto 尝试失败: op=${c.operateType} param=${c.param} result=${result}, 换下一个组合`);
+            } catch (e: any) {
+                console.warn(`[Activity] drawAuto 异常: op=${c.operateType} param=${c.param} err=${e.message}`);
+            }
+        }
+        if (!success) {
+            console.warn(`[Activity] drawAuto 所有组合均失败，最后结果:`, lastResult);
+            break;
+        }
+    }
+    return lastResult;
+}
+
 /**
  * 解析 varint
  */
@@ -444,6 +511,7 @@ module.exports = {
     getActivityList,
     getActivityGroup,
     operateActivity,
+    drawAuto,
     getActivitiesInGroup,
     claimActivityReward,
     autoClaimActivityRewards,
