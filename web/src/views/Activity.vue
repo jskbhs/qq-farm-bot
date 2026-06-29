@@ -44,6 +44,9 @@ const operateLoading = ref(false)
 // 抽奖信息
 const drawInfo = ref<any>(null)
 
+// 图片加载失败记录 (key 为 itemId/seedId)
+const imageErrors = ref<Record<string | number, boolean>>({})
+
 // 付费确认弹窗
 const showPaidConfirm = ref(false)
 const pendingDrawType = ref(0)
@@ -490,6 +493,27 @@ function formatReward(reward: any): string {
   return `${name} x${reward.count || 1}`
 }
 
+// 把任意 id (number/Long/string) 归一化为 number
+function toItemId(val: any): number {
+  return toLongNumber(val)
+}
+
+// 根据物品/种子 id 取图片地址
+function getItemImage(val: any): string {
+  const id = toItemId(val)
+  if (id <= 0) return ''
+  return `/game-config/seed_images_named/${id}.png`
+}
+
+// 物品名称：优先用后端返回的 item_name / itemName，否则用 seedName，否则用 #id
+function getItemName(item: any, idVal?: any): string {
+  if (!item) return ''
+  if (item.item_name || item.itemName) return item.item_name || item.itemName
+  if (item.seedName) return item.seedName
+  const id = toItemId(idVal ?? item.item_id ?? item.itemId ?? item.seedId)
+  return id > 0 ? `物品#${id}` : '未知物品'
+}
+
 // 把 protobuf long 对象 {low, high} 转成数字
 function toLongNumber(val: any): number {
   if (val === null || val === undefined) return 0
@@ -645,6 +669,16 @@ onMounted(() => {
                   class="prize-item"
                   :class="`quality-${prize.quality}`"
                 >
+                  <div class="prize-thumb">
+                    <img
+                      v-if="!imageErrors[prize.seedId]"
+                      :src="getItemImage(prize.seedId)"
+                      :alt="prize.seedName"
+                      loading="lazy"
+                      @error="imageErrors[prize.seedId] = true"
+                    >
+                    <span v-else class="thumb-placeholder">🌱</span>
+                  </div>
                   <div class="prize-name">
                     {{ prize.seedName || `种子#${prize.seedId}` }}
                   </div>
@@ -666,9 +700,20 @@ onMounted(() => {
               <div class="result-status" :class="`status-${operateResult.result}`">
                 {{ resultText(operateResult.result) }}
               </div>
-              <template v-if="operateResult.rewards?.length">
-                获得: {{ operateResult.rewards.map((p: any) => (p.seedName || `#${p.seedId}`) + (p.count > 1 ? ` x${p.count}` : '')).join(', ') }}
-              </template>
+              <div v-if="operateResult.rewards?.length" class="result-rewards">
+                <div v-for="(p, idx) in operateResult.rewards" :key="idx" class="result-reward-item">
+                  <img
+                    v-if="!imageErrors[p.seedId]"
+                    :src="getItemImage(p.seedId)"
+                    :alt="p.seedName"
+                    loading="lazy"
+                    @error="imageErrors[p.seedId] = true"
+                  >
+                  <span class="result-reward-name">
+                    {{ p.seedName || `#${p.seedId}` }}<template v-if="p.count > 1"> x{{ p.count }}</template>
+                  </span>
+                </div>
+              </div>
               <template v-else-if="operateResult.result === 0">
                 未获得奖励
               </template>
@@ -729,10 +774,24 @@ onMounted(() => {
                   </div>
                   <div class="bp-level-rewards">
                     <div v-if="lvl.freeReward" class="reward-tag free">
-                      免费: {{ formatReward(lvl.freeReward) }}
+                      <img
+                        v-if="!imageErrors[lvl.freeReward.itemId]"
+                        :src="getItemImage(lvl.freeReward.itemId)"
+                        class="reward-thumb"
+                        loading="lazy"
+                        @error="imageErrors[lvl.freeReward.itemId] = true"
+                      >
+                      <span>免费: {{ formatReward(lvl.freeReward) }}</span>
                     </div>
                     <div v-for="(pr, idx) in lvl.premiumRewards" :key="idx" class="reward-tag premium">
-                      付费: {{ formatReward(pr) }}
+                      <img
+                        v-if="!imageErrors[pr.itemId]"
+                        :src="getItemImage(pr.itemId)"
+                        class="reward-thumb"
+                        loading="lazy"
+                        @error="imageErrors[pr.itemId] = true"
+                      >
+                      <span>付费: {{ formatReward(pr) }}</span>
                     </div>
                   </div>
                   <div v-if="lvl.level <= battlePassLevel" class="bp-claim-actions">
@@ -797,9 +856,19 @@ onMounted(() => {
                 class="goods-item"
                 :class="{ locked: !g.unlocked }"
               >
+                <div class="goods-thumb">
+                  <img
+                    v-if="g.item_image && !imageErrors[toItemId(g.item_id)]"
+                    :src="g.item_image"
+                    :alt="g.item_name"
+                    loading="lazy"
+                    @error="imageErrors[toItemId(g.item_id)] = true"
+                  >
+                  <span v-else class="thumb-placeholder">🎁</span>
+                </div>
                 <div class="goods-info">
                   <div class="goods-name">
-                    物品 #{{ g.item_id }}
+                    {{ getItemName(g) }}
                     <span v-if="!g.unlocked" class="locked-tag">🔒 未解锁</span>
                   </div>
                   <div class="goods-price">
@@ -851,7 +920,14 @@ onMounted(() => {
                 节令奖励
               </div>
               <div v-for="(r, i) in term.rewards" :key="i" class="reward-item">
-                物品 #{{ toLongNumber(r.item_id) }} x{{ toLongNumber(r.count) }}
+                <img
+                  v-if="!imageErrors[toLongNumber(r.item_id)]"
+                  :src="getItemImage(r.item_id)"
+                  class="reward-thumb"
+                  loading="lazy"
+                  @error="imageErrors[toLongNumber(r.item_id)] = true"
+                >
+                <span>物品 #{{ toLongNumber(r.item_id) }} x{{ toLongNumber(r.count) }}</span>
               </div>
             </div>
             <div v-if="term.status === 1" class="card-actions">
@@ -1333,6 +1409,9 @@ onMounted(() => {
 }
 
 .reward-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 6px;
@@ -1376,6 +1455,9 @@ onMounted(() => {
 }
 
 .reward-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 12px;
   background: var(--bg-secondary, #f9fafb);
   border-radius: 6px;
@@ -1506,6 +1588,11 @@ onMounted(() => {
 }
 
 .prize-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
   padding: 10px 12px;
   border-radius: 8px;
   background: var(--bg-secondary, #f9fafb);
@@ -1544,6 +1631,73 @@ onMounted(() => {
 .prize-prob {
   font-weight: 600;
   color: var(--accent-color, #059669);
+}
+
+/* ===== 物品图片缩略图 ===== */
+.prize-thumb,
+.goods-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prize-thumb {
+  width: 56px;
+  height: 56px;
+}
+
+.goods-thumb {
+  width: 48px;
+  height: 48px;
+  margin-right: 10px;
+}
+
+.prize-thumb img,
+.goods-thumb img,
+.reward-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.reward-thumb {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.thumb-placeholder {
+  font-size: 24px;
+  opacity: 0.6;
+}
+
+/* 抽奖结果奖励列表 */
+.result-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.result-reward-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+}
+
+.result-reward-item img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.result-reward-name {
+  font-size: 13px;
+  color: var(--text-primary, #111827);
 }
 
 .currency-card {

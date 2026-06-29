@@ -740,13 +740,23 @@ async function handleApiCall(msg: any): Promise<void> {
             case 'getShopInfo': {
                 const { sendMsgAsync } = require('../utils/network');
                 const { types } = require('../utils/proto');
-                const { toLong } = require('../utils/utils');
+                const { toLong, toNum } = require('../utils/utils');
+                const { getItemById, getItemImageById, getPlantNameBySeedId } = require('../config/gameConfig');
                 const body = types.ShopInfoRequest.encode(types.ShopInfoRequest.create({
                     shop_id: toLong(Number(args[0]) || 0),
                 })).finish();
                 const { body: replyBody } = await sendMsgAsync('gamepb.shoppb.ShopService', 'ShopInfo', body);
                 const reply = types.ShopInfoReply.decode(replyBody);
-                result = reply.toJSON();
+                const shopResult: any = reply.toJSON();
+                // 为每个商品附加 item_name / item_image
+                const goodsList = Array.isArray(shopResult.goods_list) ? shopResult.goods_list : [];
+                for (const g of goodsList) {
+                    const itemId = toNum(g.item_id);
+                    const itemInfo = getItemById(itemId);
+                    g.item_name = itemInfo?.name || getPlantNameBySeedId(itemId);
+                    g.item_image = getItemImageById(itemId);
+                }
+                result = shopResult;
                 break;
             }
             case 'buyGoods': {
