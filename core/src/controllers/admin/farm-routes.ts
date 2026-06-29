@@ -11,6 +11,7 @@ export {};
  */
 
 const { getLevelExpProgress } = require('../../config/gameConfig');
+const { getResourcePath } = require('../../config/runtime-paths');
 const store = require('../../models/store');
 
 const {
@@ -467,7 +468,7 @@ function mountFarmRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // API: 种子录入
-    const seedImageDir = path.join(__dirname, '../../gameConfig/seed_images_named');
+    const seedImageDir = getResourcePath('gameConfig/seed_images_named');
     const seedImageUpload = multer({
         storage: multer.memoryStorage(),
         limits: { fileSize: 2 * 1024 * 1024 },
@@ -529,7 +530,7 @@ function mountFarmRoutes(app: Application, ctx: AdminContext): void {
             // plantId = 1000000 + seedId (如 seedId=21135 → plantId=1021135)
             // fruitId = 40000 + seedId (如 seedId=21135 → fruitId=41135)
             // seedItemId = seedId 本身
-            const configDir = path.join(__dirname, '../../gameConfig');
+            const configDir = getResourcePath('gameConfig');
             const plantPath = path.join(configDir, 'Plant.json');
             const itemInfoPath = path.join(configDir, 'ItemInfo.json');
 
@@ -675,8 +676,8 @@ function mountFarmRoutes(app: Application, ctx: AdminContext): void {
 
     // ============ 配置管理 API ============
 
-    const configImageDir = path.join(__dirname, '../../gameConfig/seed_images_named');
-    const configDir = path.join(__dirname, '../../gameConfig');
+    const configImageDir = getResourcePath('gameConfig/seed_images_named');
+    const configDir = getResourcePath('gameConfig');
     const configImageUpload = multer({
         storage: multer.memoryStorage(),
         limits: { fileSize: 2 * 1024 * 1024 },
