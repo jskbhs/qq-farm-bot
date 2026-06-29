@@ -11,7 +11,6 @@ const loading = ref(false)
 // 操作类型常量 (与后端 services/activity.ts 保持一致)
 const OPERATE_CLAIM = 1          // 领取奖励
 const OPERATE_DRAW = 7           // 单抽
-const OPERATE_DRAW_MULTI = 9     // 十连抽
 const OPERATE_VIEW = 10          // 查看/进入活动
 
 // 活动类型常量
@@ -43,7 +42,6 @@ const drawInfo = ref<any>(null)
 // 付费确认弹窗
 const showPaidConfirm = ref(false)
 const pendingDrawType = ref(0)
-const pendingDrawMulti = ref(false)
 const pendingActivityId = ref(0)
 
 // 品质标签
@@ -195,17 +193,15 @@ async function fetchSolarTerms() {
 }
 
 // 抽奖按钮点击
-function onDrawClick(activityId: number, count: number, isMulti = false) {
+function onDrawClick(activityId: number, count: number) {
   // drawInfo 未加载或免费次数还有，直接抽
   if (!drawInfo.value || freeRemain.value >= count) {
-    // 免费抽奖: 十连用 OPERATE_DRAW_MULTI(9)，单抽/连抽用 OPERATE_DRAW(7)
-    doOperate(activityId, isMulti ? OPERATE_DRAW_MULTI : OPERATE_DRAW, count)
+    doOperate(activityId, OPERATE_DRAW, count)
     return
   }
   // 免费用完，需要付费确认
   pendingActivityId.value = activityId
   pendingDrawType.value = count
-  pendingDrawMulti.value = isMulti
   showPaidConfirm.value = true
 }
 
@@ -213,13 +209,8 @@ function onDrawClick(activityId: number, count: number, isMulti = false) {
 async function confirmPaidDraw() {
   showPaidConfirm.value = false
   const count = pendingDrawType.value
-  const isMulti = pendingDrawMulti.value
-  // 付费十连抽用 OPERATE_DRAW_MULTI(9)；付费单抽用 OPERATE_DRAW(7)
-  if (isMulti) {
-    await doOperate(pendingActivityId.value, OPERATE_DRAW_MULTI, count)
-  }
-  else if (count > 1) {
-    // 付费连抽 (非十连)，逐次单抽
+  // 付费时服务器可能不接受 param=4，改为逐次单抽
+  if (count > 1) {
     for (let i = 0; i < count; i++) {
       await doOperate(pendingActivityId.value, OPERATE_DRAW, 1)
       if (operateResult.value?.result !== 0) break
@@ -258,6 +249,31 @@ async function runActivity(activityId: number, operateType: number, param: numbe
       else {
         toast.info(resultText(data.data?.result))
       }
+    }
+    else {
+      toast.error(data.error || `${label}失败`)
+    }
+  }
+  catch (e: any) {
+    const errData = e.response?.data
+    toast.error(friendlyError(errData?.error || e.message || '网络错误'))
+  }
+  operateLoading.value = false
+}
+
+// 领取战令等级奖励 (调用独立的 SeasonService.ClaimBattlePassRewards 接口)
+async function claimBattlePass(levelIds: number[], label = '领取战令奖励') {
+  if (!levelIds || levelIds.length === 0)
+    return
+  operateLoading.value = true
+  try {
+    const { data } = await api.post('/api/activity/battlepass/claim', { levelIds }, {
+      headers: { 'x-account-id': getAccountId() },
+    })
+    if (data.ok) {
+      toast.success(`${label}成功`)
+      // 刷新赛季信息
+      await fetchSeasonInfo()
     }
     else {
       toast.error(data.error || `${label}失败`)
@@ -510,13 +526,6 @@ onMounted(() => {
               >
                 {{ operateLoading ? '抽奖中...' : (freeRemain >= 4 ? '免费连抽' : '120点券连抽') }}
               </button>
-              <button
-                class="btn btn-gold"
-                :disabled="operateLoading || (freeRemain + paidRemain) < 10"
-                @click="onDrawClick(act.activityId, 10, true)"
-              >
-                {{ operateLoading ? '抽奖中...' : (freeRemain >= 10 ? '免费十连' : '300点券十连') }}
-              </button>
             </div>
             <div v-else class="draw-empty">
               今日次数已用完
@@ -533,7 +542,6 @@ onMounted(() => {
                     当前免费次数已用完，将消耗点券。
                     <br><br>
                     本次抽奖将花费 <b>{{ pendingDrawType * 30 }}</b> 点券
-                    <span v-if="pendingDrawMulti">（十连抽）</span>
                   </div>
                   <div class="modal-actions">
                     <button class="btn btn-secondary" @click="showPaidConfirm = false">
@@ -645,7 +653,7 @@ onMounted(() => {
                       v-if="lvl.freeReward"
                       class="btn btn-primary btn-sm"
                       :disabled="operateLoading"
-                      @click="runActivity(seasonInfo?.battlePass?.seasonId || 0, OPERATE_CLAIM, lvl.level, `领取Lv${lvl.level}免费奖励`)"
+                      @click="claimBattlePass([lvl.level], `领取Lv${lvl.level}免费奖励`)"
                     >
                       领取免费
                     </button>
@@ -653,7 +661,7 @@ onMounted(() => {
                       v-if="lvl.premiumRewards?.length && seasonInfo?.isPremium"
                       class="btn btn-gold btn-sm"
                       :disabled="operateLoading"
-                      @click="runActivity(seasonInfo?.battlePass?.seasonId || 0, OPERATE_CLAIM, lvl.level, `领取Lv${lvl.level}付费奖励`)"
+                      @click="claimBattlePass([lvl.level], `领取Lv${lvl.level}付费奖励`)"
                     >
                       领取付费
                     </button>
@@ -881,14 +889,6 @@ onMounted(() => {
                 @click="runActivity(act.activityId, OPERATE_DRAW, 1, `单抽-${act.name}`)"
               >
                 单抽
-              </button>
-              <button
-                v-if="act.type === ACTIVITY_TYPE_LOTTERY"
-                class="btn btn-gold btn-sm"
-                :disabled="operateLoading"
-                @click="runActivity(act.activityId, OPERATE_DRAW_MULTI, 10, `十连-${act.name}`)"
-              >
-                十连
               </button>
             </div>
           </div>

@@ -145,6 +145,7 @@ function createDataProvider(options: DataProviderOptions) {
         operateActivity: (accountRef: string, activityId: number, operateType: number, param: number) => callWorkerApi(resolveAccountRefId(accountRef), 'operateActivity', activityId, operateType, param),
         getSolarTerms: (accountRef: string) => callWorkerApi(resolveAccountRefId(accountRef), 'getSolarTerms'),
         getSeasonInfo: (accountRef: string) => callWorkerApi(resolveAccountRefId(accountRef), 'getSeasonInfo'),
+        claimBattlePassRewards: (accountRef: string, levelIds: number[]) => callWorkerApi(resolveAccountRefId(accountRef), 'claimBattlePassRewards', levelIds),
         doAnalytics: (accountRef: string, sortBy: string) => callWorkerApi(resolveAccountRefId(accountRef), 'getAnalytics', sortBy),
         buyFertilizer: (accountRef: string, type: string, count: number) => callWorkerApi(resolveAccountRefId(accountRef), 'buyFertilizer', type, count),
         checkAndBuyFertilizer: (accountRef: string, options: any) => callWorkerApi(resolveAccountRefId(accountRef), 'checkAndBuyFertilizer', options),

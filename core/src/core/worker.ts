@@ -743,7 +743,9 @@ async function handleApiCall(msg: any): Promise<void> {
                 const { types } = require('../utils/proto');
                 const body = types.GetSolarTermsRequest.encode(types.GetSolarTermsRequest.create({})).finish();
                 const { body: replyBody } = await sendMsgAsync('gamepb.solartermspb.SolarTermsService', 'GetSolarTerms', body);
-                result = types.GetSolarTermsReply.decode(replyBody);
+                const reply = types.GetSolarTermsReply.decode(replyBody);
+                // 转为普通对象，避免 IPC 传输时丢失嵌套 message 字段
+                result = reply.toJSON();
                 break;
             }
             case 'getSeasonInfo': {
@@ -752,9 +754,13 @@ async function handleApiCall(msg: any): Promise<void> {
                 const { parseBattlePass } = require('../services/activity');
                 const body = types.GetSeasonInfoRequest.encode(types.GetSeasonInfoRequest.create({})).finish();
                 const { body: replyBody } = await sendMsgAsync('gamepb.seasonpb.SeasonService', 'GetSeasonInfo', body);
-                const info = types.GetSeasonInfoReply.decode(replyBody);
-                if (info && info.battle_pass && Buffer.isBuffer(info.battle_pass)) {
-                    const bp = parseBattlePass(info.battle_pass);
+                const reply = types.GetSeasonInfoReply.decode(replyBody);
+                // battle_pass 嵌套在 SeasonInfo 中 (field 10)，GetSeasonInfoReply 只含 season_info (field 1)
+                const seasonInfo = reply?.season_info || reply;
+                // 转为普通对象，避免 IPC 传输时丢失嵌套 message 字段
+                const info: any = seasonInfo.toJSON ? seasonInfo.toJSON() : { ...seasonInfo };
+                if (seasonInfo.battle_pass && Buffer.isBuffer(seasonInfo.battle_pass)) {
+                    const bp = parseBattlePass(seasonInfo.battle_pass);
                     if (bp) {
                         info.level = bp.currentLevel;
                         info.score = bp.currentScore;
@@ -763,10 +769,23 @@ async function handleApiCall(msg: any): Promise<void> {
                         info.isPremium = bp.isPremium;
                         info.battlePass = bp;
                     }
-                    info.battlePassRaw = info.battle_pass.toString('hex');
+                    info.battlePassRaw = seasonInfo.battle_pass.toString('hex');
                     info.battle_pass = undefined;
                 }
                 result = info;
+                break;
+            }
+            case 'claimBattlePassRewards': {
+                const { sendMsgAsync } = require('../utils/network');
+                const { types } = require('../utils/proto');
+                const { toLong } = require('../utils/utils');
+                const levelIds: number[] = Array.isArray(args[0]) ? args[0] : [args[0]];
+                const reqBody = types.ClaimBattlePassRewardsRequest.encode(types.ClaimBattlePassRewardsRequest.create({
+                    level_ids: levelIds.map((l: number) => toLong(Number(l) || 0)),
+                })).finish();
+                const { body: replyBody } = await sendMsgAsync('gamepb.seasonpb.SeasonService', 'ClaimBattlePassRewards', reqBody);
+                const reply = types.ClaimBattlePassRewardsReply.decode(replyBody);
+                result = reply.toJSON();
                 break;
             }
             default:

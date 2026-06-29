@@ -98,6 +98,25 @@ function mountActivityRoutes(app: Application, ctx: AdminContext): void {
             handleApiError(res, e);
         }
     });
+
+    // 领取战令等级奖励
+    app.post('/api/activity/battlepass/claim', async (req: Request, res: Response) => {
+        const id = getAccId(ctx, req);
+        if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });
+        if (!checkAccountAccess(ctx, req as any, id)) {
+            return res.status(403).json({ ok: false, error: 'Forbidden' });
+        }
+        const levelIds = (req.body || {}).levelIds;
+        if (!Array.isArray(levelIds) || levelIds.length === 0) {
+            return res.status(400).json({ ok: false, error: '缺少有效的 levelIds' });
+        }
+        try {
+            const data = await ctx.provider.claimBattlePassRewards(id, levelIds);
+            res.json({ ok: true, data });
+        } catch (e: any) {
+            handleApiError(res, e);
+        }
+    });
 }
 
 module.exports = { mountActivityRoutes };
