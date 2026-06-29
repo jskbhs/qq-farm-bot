@@ -169,39 +169,34 @@ async function drawAuto(activityId: number, count: number = 1): Promise<any> {
                 const reply = await operateActivity(activityId, c.operateType, c.param);
                 lastResult = reply;
                 const rewards = reply.rewards || [];
-                // 判断成功的标准: rewards 非空 (服务器真的发放了奖励)
-                if (rewards.length > 0) {
+                const di = reply.drawInfo || {};
+                // 成功标准 (按可靠性排序):
+                // 1. rewards 非空 = 确实抽到奖励
+                // 2. drawInfo 含 freeRemaining = 免费抽接口正常 (服务器返回了当前免费次数状态)
+                //    注意: 失败时(如免费次数用完+点券不足) drawInfo 里没有 freeRemaining 字段
+                const hasRewards = rewards.length > 0;
+                const hasFreeState = di.freeRemaining !== undefined;
+                if (hasRewards || hasFreeState) {
                     drawParamCache.set(activityId, { operateType: c.operateType, param: c.param });
                     drewSomething = true;
                     successCount++;
-                    console.log(`[Activity] drawAuto 抽中: op=${c.operateType} param=${c.param} rewards=${rewards.length}`);
+                    console.log(`[Activity] drawAuto 成功: op=${c.operateType} param=${c.param} rewards=${rewards.length} freeRemaining=${di.freeRemaining}`);
                     break;
                 }
-                // rewards 空 - 进一步判断:
-                // 如果 drawInfo 含 freeRemaining 或 paidRemaining, 说明抽奖接口通,但本次没产出
-                // (这种情况也可能是正常的,比如活动已抽完/今日次数已用完)
-                const di = reply.drawInfo || {};
-                if (di.freeRemaining !== undefined || di.paidRemaining !== undefined) {
-                    drawParamCache.set(activityId, { operateType: c.operateType, param: c.param });
-                    console.log(`[Activity] drawAuto 接口通但无奖励 (次数可能用完): op=${c.operateType} param=${c.param} drawInfo=`, di);
-                    drewSomething = true; // 接口正常,只是没产出
-                    break;
-                }
-                console.log(`[Activity] drawAuto 接口拒绝: op=${c.operateType} param=${c.param}, drawInfo 无剩余次数字段`);
+                console.log(`[Activity] drawAuto 失败(无freeRemaining): op=${c.operateType} param=${c.param} drawInfo=`, di);
             } catch (e: any) {
                 console.warn(`[Activity] drawAuto 异常: op=${c.operateType} param=${c.param} err=${e.message}`);
             }
         }
-        // 没产出奖励且接口拒绝 → 停止连抽
+        // 接口拒绝 → 停止连抽
         if (!drewSomething) {
             console.warn(`[Activity] drawAuto 第${i + 1}次抽奖失败,停止连抽`);
             break;
         }
     }
 
-    // 标准化返回: result 用 successCount>0 判断
+    // 标准化返回: successCount>0 即视为本次抽奖成功
     if (lastResult) {
-        // 把真正的成功状态写到 result 字段,让前端能正常显示
         lastResult.result = successCount > 0 ? 0 : 7; // 0=成功, 7=失败
         lastResult._successCount = successCount;
         lastResult._triedCount = tryCount;
