@@ -52,6 +52,62 @@ const showPaidConfirm = ref(false)
 const pendingDrawType = ref(0)
 const pendingActivityId = ref(0)
 
+// 调试抽奖结果
+const debugResult = ref<any[] | null>(null)
+
+// 调试抽奖：依次尝试多种 operate_type 和 param 组合
+// 找出哪个组合能让服务器返回 result=0
+async function debugDraw(activityId: number) {
+  debugResult.value = []
+  operateLoading.value = true
+  // 候选组合：先 view(10) 激活，再尝试各种 draw 参数
+  const candidates: { opType: number, param: number, desc: string }[] = [
+    { opType: 7, param: 0, desc: 'op=7 param=0' },
+    { opType: 7, param: 1, desc: 'op=7 param=1' },
+    { opType: 7, param: 2, desc: 'op=7 param=2' },
+    { opType: 9, param: 0, desc: 'op=9 param=0' },
+    { opType: 9, param: 1, desc: 'op=9 param=1' },
+    { opType: 9, param: 4, desc: 'op=9 param=4' },
+    { opType: 1, param: 0, desc: 'op=1 param=0' },
+    { opType: 10, param: 0, desc: 'op=10 param=0 (view)' },
+    { opType: 0, param: 0, desc: 'op=0 param=0' },
+  ]
+  for (const c of candidates) {
+    try {
+      const { data } = await api.post('/api/activity/operate', {
+        activityId,
+        operateType: c.opType,
+        param: c.param,
+      }, {
+        headers: { 'x-account-id': getAccountId() },
+      })
+      const result = data?.data?.result
+      const rewards = data?.data?.rewards || []
+      debugResult.value!.push({
+        opType: c.opType, param: c.param, desc: c.desc,
+        result: result ?? 'N/A',
+        rewardCount: rewards.length,
+        ok: data?.ok,
+      })
+      // 如果某个组合成功了，刷新信息后停止
+      if (result === 0 && rewards.length > 0) {
+        await refreshDrawInfo()
+        await fetchCurrency()
+        break
+      }
+      // 每次尝试之间稍微等待
+      await new Promise(r => setTimeout(r, 300))
+    } catch (e: any) {
+      debugResult.value!.push({
+        opType: c.opType, param: c.param, desc: c.desc,
+        result: 'ERR', error: e.response?.data?.error || e.message,
+      })
+    }
+  }
+  operateLoading.value = false
+  toast.info(`调试完成，共测试 ${debugResult.value?.length || 0} 种参数组合`)
+}
+
 // 品质标签
 function qualityLabel(q: number): string {
   const map: Record<number, string> = { 1: '普通', 2: '稀有', 3: '史诗', 4: '传说' }
@@ -657,9 +713,31 @@ onMounted(() => {
               >
                 {{ operateLoading ? '抽奖中...' : (freeRemain >= 4 ? '免费连抽' : '120点券连抽') }}
               </button>
+              <button
+                class="btn btn-debug"
+                :disabled="operateLoading"
+                @click="debugDraw(act.activityId)"
+              >
+                🔍 调试抽奖参数
+              </button>
             </div>
             <div v-else class="draw-empty">
               今日次数已用完
+            </div>
+
+            <!-- 调试结果 -->
+            <div v-if="debugResult" class="debug-result-box">
+              <div class="debug-title">
+                调试结果 (activityId={{ act.activityId }})
+              </div>
+              <div v-for="(r, i) in debugResult" :key="i" class="debug-row">
+                <span class="debug-op">op={{ r.opType }}, param={{ r.param }}</span>
+                →
+                <span :class="r.result === 0 ? 'debug-ok' : 'debug-fail'">result={{ r.result }} ({{ resultText(r.result) }})</span>
+              </div>
+              <div class="debug-hint">
+                把上面的 result 数值告诉我，就能精确定位是哪个参数能成功
+              </div>
             </div>
 
             <!-- 付费确认弹窗 -->
@@ -1545,6 +1623,65 @@ onMounted(() => {
   font-size: 14px;
   color: var(--text-secondary, #9ca3af);
   padding: 10px 0;
+}
+
+.btn-debug {
+  background: #6b7280;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-debug:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.debug-result-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.debug-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #92400e;
+}
+
+.debug-row {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dashed #fcd34d;
+  font-family: monospace;
+}
+
+.debug-op {
+  color: #374151;
+  font-weight: 600;
+  min-width: 140px;
+}
+
+.debug-ok {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.debug-fail {
+  color: #b91c1c;
+}
+
+.debug-hint {
+  margin-top: 8px;
+  color: #92400e;
+  font-size: 11px;
+  font-style: italic;
 }
 
 .modal-overlay {
