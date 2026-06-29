@@ -22,14 +22,13 @@ export const menuRoutes: MenuItem[] = [
     icon: '🌾',
     component: () => import('@/views/Personal.vue'),
   },
-  // 暂时隐藏活动菜单，抽奖功能还有 bug 待修复
-  // {
-  //   path: 'activity',
-  //   name: 'activity',
-  //   label: '活动',
-  //   icon: '🎉',
-  //   component: () => import('@/views/Activity.vue'),
-  // },
+  {
+    path: 'activity',
+    name: 'activity',
+    label: '活动',
+    icon: '🎉',
+    component: () => import('@/views/Activity.vue'),
+  },
   {
     path: 'friends',
     name: 'friends',
