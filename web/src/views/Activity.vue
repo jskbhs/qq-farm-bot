@@ -230,14 +230,21 @@ async function fetchShopData() {
 }
 
 // 抽奖按钮点击
-function onDrawClick(activityId: number, count: number) {
-  // drawInfo 未加载或免费次数还有，直接抽
+async function onDrawClick(activityId: number, count: number) {
+  // 免费次数足够 → 直接抽 (param=0 让服务器自动用免费次数)
   if (!drawInfo.value || freeRemain.value >= count) {
-    // 免费抽: param=count (1=单抽, 4=连抽)
-    doOperate(activityId, OPERATE_DRAW, count)
+    if (count > 1) {
+      // 连抽：逐次单抽
+      for (let i = 0; i < count; i++) {
+        await doOperate(activityId, OPERATE_DRAW, 0)
+        if (operateResult.value?.result !== 0) break
+      }
+    } else {
+      await doOperate(activityId, OPERATE_DRAW, 0)
+    }
     return
   }
-  // 免费用完，需要付费确认
+  // 免费用完，弹出付费确认
   pendingActivityId.value = activityId
   pendingDrawType.value = count
   showPaidConfirm.value = true
