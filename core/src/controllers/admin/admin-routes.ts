@@ -21,6 +21,7 @@ const cleanup = require('../../services/cleanup');
 const {
     createAuthRequired,
     adminRequired,
+    requirePermission,
     getClientIp,
 } = require('./middleware');
 
@@ -65,7 +66,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 设置公告（仅管理员）
-    app.post('/api/admin/announcement', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/announcement', authRequired, requirePermission('announcement:*'), (req: Request, res: Response) => {
         try {
             const { content, showOnce } = req.body || {};
             const announcement = store.setAnnouncement(content, showOnce);
@@ -79,7 +80,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     // ============ 设备预设 API（仅管理员） ============
 
     // 获取设备预设列表
-    app.get('/api/admin/device-presets', authRequired, adminRequired, (_req: Request, res: Response) => {
+    app.get('/api/admin/device-presets', authRequired, requirePermission('system:*'), (_req: Request, res: Response) => {
         try {
             const presets = getDevicePresets();
             res.json({ ok: true, data: presets });
@@ -91,7 +92,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     // ============ 系统配置 API（仅管理员） ============
 
     // 获取系统配置
-    app.get('/api/admin/system-config', authRequired, adminRequired, (_req: Request, res: Response) => {
+    app.get('/api/admin/system-config', authRequired, requirePermission('system:*'), (_req: Request, res: Response) => {
         try {
             const savedConfig = store.getSystemConfig();
             const defaultConfig = getDefaultSystemConfig();
@@ -110,7 +111,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 保存系统配置
-    app.post('/api/admin/system-config', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/system-config', authRequired, requirePermission('system:*'), (req: Request, res: Response) => {
         try {
             const { serverUrl, clientVersion, platform, os, deviceInfo } = req.body || {};
             const newConfig = { serverUrl, clientVersion, platform, os, deviceInfo };
@@ -125,7 +126,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 重置系统配置为默认值
-    app.post('/api/admin/system-config/reset', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/system-config/reset', authRequired, requirePermission('system:*'), (req: Request, res: Response) => {
         try {
             const defaultConfig = getDefaultSystemConfig();
             store.setSystemConfig(defaultConfig);
@@ -141,7 +142,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     // ============ 卡密管理 API（仅管理员） ============
 
     // 获取所有卡密
-    app.get('/api/admin/cards', authRequired, adminRequired, (_req: Request, res: Response) => {
+    app.get('/api/admin/cards', authRequired, requirePermission('card:*'), (_req: Request, res: Response) => {
         try {
             const cards = userStore.getAllCards();
             res.json({ ok: true, data: cards });
@@ -151,7 +152,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 创建卡密
-    app.post('/api/admin/cards', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/cards', authRequired, requirePermission('card:*'), (req: Request, res: Response) => {
         try {
             const { description, days, count, type } = req.body || {};
             if (!description || days === undefined) {
@@ -176,7 +177,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 批量删除卡密（必须放在 /:code 路由之前，避免被当作 code 参数）
-    app.post('/api/admin/cards/batch-delete', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/cards/batch-delete', authRequired, requirePermission('card:*'), (req: Request, res: Response) => {
         try {
             const { codes } = req.body || {};
             if (!Array.isArray(codes) || codes.length === 0) {
@@ -191,7 +192,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 更新卡密
-    app.post('/api/admin/cards/:code', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/cards/:code', authRequired, requirePermission('card:*'), (req: Request, res: Response) => {
         try {
             const { code } = req.params;
             const updates = req.body || {};
@@ -207,7 +208,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 删除卡密
-    app.delete('/api/admin/cards/:code', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.delete('/api/admin/cards/:code', authRequired, requirePermission('card:*'), (req: Request, res: Response) => {
         try {
             const { code } = req.params;
             const ok = userStore.deleteCard(code);
@@ -232,8 +233,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    // 设置卡密领取功能状态（仅管理员）
-    app.post('/api/admin/card-claim/status', authRequired, adminRequired, (req: Request, res: Response) => {
+    // 设置卡密领取功能状态
+    app.post('/api/admin/card-claim/status', authRequired, requirePermission('card:*'), (req: Request, res: Response) => {
         try {
             const { enabled } = req.body;
             const status = userStore.setCardClaimStatus(enabled);
@@ -274,8 +275,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    // 获取卡密领取记录（仅管理员）
-    app.get('/api/admin/card-claim/records', authRequired, adminRequired, (_req: Request, res: Response) => {
+    // 获取卡密领取记录
+    app.get('/api/admin/card-claim/records', authRequired, requirePermission('card:*'), (_req: Request, res: Response) => {
         try {
             const records = userStore.getCardClaimRecords();
             res.json({ ok: true, data: records });
@@ -284,8 +285,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    // ============ 仪表盘 API（仅管理员） ============
-    app.get('/api/admin/dashboard', authRequired, adminRequired, (_req: Request, res: Response) => {
+    // ============ 仪表盘 API ============
+    app.get('/api/admin/dashboard', authRequired, requirePermission('dashboard:read'), (_req: Request, res: Response) => {
         try {
             const allUsers = userStore.getAllUsers();
             const onlineUsers = allUsers.filter((u: any) => tokenStore.isUserOnline(u.username)).length;
@@ -319,7 +320,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
 
     // ============ 账号全局管理 API（仅管理员） ============
     // 获取所有账号
-    app.get('/api/admin/accounts', authRequired, adminRequired, (_req: Request, res: Response) => {
+    app.get('/api/admin/accounts', authRequired, requirePermission('account:read'), (_req: Request, res: Response) => {
         try {
             const accountData = ctx.provider && typeof ctx.provider.getAccounts === 'function'
                 ? ctx.provider.getAccounts()
@@ -331,7 +332,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 启动指定账号
-    app.post('/api/admin/accounts/:id/start', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/accounts/:id/start', authRequired, requirePermission('account:control'), (req: Request, res: Response) => {
         try {
             const { id } = req.params;
             if (ctx.provider && typeof ctx.provider.startAccount === 'function') {
@@ -347,7 +348,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 停止指定账号
-    app.post('/api/admin/accounts/:id/stop', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/accounts/:id/stop', authRequired, requirePermission('account:control'), (req: Request, res: Response) => {
         try {
             const { id } = req.params;
             if (ctx.provider && typeof ctx.provider.stopAccount === 'function') {
@@ -363,7 +364,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 删除指定账号
-    app.delete('/api/admin/accounts/:id', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.delete('/api/admin/accounts/:id', authRequired, requirePermission('account:control'), (req: Request, res: Response) => {
         try {
             const { id } = req.params;
             store.deleteAccount(id);
@@ -376,7 +377,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
 
     // ============ 用户管理 API（仅管理员） ============
     // 获取所有用户
-    app.get('/api/admin/users', authRequired, adminRequired, (_req: Request, res: Response) => {
+    app.get('/api/admin/users', authRequired, requirePermission('user:read'), (_req: Request, res: Response) => {
         try {
             const users = userStore.getAllUsers().map((u: any) => ({
                 ...u,
@@ -399,11 +400,19 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    // 更新用户
-    app.post('/api/admin/users/:username', authRequired, adminRequired, (req: Request, res: Response) => {
+    // 更新用户（状态/过期时间）
+    app.post('/api/admin/users/:username', authRequired, requirePermission('user:write'), (req: Request, res: Response) => {
         try {
             const { username } = req.params;
             const updates = req.body || {};
+            const currentUser = (req as any).currentUser;
+
+            // 保护最高管理员账号（用户名 admin）不被其他管理员修改
+            const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
+            if (targetUser?.username === 'admin' && currentUser?.username !== 'admin') {
+                return res.status(403).json({ ok: false, error: '不能修改最高管理员的信息' });
+            }
+
             const user = userStore.updateUser(username, updates);
             if (!user) {
                 return res.status(404).json({ ok: false, error: '用户不存在' });
@@ -416,15 +425,28 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 编辑用户（管理员编辑用户信息）
-    app.post('/api/admin/users/:username/edit', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/users/:username/edit', authRequired, requirePermission('user:write'), (req: Request, res: Response) => {
         try {
             const { username } = req.params;
-            const { newUsername, password, accountLimit, expiresAt, isPermanent } = req.body || {};
+            const { newUsername, password, accountLimit, role, expiresAt, isPermanent } = req.body || {};
+            const currentUser = (req as any).currentUser;
+
+            // 非超级管理员不能修改用户角色为 admin，也不能把 admin 降级
+            if (role !== undefined && currentUser?.role !== 'admin') {
+                return res.status(403).json({ ok: false, error: '只有超级管理员可以修改用户角色' });
+            }
+
+            // 保护最高管理员账号（用户名 admin）不被其他管理员修改/降级
+            const targetUser = userStore.getAllUsers().find((u: any) => u.username === username);
+            if (targetUser?.username === 'admin' && currentUser?.username !== 'admin') {
+                return res.status(403).json({ ok: false, error: '不能修改最高管理员的信息' });
+            }
 
             const result = userStore.editUser(username, {
                 newUsername,
                 password,
                 accountLimit,
+                role,
                 expiresAt,
                 isPermanent
             });
@@ -437,9 +459,11 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
             for (const [token, user] of ctx.tokenUserMap.entries()) {
                 if (user.username === username || user.username === newUsername) {
                     user.username = result.user.username;
+                    user.role = result.user.role;
                     user.card = result.user.card;
                     user.accountLimit = result.user.accountLimit;
                     ctx.tokenUserMap.set(token, user);
+                    tokenStore.updateTokenUser(token, user);
                 }
             }
 
@@ -448,6 +472,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
                 newUsername: result.user.username,
                 changedPassword: !!password,
                 accountLimit,
+                role,
             });
 
             res.json({ ok: true, data: result.user });
@@ -457,7 +482,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 删除用户
-    app.delete('/api/admin/users/:username', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.delete('/api/admin/users/:username', authRequired, requirePermission('user:write'), (req: Request, res: Response) => {
         try {
             const { username } = req.params;
             const currentUser = (req as any).currentUser;
@@ -467,7 +492,11 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
                 return res.status(400).json({ ok: false, error: '不能删除自己的账号' });
             }
 
-            // 管理员可以删除其他管理员
+            // 不能删除最高管理员账号（用户名 admin）
+            if (username === 'admin') {
+                return res.status(403).json({ ok: false, error: '不能删除最高管理员' });
+            }
+
             const result = userStore.deleteUser(username, true);
             if (!result.ok) {
                 return res.status(400).json(result);
@@ -494,7 +523,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // 管理员为用户续费
-    app.post('/api/admin/users/:username/renew', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/users/:username/renew', authRequired, requirePermission('user:write'), (req: Request, res: Response) => {
         try {
             const { username } = req.params;
             const { cardCode } = req.body || {};
@@ -530,7 +559,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // ============ 操作日志/审计 API（仅管理员） ============
-    app.get('/api/admin/audit-logs', authRequired, adminRequired, (req: Request, res: Response) => {
+    // 获取审计日志
+    app.get('/api/admin/audit-logs', authRequired, requirePermission('log:read'), (req: Request, res: Response) => {
         try {
             const limit = Math.min(Math.max(Number.parseInt(req.query.limit as string) || 100, 1), 500);
             const offset = Math.max(Number.parseInt(req.query.offset as string) || 0, 0);
@@ -541,7 +571,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    app.delete('/api/admin/audit-logs', authRequired, adminRequired, (req: Request, res: Response) => {
+    // 清空审计日志
+    app.delete('/api/admin/audit-logs', authRequired, requirePermission('system:*'), (req: Request, res: Response) => {
         try {
             auditLog.clearLogs();
             audit('audit_logs_cleared', req);
@@ -563,7 +594,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         'login-attempts.json',
     ];
 
-    app.get('/api/admin/backup/export', authRequired, adminRequired, (_req: Request, res: Response) => {
+    // 导出数据备份
+    app.get('/api/admin/backup/export', authRequired, requirePermission('system:*'), (_req: Request, res: Response) => {
         try {
             ensureDataDir();
             const files: Record<string, string> = {};
@@ -588,7 +620,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    app.post('/api/admin/backup/import', authRequired, adminRequired, (req: Request, res: Response) => {
+    // 导入数据备份
+    app.post('/api/admin/backup/import', authRequired, requirePermission('system:*'), (req: Request, res: Response) => {
         try {
             const { files } = req.body || {};
             if (!files || typeof files !== 'object') {
@@ -612,7 +645,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // ============ 黑名单/IP 限制 API（仅管理员） ============
-    app.get('/api/admin/ip-blacklist', authRequired, adminRequired, (_req: Request, res: Response) => {
+    app.get('/api/admin/ip-blacklist', authRequired, requirePermission('blacklist:*'), (_req: Request, res: Response) => {
         try {
             const list = ipBlacklist.getList();
             res.json({ ok: true, data: list });
@@ -621,7 +654,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    app.post('/api/admin/ip-blacklist', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.post('/api/admin/ip-blacklist', authRequired, requirePermission('blacklist:*'), (req: Request, res: Response) => {
         try {
             const { ip, reason, durationMinutes } = req.body || {};
             if (!ip) {
@@ -638,7 +671,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    app.delete('/api/admin/ip-blacklist', authRequired, adminRequired, (req: Request, res: Response) => {
+    // 从黑名单移除指定 IP
+    app.delete('/api/admin/ip-blacklist', authRequired, requirePermission('blacklist:*'), (req: Request, res: Response) => {
         try {
             const { ip } = req.body || {};
             if (!ip) {
@@ -652,7 +686,7 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
-    app.delete('/api/admin/ip-blacklist/all', authRequired, adminRequired, (req: Request, res: Response) => {
+    app.delete('/api/admin/ip-blacklist/all', authRequired, requirePermission('blacklist:*'), (req: Request, res: Response) => {
         try {
             ipBlacklist.clear();
             audit('ip_blacklist_cleared', req);
@@ -663,7 +697,8 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
     });
 
     // ============ 清理工具 API（仅管理员） ============
-    app.post('/api/admin/cleanup', authRequired, adminRequired, (req: Request, res: Response) => {
+    // 系统清理工具
+    app.post('/api/admin/cleanup', authRequired, requirePermission('system:*'), (req: Request, res: Response) => {
         try {
             const { logRetentionDays } = req.body || {};
             const days = Number.isFinite(Number(logRetentionDays)) && Number(logRetentionDays) > 0

@@ -12,8 +12,8 @@ import { useUserStore } from '@/stores/user'
 const userStore = useUserStore()
 const toast = useToastStore()
 
-const activeTab = ref<'dashboard' | 'card' | 'user' | 'account' | 'log' | 'system'>(
-  (localStorage.getItem('admin-active-tab') as 'dashboard' | 'card' | 'user' | 'account' | 'log' | 'system') || 'dashboard',
+const activeTab = ref<'dashboard' | 'card' | 'user' | 'account' | 'session' | 'log' | 'system'>(
+  (localStorage.getItem('admin-active-tab') as 'dashboard' | 'card' | 'user' | 'account' | 'session' | 'log' | 'system') || 'dashboard',
 )
 
 watch(activeTab, (newTab) => {
@@ -25,6 +25,7 @@ const tabs = [
   { key: 'card', label: '卡密', icon: 'i-carbon-ticket' },
   { key: 'user', label: '用户', icon: 'i-carbon-user-admin' },
   { key: 'account', label: '账号', icon: 'i-carbon-server' },
+  { key: 'session', label: '会话', icon: 'i-carbon-network' },
   { key: 'log', label: '日志', icon: 'i-carbon-document' },
   { key: 'system', label: '系统', icon: 'i-carbon-settings' },
 ] as const
@@ -814,6 +815,129 @@ function parseBrowser(userAgent: string): string {
   return '其他'
 }
 
+// ========== 会话管理 ==========
+interface SessionInfo {
+  token: string
+  username: string
+  role: string
+  ip?: string
+  userAgent?: string
+  createdAt: number
+  lastActivityAt: number
+  online: boolean
+}
+
+const sessions = ref<SessionInfo[]>([])
+const sessionsLoading = ref(false)
+const sessionSearch = ref('')
+const showRevokeUserSessionsConfirm = ref(false)
+const revokeSessionTarget = ref<SessionInfo | null>(null)
+const showRevokeSessionConfirm = ref(false)
+const revokeLoading = ref(false)
+const sessionTimer = ref<number | null>(null)
+
+const currentToken = computed(() => userStore.token)
+
+const filteredSessions = computed(() => {
+  if (!sessionSearch.value.trim())
+    return sessions.value
+  const query = sessionSearch.value.trim().toLowerCase()
+  return sessions.value.filter(s =>
+    s.username.toLowerCase().includes(query)
+    || (s.ip || '').toLowerCase().includes(query)
+    || (s.userAgent || '').toLowerCase().includes(query)
+    || s.token.toLowerCase().includes(query),
+  )
+})
+
+const roleLabels: Record<string, string> = {
+  admin: '超级管理员',
+  operator: '运营人员',
+  viewer: '只读管理员',
+  user: '普通用户',
+}
+
+const roleBadgeClasses: Record<string, string> = {
+  admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  operator: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  viewer: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  user: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+}
+
+function getRoleLabel(role: string): string {
+  return roleLabels[role] || role
+}
+
+function getRoleBadgeColor(role: string): string {
+  return (roleBadgeClasses[role] || roleBadgeClasses.user) as string
+}
+
+function formatDateTimeCN(timestamp: number): string {
+  if (!timestamp)
+    return '-'
+  return new Date(timestamp).toLocaleString('zh-CN')
+}
+
+async function fetchSessions() {
+  sessionsLoading.value = true
+  try {
+    const result = await userStore.getSessions()
+    if (result.ok) {
+      sessions.value = result.data || []
+    }
+    else {
+      toast.error(result.error || '获取会话列表失败')
+    }
+  }
+  catch (e: any) {
+    toast.error(e.message || '获取会话列表失败')
+  }
+  finally {
+    sessionsLoading.value = false
+  }
+}
+
+function confirmRevokeSession(session: SessionInfo) {
+  revokeSessionTarget.value = session
+  showRevokeSessionConfirm.value = true
+}
+
+async function revokeSession() {
+  if (!revokeSessionTarget.value)
+    return
+  revokeLoading.value = true
+  try {
+    const result = await userStore.revokeSession(revokeSessionTarget.value.token)
+    if (result.ok) {
+      toast.success('会话已强制下线')
+      showRevokeSessionConfirm.value = false
+      revokeSessionTarget.value = null
+      await fetchSessions()
+    }
+    else {
+      toast.error(result.error || '操作失败')
+    }
+  }
+  catch (e: any) {
+    toast.error(e.message || '操作失败')
+  }
+  finally {
+    revokeLoading.value = false
+  }
+}
+
+function startSessionTimer() {
+  stopSessionTimer()
+  sessionTimer.value = window.setInterval(fetchSessions, 10000)
+}
+
+function stopSessionTimer() {
+  if (sessionTimer.value) {
+    clearInterval(sessionTimer.value)
+    sessionTimer.value = null
+  }
+}
+
 // ========== 审计日志 ==========
 interface AuditLog {
   id: string
@@ -1381,6 +1505,10 @@ onMounted(() => {
   fetchCards()
   fetchUsers()
   fetchAdminAccounts()
+  if (activeTab.value === 'session') {
+    fetchSessions()
+    startSessionTimer()
+  }
   fetchLoginLogs()
   fetchAuditLogs()
   loadSystemConfig()
@@ -1392,6 +1520,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopDashboardTimer()
+  stopSessionTimer()
 })
 
 watch(activeTab, (tab) => {
@@ -1404,6 +1533,13 @@ watch(activeTab, (tab) => {
   }
   if (tab === 'account') {
     fetchAdminAccounts()
+  }
+  if (tab === 'session') {
+    fetchSessions()
+    startSessionTimer()
+  }
+  else {
+    stopSessionTimer()
   }
   if (tab === 'log') {
     fetchLoginLogs()
@@ -1933,9 +2069,9 @@ watch(activeTab, (tab) => {
                     <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">
                       <span
                         class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
-                        :class="user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'"
+                        :class="getRoleBadgeColor(user.role)"
                       >
-                        {{ user.role === 'admin' ? '管理员' : '用户' }}
+                        {{ getRoleLabel(user.role) }}
                       </span>
                     </td>
                     <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">
@@ -2193,6 +2329,171 @@ watch(activeTab, (tab) => {
             @confirm="deleteAdminAccount"
             @cancel="showDeleteAccountConfirm = false; accountToDelete = null"
           />
+        </div>
+
+        <!-- 在线会话管理 -->
+        <div v-else-if="activeTab === 'session'" class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg text-gray-900 font-bold dark:text-gray-100">
+              在线会话管理
+            </h3>
+            <div class="flex items-center gap-2">
+              <BaseButton variant="secondary" size="sm" :loading="sessionsLoading" @click="fetchSessions">
+                刷新
+              </BaseButton>
+              <BaseButton
+                v-if="userStore.hasPermission('session:delete')"
+                variant="danger"
+                size="sm"
+                @click="showRevokeUserSessionsConfirm = true"
+              >
+                批量踢人
+              </BaseButton>
+            </div>
+          </div>
+
+          <div class="farm-card items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-md dark:bg-gray-800">
+            <input
+              v-model="sessionSearch"
+              placeholder="搜索用户名、IP、浏览器或 Token..."
+              class="h-8 w-full border farm-input border-gray-300 rounded-xl bg-white px-3 text-sm text-gray-900 outline-none transition-all dark:border-gray-600 focus:border-green-500 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500/20"
+            >
+          </div>
+
+          <div v-if="sessionsLoading" class="py-8 text-center text-gray-500">
+            <div i-svg-spinners-90-ring-with-bg class="mb-2 inline-block text-2xl" />
+            <div>加载中...</div>
+          </div>
+
+          <div v-else class="farm-card overflow-hidden border border-gray-200 rounded-2xl shadow-md dark:border-gray-700">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      用户名
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      角色
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      状态
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      IP 地址
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      浏览器
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      登录时间
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      最后活跃
+                    </th>
+                    <th class="px-3 py-2 text-right text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                  <tr v-for="session in filteredSessions" :key="session.token">
+                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 font-medium dark:text-white">
+                      {{ session.username }}
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">
+                      <span
+                        class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                        :class="getRoleBadgeColor(session.role)"
+                      >
+                        {{ getRoleLabel(session.role) }}
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2">
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full px-2 text-xs font-semibold leading-5"
+                        :class="session.online ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'"
+                      >
+                        <span class="h-1.5 w-1.5 rounded-full" :class="session.online ? 'bg-green-500' : 'bg-gray-400'" />
+                        {{ session.online ? '在线' : '离线' }}
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">
+                      {{ session.ip || '-' }}
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      {{ parseBrowser(session.userAgent || '') }}
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      {{ formatDateTimeCN(session.createdAt) }}
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      {{ formatDateTimeCN(session.lastActivityAt) }}
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-right text-sm font-medium">
+                      <button
+                        v-if="session.token === currentToken"
+                        class="text-gray-400 cursor-not-allowed"
+                        disabled
+                      >
+                        当前会话
+                      </button>
+                      <span
+                        v-else-if="session.username === 'admin' && currentUsername !== 'admin'"
+                        class="text-xs text-gray-400"
+                      >
+                        最高管理员
+                      </span>
+                      <button
+                        v-else-if="userStore.hasPermission('session:delete')"
+                        class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                        @click="confirmRevokeSession(session)"
+                      >
+                        强制下线
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="filteredSessions.length === 0">
+                    <td colspan="8" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
+                      暂无会话
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 强制下线确认弹窗 -->
+          <div
+            v-if="showRevokeSessionConfirm"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            @click.self="showRevokeSessionConfirm = false"
+          >
+            <div class="max-w-md w-full rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-800" @click.stop>
+              <h2 class="mb-4 text-lg text-gray-900 font-bold dark:text-white">
+                确认强制下线
+              </h2>
+              <p class="mb-4 text-gray-600 dark:text-gray-300">
+                确定要强制下线用户 <strong>{{ revokeSessionTarget?.username }}</strong> 的会话吗？
+              </p>
+              <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
+                Token: {{ revokeSessionTarget?.token }}
+              </p>
+              <div class="flex justify-end space-x-3">
+                <BaseButton variant="secondary" size="sm" @click="showRevokeSessionConfirm = false">
+                  取消
+                </BaseButton>
+                <BaseButton
+                  variant="danger"
+                  size="sm"
+                  :loading="revokeLoading"
+                  @click="revokeSession"
+                >
+                  强制下线
+                </BaseButton>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 日志中心 -->

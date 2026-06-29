@@ -118,6 +118,36 @@ const adminRequired = (req: AuthenticatedRequest, res: Response, next: NextFunct
     next();
 };
 
+const { hasPermission, hasAnyPermission } = require('./permissions');
+
+function requirePermission(permission: string) {
+    return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+        if (!req.currentUser) {
+            res.status(401).json({ ok: false, error: 'Unauthorized' });
+            return;
+        }
+        if (!hasPermission(req.currentUser.role, permission)) {
+            res.status(403).json({ ok: false, error: '权限不足' });
+            return;
+        }
+        next();
+    };
+}
+
+function requireAnyPermission(...permissions: string[]) {
+    return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+        if (!req.currentUser) {
+            res.status(401).json({ ok: false, error: 'Unauthorized' });
+            return;
+        }
+        if (!hasAnyPermission(req.currentUser.role, permissions)) {
+            res.status(403).json({ ok: false, error: '权限不足' });
+            return;
+        }
+        next();
+    };
+}
+
 // 定期清理过期用户（每5分钟检查一次）
 function createCleanupExpiredUsers(ctx: AdminContext): () => void {
     return () => {
@@ -274,6 +304,8 @@ module.exports = {
     createAuthRequired,
     createCheckUserAccess,
     adminRequired,
+    requirePermission,
+    requireAnyPermission,
     createCleanupExpiredUsers,
     getAccountList,
     checkAccountAccess,

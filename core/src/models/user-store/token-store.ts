@@ -171,6 +171,56 @@ function getUserLastActivity(username: string): number | null {
     return last;
 }
 
+interface SessionInfo {
+    token: string;
+    username: string;
+    role: string;
+    ip?: string;
+    userAgent?: string;
+    createdAt: number;
+    lastActivityAt: number;
+    online: boolean;
+}
+
+function getActiveSessions(): SessionInfo[] {
+    const now = Date.now();
+    return Object.values(tokens)
+        .map(entry => ({
+            token: entry.token,
+            username: entry.user?.username || 'unknown',
+            role: entry.user?.role || 'user',
+            ip: entry.user?.ip || 'unknown',
+            userAgent: entry.user?.userAgent || '',
+            createdAt: entry.createdAt,
+            lastActivityAt: entry.lastActivityAt || entry.createdAt,
+            online: (entry.lastActivityAt || entry.createdAt) > now - ONLINE_THRESHOLD_MS,
+        }))
+        .sort((a, b) => b.lastActivityAt - a.lastActivityAt);
+}
+
+function revokeToken(token: string): boolean {
+    if (tokens[token]) {
+        delete tokens[token];
+        saveTokens();
+        return true;
+    }
+    return false;
+}
+
+function revokeTokensByUser(username: string): number {
+    let count = 0;
+    for (const token of Object.keys(tokens)) {
+        if (tokens[token].user?.username === username) {
+            delete tokens[token];
+            count++;
+        }
+    }
+    if (count > 0) {
+        saveTokens();
+    }
+    return count;
+}
+
 loadTokens();
 startCleanupTimer();
 
@@ -187,4 +237,7 @@ module.exports = {
     updateActivity,
     isUserOnline,
     getUserLastActivity,
+    getActiveSessions,
+    revokeToken,
+    revokeTokensByUser,
 };
