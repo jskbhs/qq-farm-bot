@@ -84,6 +84,19 @@ function parseExtra(extra: any): any {
   catch { return null }
 }
 
+// extra 原始内容转 hex (用于调试无法解析为 JSON 的 extra)
+function extraRawHex(extra: any): string {
+  if (!extra) return ''
+  if (typeof extra === 'string') {
+    // 尝试转 hex
+    return Array.from(extra).map((c: string) => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ').slice(0, 500)
+  }
+  if (extra instanceof Uint8Array || Array.isArray(extra)) {
+    return Array.from(extra).map((b: number) => b.toString(16).padStart(2, '0')).join(' ').slice(0, 500)
+  }
+  return String(extra).slice(0, 500)
+}
+
 // 把 result 状态码转成中文提示
 function resultText(result: number | string): string {
   const r = Number(result)
@@ -205,19 +218,19 @@ function onDrawClick(activityId: number, count: number) {
   showPaidConfirm.value = true
 }
 
-// 确认付费抽奖
+// 确认付费抽奖 (param=2 表示使用点券抽奖)
 async function confirmPaidDraw() {
   showPaidConfirm.value = false
   const count = pendingDrawType.value
-  // 付费时服务器可能不接受 param=4，改为逐次单抽
+  // 付费连抽逐次单抽，每次 param=2 表示用点券
   if (count > 1) {
     for (let i = 0; i < count; i++) {
-      await doOperate(pendingActivityId.value, OPERATE_DRAW, 1)
+      await doOperate(pendingActivityId.value, OPERATE_DRAW, 2)
       if (operateResult.value?.result !== 0) break
     }
   }
   else {
-    await doOperate(pendingActivityId.value, OPERATE_DRAW, 1)
+    await doOperate(pendingActivityId.value, OPERATE_DRAW, 2)
   }
 }
 
@@ -286,6 +299,24 @@ async function claimBattlePass(levelIds: number[], label = '领取战令奖励')
   operateLoading.value = false
 }
 
+// 一键领取所有已达成等级的战令奖励
+function claimAllBattlePass() {
+  const levels = battlePassLevels.value
+  if (!levels || levels.length === 0) {
+    toast.info('没有可领取的等级奖励')
+    return
+  }
+  // 收集所有已达成等级 (level <= 当前等级) 且有奖励的 level
+  const claimableLevels = levels
+    .filter((lvl: any) => lvl.level <= battlePassLevel.value && (lvl.freeReward || (lvl.premiumRewards?.length && seasonInfo.value?.isPremium)))
+    .map((lvl: any) => lvl.level)
+  if (claimableLevels.length === 0) {
+    toast.info('没有可领取的等级奖励')
+    return
+  }
+  claimBattlePass(claimableLevels, `一键领取 ${claimableLevels.length} 个等级奖励`)
+}
+
 // 活动操作
 async function doOperate(activityId: number, operateType: number, param: number = 1) {
   operateLoading.value = true
@@ -326,27 +357,29 @@ const shopActivities = computed(() =>
   activities.value.filter(a => a.type === 3),
 )
 
-// 商店商品列表（尝试从 extra 解析）
-const shopGoods = computed(() => {
-  const act = shopActivities.value[0]
+// 从单个商店活动解析商品列表
+function parseShopGoods(act: any): any[] {
   if (!act) return []
   const extra = parseExtra(act.extra)
   if (!extra) return []
-  const goods = extra.goods || extra.items || extra.shop || extra.products || extra.exchangeItems || extra.shopItems || extra.commodities
+  // 尝试多种可能的商品字段名
+  const goods = extra.goods || extra.items || extra.shop || extra.products
+    || extra.exchangeItems || extra.shopItems || extra.commodities
+    || extra.exchange_list || extra.exchangeList || extra.list
   if (Array.isArray(goods)) {
     return goods.map((g: any, idx: number) => ({
-      id: g.id || g.itemId || g.item_id || g.goodsId || idx + 1,
-      name: g.name || g.itemName || `商品#${idx + 1}`,
-      icon: g.icon || g.image || g.itemId || g.id,
-      price: Number(g.price || g.cost || g.need || 0),
-      currency: g.currency || g.currencyName || '荷露',
-      limit: g.limit ?? g.limitCount ?? g.buyLimit ?? null,
-      bought: g.bought ?? g.buyCount ?? 0,
-      param: g.param ?? g.index ?? (idx + 1),
+      id: g.id || g.itemId || g.item_id || g.goodsId || g.product_id || idx + 1,
+      name: g.name || g.itemName || g.item_name || g.title || `商品#${idx + 1}`,
+      icon: g.icon || g.image || g.img || g.itemId || g.id,
+      price: Number(g.price || g.cost || g.need || g.needCount || g.need_count || 0),
+      currency: g.currency || g.currencyName || g.currency_name || g.costType || g.cost_type || '荷露',
+      limit: g.limit ?? g.limitCount ?? g.limit_count ?? g.buyLimit ?? g.buy_limit ?? null,
+      bought: g.bought ?? g.buyCount ?? g.buy_count ?? g.purchased ?? 0,
+      param: g.param ?? g.index ?? g.idx ?? g.position ?? (idx + 1),
     }))
   }
   return []
-})
+}
 
 // 每日任务活动
 const dailyActivities = computed(() =>
@@ -616,8 +649,17 @@ onMounted(() => {
           </div>
 
           <div v-if="seasonInfo.battlePass" class="battlepass-section">
-            <div class="bp-level">
-              Lv{{ battlePassLevel }} → Lv{{ battlePassLevel + 1 }}
+            <div class="bp-header">
+              <div class="bp-level">
+                Lv{{ battlePassLevel }} → Lv{{ battlePassLevel + 1 }}
+              </div>
+              <button
+                class="btn btn-gold btn-sm"
+                :disabled="operateLoading"
+                @click="claimAllBattlePass"
+              >
+                🎁 一键领取
+              </button>
             </div>
             <div class="bp-score-bar">
               <div class="bp-score-fill" :style="{ width: `${Math.min(100, (battlePassScore / battlePassScoreNeed) * 100)}%` }" />
@@ -697,8 +739,8 @@ onMounted(() => {
               </div>
             </div>
 
-            <div v-if="shopGoods.length" class="shop-goods">
-              <div v-for="g in shopGoods" :key="g.id" class="goods-item">
+            <div v-if="parseShopGoods(act).length" class="shop-goods">
+              <div v-for="g in parseShopGoods(act)" :key="g.id" class="goods-item">
                 <div class="goods-info">
                   <div class="goods-name">{{ g.name }}</div>
                   <div class="goods-price">
@@ -721,6 +763,9 @@ onMounted(() => {
             <div v-else class="shop-debug">
               <div class="debug-title">未解析到商品，extra 原始数据：</div>
               <pre>{{ JSON.stringify(parseExtra(act.extra), null, 2) }}</pre>
+              <div v-if="!parseExtra(act.extra)" class="debug-raw">
+                extra 无法解析为 JSON，原始内容(hex)：<br>{{ extraRawHex(act.extra) }}
+              </div>
             </div>
           </div>
         </div>
@@ -1152,6 +1197,18 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 
+.bp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.bp-header .bp-level {
+  margin-bottom: 0;
+}
+
 .bp-score-bar {
   height: 10px;
   background: var(--bg-secondary, #f3f4f6);
@@ -1530,6 +1587,17 @@ onMounted(() => {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+.debug-raw {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fef3c7;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #92400e;
+  word-break: break-all;
+  font-family: monospace;
 }
 
 .result-card {

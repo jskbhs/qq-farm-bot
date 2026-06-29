@@ -52,7 +52,7 @@ async function operateActivity(activityId: number, operateType: number = 0, para
     const drawInfo = parseDrawInfo(reply.data);
     // 解析 rewards 字段中的实际中奖奖品
     const rewards = parseRewards(reply.rewards);
-    console.log('[Activity] operateActivity:', { activityId, operateType, result: reply.result, dataLen: reply.data?.length, drawInfo, rewardCount: rewards.length });
+    console.log('[Activity] operateActivity:', { activityId, operateType, param, result: reply.result, dataLen: reply.data?.length, drawInfo, rewardCount: rewards.length });
     return { ...reply.toJSON(), drawInfo, rewards };
 }
 
