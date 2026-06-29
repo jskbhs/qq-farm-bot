@@ -646,7 +646,7 @@ function mountFarmRoutes(app: Application, ctx: AdminContext): void {
                 if (!fs.existsSync(seedImageDir)) {
                     fs.mkdirSync(seedImageDir, { recursive: true });
                 }
-                const finalPath = path.join(seedImageDir, `${assetName}_Seed.png`);
+                const finalPath = path.join(seedImageDir, `${seedId}.png`);
                 fs.writeFileSync(finalPath, req.file.buffer);
             }
 
@@ -1085,8 +1085,7 @@ function mountFarmRoutes(app: Application, ctx: AdminContext): void {
             fs.writeFileSync(path.join(configDir, 'ItemInfo.json'), JSON.stringify(newItemData, null, 4), 'utf8');
 
             // 删除图片
-            const assetName = `Crop_${seedId}`;
-            const imagePath = path.join(configImageDir, `${assetName}_Seed.png`);
+            const imagePath = path.join(configImageDir, `${seedId}.png`);
             if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
 
             if (typeof reloadConfigs === 'function') reloadConfigs();
@@ -1152,15 +1151,22 @@ function mountFarmRoutes(app: Application, ctx: AdminContext): void {
                 if (body.land_level_need !== undefined) seedItem.level = Number(body.land_level_need);
             }
 
-            // 更新果实条目名称
+            // 更新果实条目
             const fruitId = plant.fruit ? plant.fruit.id : null;
-            if (fruitId && body.name !== undefined) {
+            if (fruitId) {
                 const fruitItem = itemData.find((item: any) => Number(item.id) === fruitId && Number(item.type) === 6);
                 if (fruitItem) {
-                    const name = String(body.name).trim();
-                    fruitItem.name = name;
-                    fruitItem.effectDesc = name;
-                    fruitItem.desc = `${name}的果实，可以出售换取金币。`;
+                    if (body.name !== undefined) {
+                        const name = String(body.name).trim();
+                        fruitItem.name = name;
+                        fruitItem.effectDesc = name;
+                        fruitItem.desc = `${name}的果实，可以出售换取金币。`;
+                    }
+                    if (body.price !== undefined) {
+                        const newPrice = Number(body.price) || 0;
+                        const priceId = Number(body.priceId) || 1001;
+                        fruitItem.sells = newPrice > 0 ? `${priceId}:${Math.round(newPrice * 0.25)}` : null;
+                    }
                 }
             }
 
@@ -1171,7 +1177,7 @@ function mountFarmRoutes(app: Application, ctx: AdminContext): void {
                 if (!fs.existsSync(configImageDir)) {
                     fs.mkdirSync(configImageDir, { recursive: true });
                 }
-                const finalPath = path.join(configImageDir, `Crop_${seedId}_Seed.png`);
+                const finalPath = path.join(configImageDir, `${seedId}.png`);
                 fs.writeFileSync(finalPath, req.file.buffer);
             }
 
