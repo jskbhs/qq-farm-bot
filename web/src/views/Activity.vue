@@ -5,8 +5,19 @@ import { useToastStore } from '@/stores/toast'
 
 const toast = useToastStore()
 
-const activeTab = ref<'lottery' | 'battlepass' | 'shop' | 'solar'>('lottery')
+const activeTab = ref<'lottery' | 'battlepass' | 'shop' | 'solar' | 'all'>('lottery')
 const loading = ref(false)
+
+// 操作类型常量 (与后端 services/activity.ts 保持一致)
+const OPERATE_CLAIM = 1          // 领取奖励
+const OPERATE_DRAW = 7           // 单抽
+const OPERATE_DRAW_MULTI = 9     // 十连抽
+const OPERATE_VIEW = 10          // 查看/进入活动
+
+// 活动类型常量
+const ACTIVITY_TYPE_DAILY = 1    // 每日任务
+const ACTIVITY_TYPE_SHOP = 3     // 商店
+const ACTIVITY_TYPE_LOTTERY = 8  // 抽奖
 
 // 活动组数据
 const activities = ref<any[]>([])
@@ -32,6 +43,7 @@ const drawInfo = ref<any>(null)
 // 付费确认弹窗
 const showPaidConfirm = ref(false)
 const pendingDrawType = ref(0)
+const pendingDrawMulti = ref(false)
 const pendingActivityId = ref(0)
 
 // 品质标签
@@ -183,15 +195,17 @@ async function fetchSolarTerms() {
 }
 
 // 抽奖按钮点击
-function onDrawClick(activityId: number, count: number) {
+function onDrawClick(activityId: number, count: number, isMulti = false) {
   // drawInfo 未加载或免费次数还有，直接抽
   if (!drawInfo.value || freeRemain.value >= count) {
-    doOperate(activityId, 7, count)
+    // 免费抽奖: 十连用 OPERATE_DRAW_MULTI(9)，单抽/连抽用 OPERATE_DRAW(7)
+    doOperate(activityId, isMulti ? OPERATE_DRAW_MULTI : OPERATE_DRAW, count)
     return
   }
   // 免费用完，需要付费确认
   pendingActivityId.value = activityId
   pendingDrawType.value = count
+  pendingDrawMulti.value = isMulti
   showPaidConfirm.value = true
 }
 
@@ -199,16 +213,61 @@ function onDrawClick(activityId: number, count: number) {
 async function confirmPaidDraw() {
   showPaidConfirm.value = false
   const count = pendingDrawType.value
-  // 付费时服务器可能不接受 param=4，改为逐次单抽
-  if (count > 1) {
+  const isMulti = pendingDrawMulti.value
+  // 付费十连抽用 OPERATE_DRAW_MULTI(9)；付费单抽用 OPERATE_DRAW(7)
+  if (isMulti) {
+    await doOperate(pendingActivityId.value, OPERATE_DRAW_MULTI, count)
+  }
+  else if (count > 1) {
+    // 付费连抽 (非十连)，逐次单抽
     for (let i = 0; i < count; i++) {
-      await doOperate(pendingActivityId.value, 7, 1)
+      await doOperate(pendingActivityId.value, OPERATE_DRAW, 1)
       if (operateResult.value?.result !== 0) break
     }
   }
   else {
-    await doOperate(pendingActivityId.value, 7, 1)
+    await doOperate(pendingActivityId.value, OPERATE_DRAW, 1)
   }
+}
+
+// 通用活动运行 (查看/领取/兑换等)
+async function runActivity(activityId: number, operateType: number, param: number = 0, label = '操作') {
+  operateLoading.value = true
+  operateResult.value = null
+  try {
+    const { data } = await api.post('/api/activity/operate', {
+      activityId,
+      operateType,
+      param,
+    }, {
+      headers: { 'x-account-id': getAccountId() },
+    })
+    if (data.ok) {
+      operateResult.value = { ...data.data, _label: label }
+      if (data.data?.drawInfo) {
+        drawInfo.value = data.data.drawInfo
+      }
+      await fetchCurrency()
+      const rewards = data.data?.rewards || []
+      if (rewards.length > 0) {
+        toast.success(`${label}成功: ${rewards.map((p: any) => (p.seedName || `#${p.seedId}`) + (p.count > 1 ? ` x${p.count}` : '')).join(', ')}`)
+      }
+      else if (data.data?.result === 0) {
+        toast.success(`${label}成功`)
+      }
+      else {
+        toast.info(resultText(data.data?.result))
+      }
+    }
+    else {
+      toast.error(data.error || `${label}失败`)
+    }
+  }
+  catch (e: any) {
+    const errData = e.response?.data
+    toast.error(friendlyError(errData?.error || e.message || '网络错误'))
+  }
+  operateLoading.value = false
 }
 
 // 活动操作
@@ -272,6 +331,30 @@ const shopGoods = computed(() => {
   }
   return []
 })
+
+// 每日任务活动
+const dailyActivities = computed(() =>
+  activities.value.filter(a => a.type === ACTIVITY_TYPE_DAILY),
+)
+
+// 其他类型活动 (非抽奖/非商店/非每日)
+const otherActivities = computed(() =>
+  activities.value.filter(a =>
+    a.type !== ACTIVITY_TYPE_LOTTERY
+    && a.type !== ACTIVITY_TYPE_SHOP
+    && a.type !== ACTIVITY_TYPE_DAILY,
+  ),
+)
+
+// 活动类型标签
+function activityTypeLabel(type: number): { text: string; color: string } {
+  const map: Record<number, { text: string; color: string }> = {
+    1: { text: '每日任务', color: '#3b82f6' },
+    3: { text: '商店', color: '#f59e0b' },
+    8: { text: '抽奖', color: '#8b5cf6' },
+  }
+  return map[type] || { text: `类型${type}`, color: '#6b7280' }
+}
 
 // 总剩余次数
 const totalRemaining = computed(() => {
@@ -344,6 +427,7 @@ onMounted(() => {
           { key: 'battlepass', label: '荷风游记', icon: '📜' },
           { key: 'shop', label: '荷露商店', icon: '🛒' },
           { key: 'solar', label: '节令小礼', icon: '🌿' },
+          { key: 'all', label: '全部活动', icon: '🎁' },
         ]"
         :key="tab.key"
         class="tab-btn"
@@ -426,6 +510,13 @@ onMounted(() => {
               >
                 {{ operateLoading ? '抽奖中...' : (freeRemain >= 4 ? '免费连抽' : '120点券连抽') }}
               </button>
+              <button
+                class="btn btn-gold"
+                :disabled="operateLoading || (freeRemain + paidRemain) < 10"
+                @click="onDrawClick(act.activityId, 10, true)"
+              >
+                {{ operateLoading ? '抽奖中...' : (freeRemain >= 10 ? '免费十连' : '300点券十连') }}
+              </button>
             </div>
             <div v-else class="draw-empty">
               今日次数已用完
@@ -442,6 +533,7 @@ onMounted(() => {
                     当前免费次数已用完，将消耗点券。
                     <br><br>
                     本次抽奖将花费 <b>{{ pendingDrawType * 30 }}</b> 点券
+                    <span v-if="pendingDrawMulti">（十连抽）</span>
                   </div>
                   <div class="modal-actions">
                     <button class="btn btn-secondary" @click="showPaidConfirm = false">
@@ -548,6 +640,24 @@ onMounted(() => {
                       付费: {{ formatReward(pr) }}
                     </div>
                   </div>
+                  <div v-if="lvl.level <= battlePassLevel" class="bp-claim-actions">
+                    <button
+                      v-if="lvl.freeReward"
+                      class="btn btn-primary btn-sm"
+                      :disabled="operateLoading"
+                      @click="runActivity(seasonInfo?.battlePass?.seasonId || 0, OPERATE_CLAIM, lvl.level, `领取Lv${lvl.level}免费奖励`)"
+                    >
+                      领取免费
+                    </button>
+                    <button
+                      v-if="lvl.premiumRewards?.length && seasonInfo?.isPremium"
+                      class="btn btn-gold btn-sm"
+                      :disabled="operateLoading"
+                      @click="runActivity(seasonInfo?.battlePass?.seasonId || 0, OPERATE_CLAIM, lvl.level, `领取Lv${lvl.level}付费奖励`)"
+                    >
+                      领取付费
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -631,6 +741,155 @@ onMounted(() => {
               <div v-for="(r, i) in term.rewards" :key="i" class="reward-item">
                 物品 #{{ toLongNumber(r.item_id) }} x{{ toLongNumber(r.count) }}
               </div>
+            </div>
+            <div v-if="term.status === 1" class="card-actions">
+              <button
+                class="btn btn-primary"
+                :disabled="operateLoading"
+                @click="runActivity(toLongNumber(term.term_id), OPERATE_VIEW, 0, '查看节令')"
+              >
+                👁 查看
+              </button>
+              <button
+                class="btn btn-accent"
+                :disabled="operateLoading"
+                @click="runActivity(toLongNumber(term.term_id), OPERATE_CLAIM, 0, '领取节令奖励')"
+              >
+                🎁 领取奖励
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 全部活动 -->
+      <div v-if="activeTab === 'all'" class="tab-content">
+        <div v-if="loading" class="loading">
+          加载中...
+        </div>
+        <div v-else-if="activities.length === 0" class="empty">
+          暂无活动
+        </div>
+        <div v-else>
+          <!-- 每日任务 -->
+          <div v-if="dailyActivities.length > 0" class="section-title">
+            📋 每日任务 ({{ dailyActivities.length }})
+          </div>
+          <div
+            v-for="act in dailyActivities"
+            :key="act.activityId"
+            class="all-activity-card"
+          >
+            <div class="all-activity-header">
+              <span class="type-badge" :style="{ background: activityTypeLabel(act.type).color }">
+                {{ activityTypeLabel(act.type).text }}
+              </span>
+              <span class="all-activity-name">{{ act.name }}</span>
+            </div>
+            <div v-if="act.beginTime" class="card-time">
+              {{ formatDate(act.beginTime) }} ~ {{ formatDate(act.endTime) }}
+            </div>
+            <div class="card-actions">
+              <button
+                class="btn btn-primary"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_CLAIM, 0, '领取奖励')"
+              >
+                🎁 领取奖励
+              </button>
+              <button
+                class="btn btn-secondary"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_VIEW, 0, '查看活动')"
+              >
+                👁 查看
+              </button>
+            </div>
+          </div>
+
+          <!-- 其他类型活动 -->
+          <div v-if="otherActivities.length > 0" class="section-title">
+            🎁 其他活动 ({{ otherActivities.length }})
+          </div>
+          <div
+            v-for="act in otherActivities"
+            :key="act.activityId"
+            class="all-activity-card"
+          >
+            <div class="all-activity-header">
+              <span class="type-badge" :style="{ background: activityTypeLabel(act.type).color }">
+                {{ activityTypeLabel(act.type).text }}
+              </span>
+              <span class="all-activity-name">{{ act.name }}</span>
+            </div>
+            <div v-if="act.beginTime" class="card-time">
+              {{ formatDate(act.beginTime) }} ~ {{ formatDate(act.endTime) }}
+            </div>
+            <div class="card-actions">
+              <button
+                class="btn btn-primary"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_CLAIM, 0, '领取奖励')"
+              >
+                🎁 领取
+              </button>
+              <button
+                class="btn btn-secondary"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_VIEW, 0, '查看活动')"
+              >
+                👁 查看
+              </button>
+            </div>
+          </div>
+
+          <!-- 全部活动汇总列表 -->
+          <div class="section-title">
+            📦 全部活动汇总 ({{ activities.length }})
+          </div>
+          <div
+            v-for="act in activities"
+            :key="`sum-${act.activityId}`"
+            class="all-activity-card compact"
+          >
+            <div class="all-activity-header">
+              <span class="type-badge" :style="{ background: activityTypeLabel(act.type).color }">
+                {{ activityTypeLabel(act.type).text }}
+              </span>
+              <span class="all-activity-name">{{ act.name }}</span>
+              <span class="activity-id">ID: {{ act.activityId }}</span>
+            </div>
+            <div class="card-actions">
+              <button
+                class="btn btn-primary btn-sm"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_CLAIM, 0, `领取-${act.name}`)"
+              >
+                领取
+              </button>
+              <button
+                class="btn btn-secondary btn-sm"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_VIEW, 0, `查看-${act.name}`)"
+              >
+                查看
+              </button>
+              <button
+                v-if="act.type === ACTIVITY_TYPE_LOTTERY"
+                class="btn btn-accent btn-sm"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_DRAW, 1, `单抽-${act.name}`)"
+              >
+                单抽
+              </button>
+              <button
+                v-if="act.type === ACTIVITY_TYPE_LOTTERY"
+                class="btn btn-gold btn-sm"
+                :disabled="operateLoading"
+                @click="runActivity(act.activityId, OPERATE_DRAW_MULTI, 10, `十连-${act.name}`)"
+              >
+                十连
+              </button>
             </div>
           </div>
         </div>
@@ -786,6 +1045,84 @@ onMounted(() => {
   background: #7c3aed;
 }
 
+.btn-gold {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706, #b45309);
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin-top: 16px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--border-color, #e5e7eb);
+}
+
+.section-title:first-child {
+  margin-top: 0;
+}
+
+.all-activity-card {
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.all-activity-card.compact {
+  padding: 10px 14px;
+}
+
+.all-activity-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.all-activity-card.compact .all-activity-header {
+  margin-bottom: 6px;
+}
+
+.type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.all-activity-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-id {
+  font-size: 11px;
+  color: var(--text-secondary, #9ca3af);
+  font-family: monospace;
+}
+
 .season-info,
 .solar-info {
   display: flex;
@@ -893,6 +1230,12 @@ onMounted(() => {
 .reward-tag.premium {
   background: #fef3c7;
   color: #b45309;
+}
+
+.bp-claim-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .battlepass-raw {
