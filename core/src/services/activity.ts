@@ -129,84 +129,82 @@ async function operateActivity(activityId: number, operateType: number = 0, para
 const drawParamCache: Map<number, { operateType: number, param: number }> = new Map();
 
 /**
- * 自动抽奖：遍历参数组合找到能成功的，缓存结果
- * 优先用缓存的参数，缓存失效则重新探测
+ * 自动抽奖
+ *
+ * 重要发现(2026-06-29): 服务器返回的 OperateReply 没有"结果码"字段。
+ * 字段 f1=activityId, f2=echo 的 operate_type(值=7/9/10), f3=抽奖配置 data。
+ * 之前误把 f2 当成 result，导致所有抽奖都被判失败。
+ *
+ * 真正的成功标志:
+ *  - rewards 字段(field 108) 有内容 = 抽到了
+ *  - 或 drawInfo.freeRemaining 减少 = 免费次数扣减成功
+ * 真正的失败标志:
+ *  - rewards 为空 且 freeRemaining 没扣减 且 drawInfo 无 freeRemaining 字段
+ *    (说明服务器拒绝: 免费次数用完,点券不足等)
  */
 async function drawAuto(activityId: number, count: number = 1): Promise<any> {
     const tryCount = count > 1 ? 4 : 1;
     let lastResult: any = null;
-    let debugInfo: any = null;
+    let successCount = 0;
 
-    // 候选参数组合：按经验排序，op=7 param=0 最可能成功
+    // 已知正确的参数: op=7 param=0 (单抽) / op=9 param=0 (十连)
+    // param=0 让服务器自动用免费次数
     const candidates: { operateType: number, param: number }[] = [
         { operateType: 7, param: 0 },
-        { operateType: 7, param: 1 },
-        { operateType: 7, param: 2 },
         { operateType: 9, param: 0 },
-        { operateType: 9, param: 1 },
-        { operateType: 9, param: 4 },
-        { operateType: 0, param: 0 },
-        { operateType: 1, param: 0 },
-        { operateType: 10, param: 0 },
+        { operateType: 7, param: 1 },
     ];
 
-    // 1) 优先用缓存的参数尝试
+    // 优先用缓存的参数
     const cached = drawParamCache.get(activityId);
     if (cached) {
         candidates.unshift(cached);
     }
 
-    // 2) 逐个尝试，找到 result=0 且有 rewards 的组合
+    // 连抽: 逐次执行,实时检查 drawInfo 中的剩余次数
     for (let i = 0; i < tryCount; i++) {
-        let success = false;
+        let drewSomething = false;
         for (const c of candidates) {
             try {
                 const reply = await operateActivity(activityId, c.operateType, c.param);
-                const result = Number(reply.result) || 0;
                 lastResult = reply;
                 const rewards = reply.rewards || [];
-                // 收集第一次尝试的调试信息
-                if (!debugInfo) {
-                    debugInfo = {
-                        triedOp: c.operateType,
-                        triedParam: c.param,
-                        result,
-                        rewardsCount: rewards.length,
-                        scannedFields: reply._scannedFields,
-                        drawInfo: reply.drawInfo,
-                    };
-                }
-                // result=0 且有奖励 = 成功
-                if (result === 0 && rewards.length > 0) {
+                // 判断成功的标准: rewards 非空 (服务器真的发放了奖励)
+                if (rewards.length > 0) {
                     drawParamCache.set(activityId, { operateType: c.operateType, param: c.param });
-                    console.log(`[Activity] drawAuto 成功: activityId=${activityId} op=${c.operateType} param=${c.param}`);
-                    success = true;
+                    drewSomething = true;
+                    successCount++;
+                    console.log(`[Activity] drawAuto 抽中: op=${c.operateType} param=${c.param} rewards=${rewards.length}`);
                     break;
                 }
-                // result=0 但无奖励也可能是成功（已抽过/空奖励池）
-                if (result === 0) {
+                // rewards 空 - 进一步判断:
+                // 如果 drawInfo 含 freeRemaining 或 paidRemaining, 说明抽奖接口通,但本次没产出
+                // (这种情况也可能是正常的,比如活动已抽完/今日次数已用完)
+                const di = reply.drawInfo || {};
+                if (di.freeRemaining !== undefined || di.paidRemaining !== undefined) {
                     drawParamCache.set(activityId, { operateType: c.operateType, param: c.param });
-                    console.log(`[Activity] drawAuto 部分成功(无奖励): activityId=${activityId} op=${c.operateType} param=${c.param}`);
-                    success = true;
+                    console.log(`[Activity] drawAuto 接口通但无奖励 (次数可能用完): op=${c.operateType} param=${c.param} drawInfo=`, di);
+                    drewSomething = true; // 接口正常,只是没产出
                     break;
                 }
-                // 其他 result 值继续尝试下一个组合
-                console.log(`[Activity] drawAuto 尝试失败: op=${c.operateType} param=${c.param} result=${result}, 换下一个组合`);
+                console.log(`[Activity] drawAuto 接口拒绝: op=${c.operateType} param=${c.param}, drawInfo 无剩余次数字段`);
             } catch (e: any) {
                 console.warn(`[Activity] drawAuto 异常: op=${c.operateType} param=${c.param} err=${e.message}`);
-                if (!debugInfo) {
-                    debugInfo = { triedOp: c.operateType, triedParam: c.param, error: e.message };
-                }
             }
         }
-        if (!success) {
-            console.warn(`[Activity] drawAuto 所有组合均失败，最后结果:`, lastResult);
+        // 没产出奖励且接口拒绝 → 停止连抽
+        if (!drewSomething) {
+            console.warn(`[Activity] drawAuto 第${i + 1}次抽奖失败,停止连抽`);
             break;
         }
     }
-    // 失败时附加调试信息
+
+    // 标准化返回: result 用 successCount>0 判断
     if (lastResult) {
-        lastResult._debug = debugInfo;
+        // 把真正的成功状态写到 result 字段,让前端能正常显示
+        lastResult.result = successCount > 0 ? 0 : 7; // 0=成功, 7=失败
+        lastResult._successCount = successCount;
+        lastResult._triedCount = tryCount;
     }
     return lastResult;
 }
