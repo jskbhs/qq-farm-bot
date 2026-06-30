@@ -25,11 +25,13 @@ function getAccounts(): AccountsData {
 function normalizeAccountsData(raw: unknown): AccountsData {
     const data: any = raw && typeof raw === 'object' ? raw : {};
     const accounts: Account[] = Array.isArray(data.accounts) ? data.accounts : [];
-    const maxId = accounts.reduce((m: number, a: any) => Math.max(m, Number.parseInt(a && a.id, 10) || 0), 0);
-    let nextId = Number.parseInt(data.nextId, 10);
-    if (!Number.isFinite(nextId) || nextId <= 0) nextId = maxId + 1;
-    if (accounts.length === 0) nextId = 1;
-    if (nextId <= maxId) nextId = maxId + 1;
+    const usedIds = new Set<number>();
+    for (const a of accounts) {
+        const id = Number.parseInt(a && a.id, 10);
+        if (Number.isFinite(id) && id > 0) usedIds.add(id);
+    }
+    let nextId = 1;
+    while (usedIds.has(nextId)) nextId++;
     return { accounts, nextId };
 }
 

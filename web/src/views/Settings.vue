@@ -1086,7 +1086,7 @@ async function handleTestOffline() {
                   </div>
                   <div class="min-w-0 flex-1">
                     <h4 class="truncate text-base font-bold sm:text-lg">
-                      {{ acc.name || acc.nick || acc.id }}
+                      {{ acc.nick && acc.name ? `${acc.nick} (${acc.name})` : acc.name || acc.nick || acc.id }}
                     </h4>
                     <div class="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <span

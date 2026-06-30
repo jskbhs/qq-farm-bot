@@ -37,6 +37,8 @@ const displayName = computed(() => {
   const acc = currentAccount.value
   if (!acc)
     return '选择账号'
+  if (acc.nick && acc.name)
+    return `${acc.nick} (${acc.name})`
   return acc.name || acc.nick || acc.uin || acc.id
 })
 
@@ -236,7 +238,7 @@ onUnmounted(() => {
                       </div>
                       <div class="min-w-0 flex flex-1 flex-col items-start">
                         <span class="w-full truncate text-left text-sm font-bold" style="color: 'var(--theme-text)'">
-                          {{ acc.name || acc.nick || acc.uin || acc.id }}
+                          {{ acc.nick && acc.name ? `${acc.nick} (${acc.name})` : acc.name || acc.nick || acc.uin || acc.id }}
                         </span>
                         <div class="flex items-center gap-1.5">
                           <span

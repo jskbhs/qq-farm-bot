@@ -701,6 +701,7 @@ function isExpired(card: UserCard | null) {
 interface AdminAccount {
   id: string
   name: string
+  nick?: string
   uin: string
   qq: string
   platform: string
@@ -2521,8 +2522,8 @@ watch(activeTab, (tab) => {
                   <tr v-for="acc in adminAccounts" :key="acc.id">
                     <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 font-medium dark:text-white">
                       <div>{{ acc.name || acc.uin || acc.id }}</div>
-                      <div class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ acc.uin || acc.qq || '-' }}
+                      <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                        {{ acc.nick || acc.uin || acc.qq || '-' }}
                       </div>
                     </td>
                     <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-900 dark:text-white">
