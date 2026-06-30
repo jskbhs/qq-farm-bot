@@ -5,6 +5,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseTextarea from '@/components/ui/BaseTextarea.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
+import { useChangelogStore } from '@/stores/changelog'
 import { useToastStore } from '@/stores/toast'
 import { useUserStore } from '@/stores/user'
 
@@ -38,6 +39,7 @@ const emit = defineEmits<{
 
 const toastStore = useToastStore()
 const userStore = useUserStore()
+const changelogStore = useChangelogStore()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -85,6 +87,9 @@ function close() {
     if (!window.confirm('有未保存的修改，确定要关闭吗？'))
       return
   }
+  // 关闭即视为已读，记录当前版本
+  if (data.value?.version)
+    changelogStore.markSeen(data.value.version)
   emit('close')
 }
 

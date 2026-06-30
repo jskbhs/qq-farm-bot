@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import AccountModal from '@/components/AccountModal.vue'
 import BottomNav from '@/components/BottomNav.vue'
+import ChangelogModal from '@/components/ChangelogModal.vue'
 import HolidayBanner from '@/components/HolidayBanner.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import SoundManager from '@/components/SoundManager.vue'
@@ -10,11 +11,14 @@ import YybConfigModal from '@/components/YybConfigModal.vue'
 import YybLoginModal from '@/components/YybLoginModal.vue'
 import { getPlatformClass, getPlatformLabel, useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
+import { useChangelogStore } from '@/stores/changelog'
 
 const appStore = useAppStore()
 const accountStore = useAccountStore()
+const changelogStore = useChangelogStore()
 const { sidebarOpen } = storeToRefs(appStore)
 const { accounts, currentAccount } = storeToRefs(accountStore)
+const { showModal: showChangelog } = storeToRefs(changelogStore)
 
 const showAccountDropdown = ref(false)
 const showAccountModal = ref(false)
@@ -103,6 +107,8 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('resize', updateDropdownPosition)
   window.addEventListener('scroll', updateDropdownPosition, true)
+  // 进入面板时检查是否有新版本，有则自动弹一次
+  changelogStore.checkForNewVersion()
 })
 
 onUnmounted(() => {
@@ -356,6 +362,9 @@ onUnmounted(() => {
     />
 
     <SoundManager />
+
+    <!-- 版本更新弹窗（全局，首次有新版本时自动弹一次） -->
+    <ChangelogModal :show="showChangelog" @close="changelogStore.close()" />
   </div>
 </template>
 
