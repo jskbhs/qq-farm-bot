@@ -595,6 +595,15 @@ export async function doFriendOperation(friendGid: any, opType: string): Promise
 // ============ 护主犬过滤 ============
 
 /**
+ * 护主犬物品 ID 列表（来自 ItemInfo.json / 游戏内道具搜索"护主犬"）。
+ * 当前主项 90021 是"洛克王国联动·护主犬"宠物（50% 触发看护技能）。
+ * 如官方新增同系列护主犬，追加到此数组即可。
+ */
+const GUARD_DOG_IDS: ReadonlySet<number> = new Set<number>([
+    90021, // 护主犬（洛克王国联动限定，50% 看护概率）
+]);
+
+/**
  * 仅在开启"只帮护主犬好友"时，按服务端返回的 brief_dog_info 判断是否护主。
  * 返回 true 表示当前好友未携带护主犬，帮忙操作应被跳过。
  */
@@ -610,17 +619,38 @@ function isFriendLackingGuardDog(enterReply: any, friendName: string): boolean {
         });
         return true;
     }
-    const dogId: number = toNum(brief.dog_id);
-    const status: number = toNum(brief.status);
-    // 服务端约定：dog_id > 0 且 status == 1 时表示好友正在护主
-    if (dogId > 0 && status === 1) return false;
-    log('好友', `${friendName}: 未携带护主犬，跳过帮忙`, {
+    // 服务端可能返回单个 dog_id，也可能是 dogs 列表；兼容两种结构
+    const dogIds: number[] = [];
+    if (Number.isFinite(Number(brief.dog_id))) dogIds.push(toNum(brief.dog_id));
+    if (Array.isArray(brief.dogs)) {
+        for (const d of brief.dogs) if (d && Number.isFinite(Number(d.id))) dogIds.push(toNum(d.id));
+    }
+    if (dogIds.length === 0) {
+        log('好友', `${friendName}: 护主犬信息无有效 ID，已跳过帮忙`, {
+            module: 'friend',
+            event: '护主犬过滤',
+            result: 'empty_dog_ids',
+            friendName,
+        });
+        return true;
+    }
+    const hasGuardDog: boolean = dogIds.some((id) => GUARD_DOG_IDS.has(id));
+    if (hasGuardDog) {
+        log('好友', `${friendName}: 携带护主犬，执行帮忙`, {
+            module: 'friend',
+            event: '护主犬过滤',
+            result: 'has_guard_dog',
+            friendName,
+            dogIds,
+        });
+        return false;
+    }
+    log('好友', `${friendName}: 未携带护主犬（ID: ${dogIds.join(',')}），跳过帮忙`, {
         module: 'friend',
         event: '护主犬过滤',
         result: 'no_guard_dog',
         friendName,
-        dogId,
-        status,
+        dogIds,
     });
     return true;
 }
