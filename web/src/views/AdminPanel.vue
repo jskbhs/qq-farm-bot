@@ -1906,11 +1906,11 @@ watch(activeTab, (tab) => {
 
     <div class="farm-card-enhanced">
       <div class="admin-tabs-nav">
-        <nav class="flex gap-2 p-2">
+        <nav class="scrollbar-hide flex gap-2 overflow-x-auto p-2">
           <button
             v-for="tab in visibleTabs"
             :key="tab.key"
-            class="admin-tab flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
+            class="admin-tab flex flex-shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
             :class="activeTab === tab.key
               ? 'admin-tab-active'
               : 'admin-tab-inactive'"

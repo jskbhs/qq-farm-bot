@@ -5,7 +5,7 @@
 input,
 textarea,
 select,
-[contenteditable="true"] {
+[contenteditable='true'] {
   -webkit-user-select: text !important;
   -moz-user-select: text !important;
   -ms-user-select: text !important;
@@ -34,7 +34,12 @@ textarea * {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-primary) 60%, white) 0%, var(--theme-primary) 50%, color-mix(in srgb, var(--theme-primary) 80%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--theme-primary) 60%, white) 0%,
+    var(--theme-primary) 50%,
+    color-mix(in srgb, var(--theme-primary) 80%, black) 100%
+  );
   border-radius: 9999px;
   border: 2px solid color-mix(in srgb, var(--theme-primary) 8%, transparent);
   background-clip: padding-box;
@@ -42,12 +47,21 @@ textarea * {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-primary) 80%, white) 0%, var(--theme-primary) 50%, color-mix(in srgb, var(--theme-primary) 60%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--theme-primary) 80%, white) 0%,
+    var(--theme-primary) 50%,
+    color-mix(in srgb, var(--theme-primary) 60%, black) 100%
+  );
   border-width: 2px;
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 80%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--theme-primary) 0%,
+    color-mix(in srgb, var(--theme-primary) 80%, black) 100%
+  );
 }
 
 ::-webkit-scrollbar-corner {
@@ -58,6 +72,16 @@ textarea * {
 .dark .farm-input option {
   background-color: #374151 !important;
   color: #f9fafb !important;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Base styles to reset some defaults if needed, though UnoCSS reset handles most */
@@ -87,24 +111,29 @@ body {
 /* Cartoon card component — 3D浮雕卡片 */
 .cartoon-card {
   border-radius: var(--theme-radius-lg, 18px);
-  box-shadow: var(--theme-shadow-md, 0 4px 0 rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.12));
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
-  border: 3px solid rgba(0,0,0,0.08);
+  box-shadow: var(--theme-shadow-md, 0 4px 0 rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.12));
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease;
+  border: 3px solid rgba(0, 0, 0, 0.08);
 }
 
 .cartoon-card:hover {
   transform: translateY(-3px) scale(1.01);
-  box-shadow: var(--theme-shadow-lg, 0 6px 0 rgba(0,0,0,0.2), 0 8px 32px rgba(0,0,0,0.16));
+  box-shadow: var(--theme-shadow-lg, 0 6px 0 rgba(0, 0, 0, 0.2), 0 8px 32px rgba(0, 0, 0, 0.16));
 }
 
 .cartoon-card:active {
   transform: translateY(0) scale(0.99);
-  box-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Farm background gradient — 天空+草地渐变 */
 .farm-bg {
-  background: linear-gradient(180deg,
+  background: linear-gradient(
+    180deg,
     var(--theme-sky-light, #b8e4f7) 0%,
     var(--theme-sky, #87ceeb) 35%,
     var(--theme-grass-light, #6dbf5b) 35%,
@@ -116,86 +145,180 @@ body {
 /* Soil texture background — 泥土纹理 */
 .soil-bg {
   background:
-    radial-gradient(circle at 15% 85%, rgba(240,192,64,0.15) 0%, transparent 40%),
-    radial-gradient(circle at 85% 15%, rgba(139,105,20,0.2) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(107,79,14,0.1) 0%, transparent 60%),
+    radial-gradient(circle at 15% 85%, rgba(240, 192, 64, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(139, 105, 20, 0.2) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(107, 79, 14, 0.1) 0%, transparent 60%),
     linear-gradient(180deg, var(--theme-soil, #8b6914) 0%, #6b4f0e 100%);
 }
 
 /* Grass background — 草地纹理 */
 .grass-bg {
   background:
-    radial-gradient(circle at 25% 75%, rgba(109,191,91,0.3) 0%, transparent 45%),
-    radial-gradient(circle at 75% 25%, rgba(74,140,63,0.2) 0%, transparent 45%),
+    radial-gradient(circle at 25% 75%, rgba(109, 191, 91, 0.3) 0%, transparent 45%),
+    radial-gradient(circle at 75% 25%, rgba(74, 140, 63, 0.2) 0%, transparent 45%),
     linear-gradient(180deg, var(--theme-grass-light, #6dbf5b) 0%, var(--theme-grass, #4a8c3f) 100%);
 }
 
 /* Cartoon animations — QQ农场风格弹性动画 */
 @keyframes cartoon-bounce {
-  0%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-12px); }
-  50% { transform: translateY(-6px); }
-  70% { transform: translateY(-9px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-12px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  70% {
+    transform: translateY(-9px);
+  }
 }
 
 @keyframes bounce-in {
-  0% { transform: scale(0.3); opacity: 0; }
-  50% { transform: scale(1.08); }
-  70% { transform: scale(0.95); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes bounce-hover {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 @keyframes plant-grow {
-  0% { transform: scale(0.3) translateY(20px); opacity: 0; }
-  60% { transform: scale(1.15) translateY(-6px); opacity: 1; }
-  80% { transform: scale(0.95) translateY(2px); }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% {
+    transform: scale(0.3) translateY(20px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15) translateY(-6px);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95) translateY(2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes cartoon-wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  15% { transform: rotate(-6deg); }
-  30% { transform: rotate(5deg); }
-  45% { transform: rotate(-4deg); }
-  60% { transform: rotate(3deg); }
-  75% { transform: rotate(-2deg); }
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(-6deg);
+  }
+  30% {
+    transform: rotate(5deg);
+  }
+  45% {
+    transform: rotate(-4deg);
+  }
+  60% {
+    transform: rotate(3deg);
+  }
+  75% {
+    transform: rotate(-2deg);
+  }
 }
 
 @keyframes sparkle {
-  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
 }
 
 @keyframes water-drop {
-  0% { transform: translateY(-12px); opacity: 0; }
-  40% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(14px); opacity: 0; }
+  0% {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  40% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
 }
 
 @keyframes float-up {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-30px); opacity: 0; }
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
 }
 
 @keyframes sway {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 140, 63, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(74, 140, 63, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 140, 63, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(74, 140, 63, 0);
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
-  20%, 40%, 60%, 80% { transform: translateX(3px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-3px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(3px);
+  }
 }
 
 /* Cartoon font classes */
@@ -214,24 +337,30 @@ body {
   border-radius: var(--theme-radius-lg, 18px);
   font-weight: 700;
   padding: 10px 24px;
-  border: 3px solid rgba(0,0,0,0.1);
-  border-bottom: 4px solid rgba(0,0,0,0.2);
-  box-shadow: 0 4px 0 rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.1);
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 4px solid rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  text-shadow: 0 1px 1px rgba(255,255,255,0.2);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 .cartoon-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 rgba(0,0,0,0.18), 0 6px 16px rgba(0,0,0,0.12);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .cartoon-btn:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.1);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.18),
+    0 1px 4px rgba(0, 0, 0, 0.1);
   border-bottom-width: 3px;
 }
 
@@ -239,7 +368,9 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 /* Farm progress bar — 卡通进度条 */
@@ -247,10 +378,10 @@ body {
   border-radius: 9999px;
   overflow: hidden;
   height: 14px;
-  background: rgba(0,0,0,0.12);
-  border: 2px solid rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.12);
+  border: 2px solid rgba(0, 0, 0, 0.1);
   position: relative;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .farm-progress::after {
@@ -261,15 +392,19 @@ body {
     -45deg,
     transparent,
     transparent 4px,
-    rgba(255,255,255,0.2) 4px,
-    rgba(255,255,255,0.2) 8px
+    rgba(255, 255, 255, 0.2) 4px,
+    rgba(255, 255, 255, 0.2) 8px
   );
   animation: barberpole 1s linear infinite;
 }
 
 @keyframes barberpole {
-  0% { background-position: 0 0; }
-  100% { background-position: 11.31px 0; }
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 11.31px 0;
+  }
 }
 
 /* Utility animation classes */
@@ -322,25 +457,54 @@ body {
   opacity: 0;
 }
 
-.animate-stagger-1 { animation-delay: 0.05s; }
-.animate-stagger-2 { animation-delay: 0.1s; }
-.animate-stagger-3 { animation-delay: 0.15s; }
-.animate-stagger-4 { animation-delay: 0.2s; }
-.animate-stagger-5 { animation-delay: 0.25s; }
-.animate-stagger-6 { animation-delay: 0.3s; }
-.animate-stagger-7 { animation-delay: 0.35s; }
+.animate-stagger-1 {
+  animation-delay: 0.05s;
+}
+.animate-stagger-2 {
+  animation-delay: 0.1s;
+}
+.animate-stagger-3 {
+  animation-delay: 0.15s;
+}
+.animate-stagger-4 {
+  animation-delay: 0.2s;
+}
+.animate-stagger-5 {
+  animation-delay: 0.25s;
+}
+.animate-stagger-6 {
+  animation-delay: 0.3s;
+}
+.animate-stagger-7 {
+  animation-delay: 0.35s;
+}
 
 @keyframes float-slow {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  25% { transform: translateY(-8px) translateX(4px); }
-  50% { transform: translateY(-4px) translateX(-2px); }
-  75% { transform: translateY(-10px) translateX(2px); }
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-8px) translateX(4px);
+  }
+  50% {
+    transform: translateY(-4px) translateX(-2px);
+  }
+  75% {
+    transform: translateY(-10px) translateX(2px);
+  }
 }
 
 @keyframes number-pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes fade-in-up {
@@ -355,7 +519,8 @@ body {
 }
 
 @keyframes online-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
   }
   50% {
@@ -389,7 +554,12 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, color-mix(in srgb, white 20%, transparent) 0%, transparent 50%, color-mix(in srgb, var(--theme-primary) 5%, transparent) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, white 20%, transparent) 0%,
+    transparent 50%,
+    color-mix(in srgb, var(--theme-primary) 5%, transparent) 100%
+  );
   border-radius: 24px;
   pointer-events: none;
 }
@@ -424,7 +594,12 @@ body {
 }
 
 .dark .farm-card-enhanced::before {
-  background: linear-gradient(135deg, color-mix(in srgb, white 8%, transparent) 0%, transparent 50%, color-mix(in srgb, var(--theme-primary) 8%, transparent) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, white 8%, transparent) 0%,
+    transparent 50%,
+    color-mix(in srgb, var(--theme-primary) 8%, transparent) 100%
+  );
 }
 
 .dark .farm-card-enhanced::after {
@@ -480,8 +655,12 @@ body {
 }
 
 @keyframes progress-stripe {
-  0% { background-position: 0 0; }
-  100% { background-position: 16.97px 0; }
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 16.97px 0;
+  }
 }
 
 /* 资产数字样式 */
@@ -559,14 +738,23 @@ body {
 }
 
 @keyframes gain-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
 }
 
 /* 底部导航选中项 */
 .bottom-nav-item-active {
   position: relative;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 15%, transparent) 0%, color-mix(in srgb, var(--theme-primary) 8%, transparent) 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--theme-primary) 15%, transparent) 0%,
+    color-mix(in srgb, var(--theme-primary) 8%, transparent) 100%
+  );
   border-radius: 16px;
 }
 
@@ -588,9 +776,15 @@ body {
 }
 
 @keyframes nav-bounce {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3) translateY(-4px); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3) translateY(-4px);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* 在线状态指示器 */
@@ -631,19 +825,36 @@ body {
 }
 
 @keyframes wheat-sway {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(5deg); }
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
 }
 
 /* 装饰分隔线 */
 .decorative-divider {
   position: relative;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(139, 105, 20, 0.2) 20%, rgba(139, 105, 20, 0.2) 80%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 105, 20, 0.2) 20%,
+    rgba(139, 105, 20, 0.2) 80%,
+    transparent 100%
+  );
 }
 
 .dark .decorative-divider {
-  background: linear-gradient(90deg, transparent 0%, rgba(109, 191, 91, 0.2) 20%, rgba(109, 191, 91, 0.2) 80%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(109, 191, 91, 0.2) 20%,
+    rgba(109, 191, 91, 0.2) 80%,
+    transparent 100%
+  );
 }
 
 .decorative-divider::before {

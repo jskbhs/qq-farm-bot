@@ -2,14 +2,18 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { menuRoutes } from '@/router/menu'
+import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const userStore = useUserStore()
+const appStore = useAppStore()
 const activeKey = ref('')
 
 const visibleItems = computed(() => {
-  return menuRoutes.filter(item => !item.adminOnly || userStore.isAdminPanelUser)
+  return menuRoutes
+    .filter(item => !item.adminOnly || userStore.isAdminPanelUser)
+    .filter(item => appStore.isBottomNavVisible(item.path, true))
 })
 
 function isActive(path: string) {

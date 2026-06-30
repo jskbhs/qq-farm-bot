@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import api from '@/api'
 
 const THEME_KEY = 'ui_theme'
+const BOTTOM_NAV_KEY = 'ui_bottom_nav'
 
 export type Theme = 'light-blue' | 'light-green' | 'light-pink' | 'dark-blue' | 'dark-purple' | 'dark-teal' | 'dark-orange' | 'dark-red' | 'farm-light' | 'farm-dark' | 'spring-sakura' | 'autumn-harvest' | 'winter-snow'
 
@@ -10,6 +11,46 @@ export const useAppStore = defineStore('app', () => {
   const sidebarOpen = ref(false)
   const currentTheme = ref<Theme>((localStorage.getItem(THEME_KEY) as Theme) || 'farm-light')
   const showThemePanel = ref(false)
+
+  function loadBottomNav(): Record<string, boolean> {
+    try {
+      const raw = localStorage.getItem(BOTTOM_NAV_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') {
+          return parsed as Record<string, boolean>
+        }
+      }
+    }
+    catch {
+      // ignore
+    }
+    return {}
+  }
+
+  const bottomNavVisible = ref<Record<string, boolean>>(loadBottomNav())
+
+  function saveBottomNav() {
+    localStorage.setItem(BOTTOM_NAV_KEY, JSON.stringify(bottomNavVisible.value))
+  }
+
+  function isBottomNavVisible(path: string, defaultVisible = true): boolean {
+    const key = path || ''
+    if (key in bottomNavVisible.value) {
+      return bottomNavVisible.value[key] ?? defaultVisible
+    }
+    return defaultVisible
+  }
+
+  function setBottomNavVisible(path: string, visible: boolean) {
+    bottomNavVisible.value = { ...bottomNavVisible.value, [path || '']: visible }
+    saveBottomNav()
+  }
+
+  function resetBottomNav() {
+    bottomNavVisible.value = {}
+    saveBottomNav()
+  }
 
   const themes: Record<Theme, {
     name: string
@@ -277,6 +318,10 @@ export const useAppStore = defineStore('app', () => {
     currentTheme,
     showThemePanel,
     themes,
+    bottomNavVisible,
+    isBottomNavVisible,
+    setBottomNavVisible,
+    resetBottomNav,
     applyTheme,
     toggleThemePanel,
     toggleDark,

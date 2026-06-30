@@ -12,13 +12,16 @@ import BaseSelect from '@/components/ui/BaseSelect.vue'
 import BaseSwitch from '@/components/ui/BaseSwitch.vue'
 import YybConfigModal from '@/components/YybConfigModal.vue'
 import YybLoginModal from '@/components/YybLoginModal.vue'
+import { menuRoutes } from '@/router/menu'
 import { getPlatformClass, getPlatformLabel, useAccountStore } from '@/stores/account'
+import { useAppStore } from '@/stores/app'
 import { useFarmStore } from '@/stores/farm'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import { useYybLoginStore } from '@/stores/yyb-login'
 
 const router = useRouter()
+const appStore = useAppStore()
 const accountStore = useAccountStore()
 const userStore = useUserStore()
 const settingStore = useSettingStore()
@@ -63,6 +66,20 @@ const tabs = [
   { key: 'automation', label: '自动控制', icon: '🔄' },
   { key: 'user', label: '用户管理', icon: '👥' },
 ] as const
+
+const bottomNavItems = computed(() => menuRoutes.filter(item => !item.adminOnly || userStore.isAdminPanelUser))
+
+function isNavItemVisible(item: typeof menuRoutes[number]): boolean {
+  return appStore.isBottomNavVisible(item.path, true)
+}
+
+function toggleNavItem(item: typeof menuRoutes[number]) {
+  appStore.setBottomNavVisible(item.path, !isNavItemVisible(item))
+}
+
+function resetNavItems() {
+  appStore.resetBottomNav()
+}
 
 const modalVisible = ref(false)
 const modalConfig = ref({
@@ -950,11 +967,11 @@ async function handleTestOffline() {
 
     <div class="farm-card-enhanced overflow-hidden p-0">
       <div class="border-b" :style="{ borderColor: 'color-mix(in srgb, var(--theme-primary) 15%, transparent)' }">
-        <nav class="flex gap-1.5 p-2.5">
+        <nav class="scrollbar-hide flex gap-1.5 overflow-x-auto p-2.5">
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            class="relative flex items-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
+            class="relative flex flex-shrink-0 items-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-bold transition-all duration-300"
             :class="activeTab === tab.key
               ? 'text-white shadow-md scale-105'
               : 'hover:scale-105'"
@@ -1757,6 +1774,43 @@ async function handleTestOffline() {
                   @click="handleSaveOffline"
                 >
                   保存下线提醒设置
+                </BaseButton>
+              </div>
+            </div>
+
+            <div class="farm-card border border-gray-200 rounded-2xl bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800">
+              <h4 class="mb-3 flex items-center gap-2 text-base text-gray-900 font-bold dark:text-gray-100">
+                🧭 悬浮底栏显示
+              </h4>
+
+              <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+                自定义底部导航栏显示哪些入口，关闭后不再显示。
+              </p>
+
+              <div class="grid grid-cols-2 gap-3 md:grid-cols-4 sm:grid-cols-3">
+                <label
+                  v-for="item in bottomNavItems"
+                  :key="item.path"
+                  class="flex cursor-pointer items-center gap-2 border rounded-xl p-3 transition-colors"
+                  :class="isNavItemVisible(item)
+                    ? 'border-[color-mix(in_srgb,var(--theme-primary)_30%,transparent)] bg-[color-mix(in_srgb,var(--theme-primary)_8%,transparent)]'
+                    : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50'"
+                  :style="isNavItemVisible(item) ? { color: 'var(--theme-primary)' } : { color: 'var(--theme-text)' }"
+                >
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 border-gray-300 rounded text-[var(--theme-primary)] focus:ring-[var(--theme-primary)]"
+                    :checked="isNavItemVisible(item)"
+                    @change="toggleNavItem(item)"
+                  >
+                  <div :class="item.icon" class="text-lg" />
+                  <span class="text-sm font-medium">{{ item.label }}</span>
+                </label>
+              </div>
+
+              <div class="mt-4 flex justify-end">
+                <BaseButton variant="secondary" size="sm" @click="resetNavItems">
+                  恢复默认
                 </BaseButton>
               </div>
             </div>
