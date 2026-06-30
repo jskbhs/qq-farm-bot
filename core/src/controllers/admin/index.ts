@@ -8,6 +8,8 @@ export {};
 const fs = require('node:fs');
 const path = require('node:path');
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const { CONFIG } = require('../../config/config');
 const { getResourcePath } = require('../../config/runtime-paths');
@@ -38,24 +40,59 @@ function startAdminServer(dataProvider: any): void {
     ctx = createAdminContext(dataProvider);
 
     const app = express();
-    app.set('trust proxy', true);
-    app.use(express.json());
+
+    // 仅在明确配置了受信任代理时启用；否则保持 Express 默认行为，防止 X-Forwarded-For 被伪造
+    const trustedProxy = process.env.TRUSTED_PROXY;
+    if (trustedProxy) {
+        app.set('trust proxy', trustedProxy === 'true' ? true : trustedProxy.split(',').map(s => s.trim()));
+    }
+
+    // 安全响应头
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", "data:", "https:"],
+                connectSrc: ["'self'", "ws:", "wss:"],
+            },
+        },
+        crossOriginEmbedderPolicy: false,
+    }));
+
+    // 请求体大小限制
+    app.use(express.json({ limit: '1mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+    // 公共接口速率限制（登录、注册、续费、领卡密）
+    const publicLimiter = rateLimit({
+        windowMs: 1 * 60 * 1000,
+        max: 30,
+        standardHeaders: true,
+        legacyHeaders: false,
+        handler: (_req: any, res: any) => {
+            res.status(429).json({ ok: false, error: '请求过于频繁，请稍后再试' });
+        },
+    });
+    app.use('/api/login', publicLimiter);
+    app.use('/api/register', publicLimiter);
+    app.use('/api/user/renew-public', publicLimiter);
+    app.use('/api/card-claim/claim', publicLimiter);
 
     ctx.app = app;
 
     app.use((req: any, res: any, next: any) => {
-        const allowedOrigins: string[] = CONFIG.ALLOWED_ORIGINS || ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+        const allowedOrigins: string[] = CONFIG.allowedOrigins;
         const origin = req.headers.origin;
 
         if (origin && allowedOrigins.includes(origin)) {
             res.header('Access-Control-Allow-Origin', origin);
-        } else if (!origin) {
-            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Credentials', 'true');
         }
 
         res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS, PUT');
         res.header('Access-Control-Allow-Headers', 'Content-Type, x-account-id, x-admin-token, x-proxy-api-key, x-proxy-api-url, x-proxy-app-id');
-        res.header('Access-Control-Allow-Credentials', 'true');
         res.header('Access-Control-Max-Age', '86400');
 
         if (req.method === 'OPTIONS') return res.sendStatus(200);

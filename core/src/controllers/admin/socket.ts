@@ -7,6 +7,7 @@ export {};
 const { Server } = require('socket.io');
 const SocketIOServer = Server;
 
+const { CONFIG } = require('../../config/config');
 const {
     resolveAccId,
     getAccountList,
@@ -104,12 +105,14 @@ function applySocketSubscription(ctx: AdminContext, socket: any, accountRef: str
 }
 
 function setupSocketIO(ctx: AdminContext): void {
+    const allowedOrigins: string[] = CONFIG.allowedOrigins;
     ctx.io = new SocketIOServer(ctx.server as any, {
         path: '/socket.io',
         cors: {
-            origin: '*',
+            origin: allowedOrigins,
             methods: ['GET', 'POST'],
             allowedHeaders: ['x-admin-token', 'x-account-id'],
+            credentials: true,
         },
     });
 

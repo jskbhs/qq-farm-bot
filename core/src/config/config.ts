@@ -34,6 +34,7 @@ interface RuntimeConfig extends SystemConfig {
     friendCheckIntervalMax: number;
     adminPort: number;
     adminPassword: string | undefined;
+    allowedOrigins: string[];
 }
 
 // ============ 设备预设 ============
@@ -138,6 +139,16 @@ const DEFAULT_SYSTEM_CONFIG: SystemConfig = {
     deviceInfo: { ...DEFAULT_DEVICE_INFO },
 };
 
+function parseAllowedOrigins(envValue: string | undefined): string[] {
+    if (!envValue) {
+        return ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+    }
+    return envValue
+        .split(',')
+        .map(o => o.trim())
+        .filter(Boolean);
+}
+
 const CONFIG: RuntimeConfig = {
     serverUrl: DEFAULT_SYSTEM_CONFIG.serverUrl,
     clientVersion: DEFAULT_CLIENT_VERSION,
@@ -153,6 +164,7 @@ const CONFIG: RuntimeConfig = {
     friendCheckIntervalMax: 15000,
     adminPort: Number(process.env.ADMIN_PORT),
     adminPassword: process.env.ADMIN_PASSWORD,
+    allowedOrigins: parseAllowedOrigins(process.env.ALLOWED_ORIGINS),
 };
 
 function normalizeDeviceInfo(input: any): DeviceInfo {

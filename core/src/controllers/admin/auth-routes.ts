@@ -345,7 +345,8 @@ function mountAuthRoutes(app: Application, ctx: AdminContext): void {
     });
 
     app.use('/api', (req: Request, res: Response, next: any) => {
-        if (req.path === '/login' || req.path === '/qr/create' || req.path === '/qr/check' || req.path === '/card-claim/status' || req.path === '/card-claim/claim' || req.path === '/game-version' || req.path === '/user/renew-public') return next();
+        const publicPaths = ['/login', '/qr/create', '/qr/check', '/card-claim/status', '/card-claim/claim', '/game-version', '/user/renew-public', '/ping', '/auth/validate'];
+        if (publicPaths.includes(req.path)) return next();
         return authRequired(req, res, next);
     });
 
