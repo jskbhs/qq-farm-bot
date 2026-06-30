@@ -7,6 +7,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import DailyReportCard from '@/components/DailyReportCard.vue'
+import ChangelogModal from '@/components/ChangelogModal.vue'
 import { useAccountStore } from '@/stores/account'
 import { useBagStore } from '@/stores/bag'
 import { useStatusStore } from '@/stores/status'
@@ -28,6 +29,7 @@ const logContainer = ref<HTMLElement | null>(null)
 const autoScroll = ref(true)
 const lastBagFetchAt = ref(0)
 const clearingLogs = ref(false)
+const showChangelog = ref(false)
 
 const allLogs = computed(() => {
   const sLogs = statusLogs.value || []
@@ -692,6 +694,15 @@ useIntervalFn(updateCountdowns, 1000)
               </BaseButton>
 
               <BaseButton
+                variant="outline"
+                size="sm"
+                title="查看版本更新"
+                @click="showChangelog = true"
+              >
+                📋 版本更新
+              </BaseButton>
+
+              <BaseButton
                 variant="secondary"
                 size="sm"
                 :loading="clearingLogs"
@@ -793,5 +804,8 @@ useIntervalFn(updateCountdowns, 1000)
         </div>
       </div>
     </div>
+
+    <!-- 版本更新弹窗 -->
+    <ChangelogModal :show="showChangelog" @close="showChangelog = false" />
   </div>
 </template>
