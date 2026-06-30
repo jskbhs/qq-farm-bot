@@ -81,12 +81,8 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
                         date: dateKey,
                         generatedAt: Date.now(),
                         accounts: [],
-                        byGold: [],
-                        bySteal: [],
-                        byHarvest: [],
-                        byHelpFarming: [],
-                        byGuardDogDrop: [],
-                        totals: { accounts: 0, activeAccounts: 0, harvest: 0, steal: 0, fertilize: 0, plant: 0, helpFarming: 0, guardDogDrop: 0, taskClaim: 0, sell: 0, gold: 0, exp: 0 },
+                        byField: {},
+                        totals: { accounts: 0, activeAccounts: 0, harvest: 0, farming: 0, fertilize: 0, plant: 0, steal: 0, helpFarming: 0, guardDogDrop: 0, taskClaim: 0, sell: 0, gold: 0, exp: 0 },
                     },
                 });
             }
@@ -102,17 +98,18 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
                     running: !!meta.running,
                 };
             });
+            // 为每个字段都注入 enriched 后的列表
+            const byFieldEnriched: Record<string, any[]> = {};
+            for (const k of Object.keys(data.byField || {})) {
+                byFieldEnriched[k] = enriched(data.byField[k] || []);
+            }
             res.json({
                 ok: true,
                 data: {
                     date: data.date,
                     generatedAt: data.generatedAt,
                     accounts: enriched(data.accounts),
-                    byGold: enriched(data.byGold),
-                    bySteal: enriched(data.bySteal),
-                    byHarvest: enriched(data.byHarvest),
-                    byHelpFarming: enriched(data.byHelpFarming || []),
-                    byGuardDogDrop: enriched(data.byGuardDogDrop || []),
+                    byField: byFieldEnriched,
                     totals: data.totals,
                 },
             });

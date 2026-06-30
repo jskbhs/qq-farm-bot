@@ -9,9 +9,30 @@ const accountStore = useAccountStore()
 const userStore = useUserStore()
 const toast = useToastStore()
 
+/**
+ * 与 Dashboard 「今日统计」完全对齐的 11 个字段
+ * 改字段要同时改:
+ *   1. web/src/views/Dashboard.vue 的 OP_META
+ *   2. core/src/services/gamification.ts 的 SUMMARY_FIELDS
+ *   3. web/src/views/Leaderboard.vue 的 FIELDS
+ */
+const FIELDS: Array<{ key: string, label: string, icon: string, accent: string }> = [
+  { key: 'harvest',      label: '收获',         icon: '🌾',   accent: '#f59e0b' },
+  { key: 'farming',      label: '一键务农',     icon: '🧑\u200d🌾',  accent: '#eab308' },
+  { key: 'fertilize',    label: '施肥',         icon: '🧪',   accent: '#10b981' },
+  { key: 'plant',        label: '种植',         icon: '🌱',   accent: '#84cc16' },
+  { key: 'steal',        label: '偷菜',         icon: '🏃',   accent: '#f97316' },
+  { key: 'helpFarming',  label: '帮务农',       icon: '🧑\u200d🌾',  accent: '#06b6d4' },
+  { key: 'guardDogDrop', label: '同气连枝礼包', icon: '🎁',   accent: '#ef4444' },
+  { key: 'taskClaim',    label: '任务',         icon: '✅',   accent: '#6366f1' },
+  { key: 'sell',         label: '出售',         icon: '💰',   accent: '#ec4899' },
+  { key: 'gold',         label: '金币',         icon: '🪙',   accent: '#f59e0b' },
+  { key: 'exp',          label: '经验',         icon: '⭐',   accent: '#a855f7' },
+]
+
 const loading = ref(false)
 const dateKey = ref<'today' | 'yesterday'>('today')
-const activeTab = ref<'score' | 'gold' | 'steal' | 'harvest' | 'helpFarming' | 'guardDogDrop'>('score')
+const activeTab = ref<string>('score')
 const data = ref<any>(null)
 const report = ref<any>(null)
 const lastRefreshedAt = ref<number>(0)
@@ -70,43 +91,30 @@ function updateRefreshedText() {
   else lastRefreshedText.value = new Date(lastRefreshedAt.value).toLocaleTimeString('zh-CN')
 }
 
-const tabs = [
-  { key: 'score', label: '综合', icon: '🏆' },
-  { key: 'gold', label: '金币', icon: '💰' },
-  { key: 'steal', label: '偷菜', icon: '🥷' },
-  { key: 'harvest', label: '收菜', icon: '🌾' },
-  { key: 'helpFarming', label: '帮忙', icon: '🤝' },
-  { key: 'guardDogDrop', label: '护主犬', icon: '🐶' },
-] as const
+const tabs = computed(() => [
+  { key: 'score', label: '综合', icon: '🏆', accent: 'var(--theme-primary)' },
+  ...FIELDS.map(f => ({ key: f.key, label: f.label, icon: f.icon, accent: f.accent })),
+])
 
 const currentList = computed(() => {
   if (!data.value) return []
-  if (activeTab.value === 'gold') return data.value.byGold || []
-  if (activeTab.value === 'steal') return data.value.bySteal || []
-  if (activeTab.value === 'harvest') return data.value.byHarvest || []
-  if (activeTab.value === 'helpFarming') return data.value.byHelpFarming || []
-  if (activeTab.value === 'guardDogDrop') return data.value.byGuardDogDrop || []
-  return data.value.accounts || []
+  if (activeTab.value === 'score') return data.value.accounts || []
+  const byField = data.value.byField || {}
+  return byField[activeTab.value] || []
 })
 
 const maxValue = computed(() => {
   const list = currentList.value
   if (!list.length) return 1
-  if (activeTab.value === 'gold') return Math.max(...list.map((e: any) => e.gold || 0), 1)
-  if (activeTab.value === 'steal') return Math.max(...list.map((e: any) => e.stealCount || 0), 1)
-  if (activeTab.value === 'harvest') return Math.max(...list.map((e: any) => e.harvestCount || 0), 1)
-  if (activeTab.value === 'helpFarming') return Math.max(...list.map((e: any) => e.helpFarmingCount || 0), 1)
-  if (activeTab.value === 'guardDogDrop') return Math.max(...list.map((e: any) => e.guardDogDropCount || 0), 1)
-  return Math.max(...list.map((e: any) => e.score || 0), 1)
+  if (activeTab.value === 'score') {
+    return Math.max(...list.map((e: any) => e.score || 0), 1)
+  }
+  return Math.max(...list.map((e: any) => e[activeTab.value] || 0), 1)
 })
 
 function valueOf(entry: any) {
-  if (activeTab.value === 'gold') return entry.gold || 0
-  if (activeTab.value === 'steal') return entry.stealCount || 0
-  if (activeTab.value === 'harvest') return entry.harvestCount || 0
-  if (activeTab.value === 'helpFarming') return entry.helpFarmingCount || 0
-  if (activeTab.value === 'guardDogDrop') return entry.guardDogDropCount || 0
-  return entry.score || 0
+  if (activeTab.value === 'score') return entry.score || 0
+  return entry[activeTab.value] || 0
 }
 
 function formatNumber(n: number) {
@@ -128,21 +136,15 @@ function rankColor(rank: number) {
 }
 
 function valueLabel() {
-  if (activeTab.value === 'gold') return '金币'
-  if (activeTab.value === 'steal') return '偷菜'
-  if (activeTab.value === 'harvest') return '收菜'
-  if (activeTab.value === 'helpFarming') return '帮忙'
-  if (activeTab.value === 'guardDogDrop') return '护主犬'
-  return '得分'
+  if (activeTab.value === 'score') return '得分'
+  const f = FIELDS.find(x => x.key === activeTab.value)
+  return f?.label || activeTab.value
 }
 
 function tabAccentColor() {
-  if (activeTab.value === 'gold') return '#10b981'
-  if (activeTab.value === 'steal') return '#8b5cf6'
-  if (activeTab.value === 'harvest') return '#f59e0b'
-  if (activeTab.value === 'helpFarming') return '#06b6d4'
-  if (activeTab.value === 'guardDogDrop') return '#ef4444'
-  return 'var(--theme-primary)'
+  if (activeTab.value === 'score') return 'var(--theme-primary)'
+  const t = tabs.value.find(x => x.key === activeTab.value)
+  return t?.accent || 'var(--theme-primary)'
 }
 
 async function regenerateReport() {
@@ -293,26 +295,26 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div class="rounded-xl p-3" style="background: color-mix(in srgb, #f59e0b 8%, transparent)">
-            <div class="text-xs opacity-70">收菜</div>
+            <div class="text-xs opacity-70">收获</div>
             <div class="text-xl font-black mt-0.5" style="color: #f59e0b">
               🌾 {{ formatNumber(report.totals.harvest) }}
             </div>
           </div>
           <div class="rounded-xl p-3" style="background: color-mix(in srgb, #8b5cf6 8%, transparent)">
             <div class="text-xs opacity-70">偷菜</div>
-            <div class="text-xl font-black mt-0.5" style="color: #8b5cf6">
-              🥷 {{ formatNumber(report.totals.steal) }}
+            <div class="text-xl font-black mt-0.5" style="color: #f97316">
+              🏃 {{ formatNumber(report.totals.steal) }}
             </div>
           </div>
           <div class="rounded-xl p-3" style="background: color-mix(in srgb, #10b981 8%, transparent)">
             <div class="text-xs opacity-70">金币</div>
             <div class="text-xl font-black mt-0.5" style="color: #10b981">
-              💰 {{ formatNumber(report.totals.gold) }}
+              🪙 {{ formatNumber(report.totals.gold) }}
             </div>
           </div>
         </div>
 
-        <!-- 三王 + 护主犬王 -->
+        <!-- 三王 -->
         <div v-if="report && (report.mvpAccount || report.harvestKingAccount || report.stealKingAccount)" class="grid grid-cols-3 gap-3 mt-3">
           <div v-if="report.mvpAccount" class="rounded-xl p-3 text-center" style="background: color-mix(in srgb, #fbbf24 15%, transparent); border: 1px solid #fbbf24 30%">
             <div class="text-2xl">🏆</div>
@@ -322,12 +324,12 @@ onBeforeUnmount(() => {
           </div>
           <div v-if="report.harvestKingAccount" class="rounded-xl p-3 text-center" style="background: color-mix(in srgb, #f59e0b 15%, transparent); border: 1px solid #f59e0b 30%">
             <div class="text-2xl">🌾</div>
-            <div class="text-xs opacity-70 mt-1">收菜之王</div>
+            <div class="text-xs opacity-70 mt-1">收获之王</div>
             <div class="text-sm font-bold mt-0.5 truncate">{{ report.harvestKingAccount.accountName }}</div>
             <div class="text-xs opacity-60">{{ report.harvestKingAccount.harvest }} 次</div>
           </div>
-          <div v-if="report.stealKingAccount" class="rounded-xl p-3 text-center" style="background: color-mix(in srgb, #8b5cf6 15%, transparent); border: 1px solid #8b5cf6 30%">
-            <div class="text-2xl">🥷</div>
+          <div v-if="report.stealKingAccount" class="rounded-xl p-3 text-center" style="background: color-mix(in srgb, #f97316 15%, transparent); border: 1px solid #f97316 30%">
+            <div class="text-2xl">🏃</div>
             <div class="text-xs opacity-70 mt-1">偷菜之王</div>
             <div class="text-sm font-bold mt-0.5 truncate">{{ report.stealKingAccount.accountName }}</div>
             <div class="text-xs opacity-60">{{ report.stealKingAccount.steal }} 次</div>
@@ -335,14 +337,14 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- 排行榜标签 -->
+      <!-- 排行榜标签 (与今日统计 11 字段一致) -->
       <div class="flex gap-2 overflow-x-auto pb-1">
         <button
           v-for="tab in tabs"
           :key="tab.key"
           class="flex flex-shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all"
           :class="activeTab === tab.key ? 'shadow-md scale-105' : 'opacity-60 hover:opacity-100'"
-          :style="activeTab === tab.key ? { backgroundColor: tab.key === 'score' ? 'var(--theme-primary)' : tabAccentColor(), color: 'white' } : { background: 'color-mix(in srgb, var(--theme-bg) 60%, transparent)' }"
+          :style="activeTab === tab.key ? { backgroundColor: tab.accent, color: 'white' } : { background: 'color-mix(in srgb, var(--theme-bg) 60%, transparent)' }"
           @click="activeTab = tab.key"
         >
           <span>{{ tab.icon }}</span>
@@ -387,12 +389,18 @@ onBeforeUnmount(() => {
               <span v-if="entry.running" class="i-carbon-circle-filled text-xs" style="color: #10b981" title="运行中" />
               <span v-else class="i-carbon-circle-filled text-xs opacity-40" title="未运行" />
             </div>
-            <div class="text-xs opacity-60 flex items-center gap-2">
+            <div class="text-xs opacity-60 flex items-center gap-2 flex-wrap">
               <span>{{ entry.platform === 'wx' ? '微信' : 'QQ' }}</span>
               <span>·</span>
               <span>综合 {{ entry.score }} 分</span>
-              <span v-if="entry.lastSavedAt">·</span>
-              <span v-if="entry.lastSavedAt" class="opacity-50">存盘 {{ new Date(entry.lastSavedAt).toLocaleTimeString('zh-CN') }}</span>
+              <template v-if="activeTab !== 'score'">
+                <span>·</span>
+                <span>收 {{ entry.harvest }} / 偷 {{ entry.steal }} / 帮 {{ entry.helpFarming }}</span>
+              </template>
+              <template v-if="entry.lastSavedAt">
+                <span>·</span>
+                <span class="opacity-50">存盘 {{ new Date(entry.lastSavedAt).toLocaleTimeString('zh-CN') }}</span>
+              </template>
             </div>
           </div>
 

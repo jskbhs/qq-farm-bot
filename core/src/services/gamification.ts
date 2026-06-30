@@ -60,25 +60,47 @@ function ensureGamifDir(): void {
 
 // ============== 跨账号排行 ==============
 
+/**
+ * 与 Dashboard 今日统计 (OP_META) 完全对齐的字段集合
+ * 任何想新增的「今日统计」字段，需要同时改:
+ *   1. web/src/views/Dashboard.vue 的 OP_META
+ *   2. core/src/services/gamification.ts 的 SUMMARY_FIELDS
+ *   3. web/src/views/Leaderboard.vue 的 tabs
+ */
+const SUMMARY_FIELDS: Array<{ key: string, label: string, icon: string, weight: number }> = [
+    { key: 'harvest',      label: '收获',         icon: '🌾',   weight: 10 },  // 直接收益
+    { key: 'farming',      label: '一键务农',     icon: '🧑‍🌾',  weight: 1 },
+    { key: 'fertilize',    label: '施肥',         icon: '🧪',   weight: 1 },
+    { key: 'plant',        label: '种植',         icon: '🌱',   weight: 1 },
+    { key: 'steal',        label: '偷菜',         icon: '🏃',   weight: 5 },   // 偷菜也是直接收益
+    { key: 'helpFarming',  label: '帮务农',       icon: '🧑‍🌾',  weight: 2 },
+    { key: 'guardDogDrop', label: '同气连枝礼包', icon: '🎁',   weight: 20 },  // 高价值道具
+    { key: 'taskClaim',    label: '任务',         icon: '✅',   weight: 1 },
+    { key: 'sell',         label: '出售',         icon: '💰',   weight: 1 },
+    { key: 'gold',         label: '金币',         icon: '🪙',   weight: 0 },   // 100 金币 = 1 分
+    { key: 'exp',          label: '经验',         icon: '⭐',   weight: 0 },   // 10 经验 = 1 分
+];
+
 interface AccountSummary {
     accountId: string;
     accountName: string;
     platform: string;
-    operations: Record<string, number>;
-    harvestCount: number;
-    stealCount: number;
-    fertilizeCount: number;
-    plantCount: number;
-    helpFarmingCount: number;
-    guardDogDropCount: number;
-    taskClaimCount: number;
-    sellCount: number;
-    gold: number;
-    exp: number;
-    levelUp: number;
     online: boolean;          // 账号是否在运行
     lastSavedAt: number;      // 该账号最近一次落盘时间
     score: number;            // 综合得分
+
+    // 完整 11 个今日统计字段（与 Dashboard 今日统计对齐）
+    harvest: number;
+    farming: number;
+    fertilize: number;
+    plant: number;
+    steal: number;
+    helpFarming: number;
+    guardDogDrop: number;
+    taskClaim: number;
+    sell: number;
+    gold: number;
+    exp: number;
 }
 
 interface LeaderboardEntry extends AccountSummary {
@@ -88,19 +110,17 @@ interface LeaderboardEntry extends AccountSummary {
 interface LeaderboardData {
     date: string;
     generatedAt: number;
-    accounts: LeaderboardEntry[];
-    byGold: LeaderboardEntry[];
-    bySteal: LeaderboardEntry[];
-    byHarvest: LeaderboardEntry[];
-    byHelpFarming: LeaderboardEntry[];
-    byGuardDogDrop: LeaderboardEntry[];
+    accounts: LeaderboardEntry[];   // 按综合分排序
+    byField: Record<string, LeaderboardEntry[]>;   // 按单个字段排序，key 与 SUMMARY_FIELDS.key 对应
     totals: {
         accounts: number;
         activeAccounts: number;
+        // 同样 11 个字段
         harvest: number;
-        steal: number;
+        farming: number;
         fertilize: number;
         plant: number;
+        steal: number;
         helpFarming: number;
         guardDogDrop: number;
         taskClaim: number;
@@ -127,49 +147,48 @@ function summarizeAccount(
     const isToday = stats && stats.date === dateKey;
     const ops = isToday && stats.operations ? stats.operations : {};
 
-    const harvest = num(ops.harvest);
-    const steal = num(ops.steal);
-    const fertilize = num(ops.fertilize);
-    const plant = num(ops.plant);
-    const helpFarming = num(ops.helpFarming);
-    const guardDogDrop = num(ops.guardDogDrop);
-    const taskClaim = num(ops.taskClaim);
-    const sell = num(ops.sell);
-    const gold = num(ops.gold);
-    const exp = num(ops.exp);
-    const levelUp = num(ops.levelUp);
+    // 把所有字段都取出来（用 0 兜底）
+    const fields: Record<string, number> = {};
+    for (const f of SUMMARY_FIELDS) {
+        fields[f.key] = num(ops[f.key]);
+    }
+
     const lastSavedAt = num(stats.savedAt);
 
-    // 综合得分（基于实际产生的「收益型」操作）
-    // 收菜权重最高（实际收益）+ 偷菜 + 帮忙 + 同气连枝礼包 + 金币换算
-    const score =
-        harvest * 10
-        + steal * 5
-        + helpFarming * 2
-        + fertilize * 1
-        + plant * 1
-        + guardDogDrop * 20   // 护主犬礼包权重较高
-        + Math.floor(gold / 100);
+    // 综合得分（基于 SUMMARY_FIELDS 的权重）
+    // 收菜 ×10、偷菜 ×5、帮务农 ×2、护主犬礼包 ×20、其余 ×1
+    // 金币/100 折算、经验/10 折算
+    let score = 0;
+    for (const f of SUMMARY_FIELDS) {
+        if (f.key === 'gold') {
+            score += Math.floor(fields[f.key] / 100);
+        }
+        else if (f.key === 'exp') {
+            score += Math.floor(fields[f.key] / 10);
+        }
+        else {
+            score += fields[f.key] * f.weight;
+        }
+    }
 
     return {
         accountId: String(accountId),
         accountName: accountName || `账号${accountId}`,
         platform: platform || 'qq',
-        operations: ops,
-        harvestCount: harvest,
-        stealCount: steal,
-        fertilizeCount: fertilize,
-        plantCount: plant,
-        helpFarmingCount: helpFarming,
-        guardDogDropCount: guardDogDrop,
-        taskClaimCount: taskClaim,
-        sellCount: sell,
-        gold,
-        exp,
-        levelUp,
         online,
         lastSavedAt,
         score,
+        harvest: fields.harvest,
+        farming: fields.farming,
+        fertilize: fields.fertilize,
+        plant: fields.plant,
+        steal: fields.steal,
+        helpFarming: fields.helpFarming,
+        guardDogDrop: fields.guardDogDrop,
+        taskClaim: fields.taskClaim,
+        sell: fields.sell,
+        gold: fields.gold,
+        exp: fields.exp,
     };
 }
 
@@ -183,6 +202,7 @@ function withRank(sorted: AccountSummary[]): LeaderboardEntry[] {
 
 /**
  * 收集所有账号的"在线"状态（由外部传入的 runningMap），生成排行榜
+ * byField 为每个 SUMMARY_FIELDS 都生成一份按该字段排序的列表
  */
 function buildLeaderboard(dateKey: string, runningMap: Record<string, boolean> = {}): LeaderboardData {
     const accounts = store.getAccounts() || { accounts: [] };
@@ -191,44 +211,34 @@ function buildLeaderboard(dateKey: string, runningMap: Record<string, boolean> =
     );
 
     const byScore = withRank(sortBy(summaries, s => s.score));
-    const byGold = withRank(sortBy(summaries, s => s.gold));
-    const bySteal = withRank(sortBy(summaries, s => s.stealCount));
-    const byHarvest = withRank(sortBy(summaries, s => s.harvestCount));
-    const byHelpFarming = withRank(sortBy(summaries, s => s.helpFarmingCount));
-    const byGuardDogDrop = withRank(sortBy(summaries, s => s.guardDogDropCount));
 
-    const totals = summaries.reduce(
-        (acc, s) => ({
-            accounts: acc.accounts + 1,
-            activeAccounts: acc.activeAccounts + (s.score > 0 ? 1 : 0),
-            harvest: acc.harvest + s.harvestCount,
-            steal: acc.steal + s.stealCount,
-            fertilize: acc.fertilize + s.fertilizeCount,
-            plant: acc.plant + s.plantCount,
-            helpFarming: acc.helpFarming + s.helpFarmingCount,
-            guardDogDrop: acc.guardDogDrop + s.guardDogDropCount,
-            taskClaim: acc.taskClaim + s.taskClaimCount,
-            sell: acc.sell + s.sellCount,
-            gold: acc.gold + s.gold,
-            exp: acc.exp + s.exp,
-        }),
-        {
-            accounts: 0, activeAccounts: 0,
-            harvest: 0, steal: 0, fertilize: 0, plant: 0,
-            helpFarming: 0, guardDogDrop: 0, taskClaim: 0, sell: 0,
-            gold: 0, exp: 0,
-        },
-    );
+    // 为每个字段都生成一份排序结果
+    const byField: Record<string, LeaderboardEntry[]> = {};
+    for (const f of SUMMARY_FIELDS) {
+        byField[f.key] = withRank(sortBy(summaries, s => num((s as any)[f.key])));
+    }
+
+    // 汇总
+    const totals: any = {
+        accounts: 0,
+        activeAccounts: 0,
+    };
+    for (const f of SUMMARY_FIELDS) {
+        totals[f.key] = 0;
+    }
+    for (const s of summaries) {
+        totals.accounts++;
+        if (s.score > 0) totals.activeAccounts++;
+        for (const f of SUMMARY_FIELDS) {
+            totals[f.key] += num((s as any)[f.key]);
+        }
+    }
 
     return {
         date: dateKey,
         generatedAt: nowMs(),
         accounts: byScore,
-        byGold,
-        bySteal,
-        byHarvest,
-        byHelpFarming,
-        byGuardDogDrop,
+        byField,
         totals,
     };
 }
@@ -269,6 +279,7 @@ interface DailyReportAccount {
     accountName: string;
     platform: string;
     harvest: number;
+    farming: number;
     steal: number;
     fertilize: number;
     plant: number;
@@ -276,7 +287,6 @@ interface DailyReportAccount {
     helpFarming: number;
     taskClaim: number;
     guardDogDrop: number;
-    levelUp: number;
     gold: number;
     exp: number;
     score: number;
@@ -291,6 +301,7 @@ interface DailyReport {
     accounts: DailyReportAccount[];
     totals: {
         harvest: number;
+        farming: number;
         steal: number;
         fertilize: number;
         plant: number;
@@ -315,15 +326,15 @@ function generateReport(dateKey: string, runningMap: Record<string, boolean> = {
             accountId: s.accountId,
             accountName: s.accountName,
             platform: s.platform,
-            harvest: s.harvestCount,
-            steal: s.stealCount,
-            fertilize: s.fertilizeCount,
-            plant: s.plantCount,
-            sell: s.sellCount,
-            helpFarming: s.helpFarmingCount,
-            taskClaim: s.taskClaimCount,
-            guardDogDrop: s.guardDogDropCount,
-            levelUp: s.levelUp,
+            harvest: s.harvest,
+            farming: s.farming,
+            steal: s.steal,
+            fertilize: s.fertilize,
+            plant: s.plant,
+            sell: s.sell,
+            helpFarming: s.helpFarming,
+            taskClaim: s.taskClaim,
+            guardDogDrop: s.guardDogDrop,
             gold: s.gold,
             exp: s.exp,
             score: s.score,
@@ -331,25 +342,16 @@ function generateReport(dateKey: string, runningMap: Record<string, boolean> = {
         };
     });
 
-    const totals = accountReports.reduce(
-        (acc, a) => ({
-            harvest: acc.harvest + a.harvest,
-            steal: acc.steal + a.steal,
-            fertilize: acc.fertilize + a.fertilize,
-            plant: acc.plant + a.plant,
-            sell: acc.sell + a.sell,
-            helpFarming: acc.helpFarming + a.helpFarming,
-            taskClaim: acc.taskClaim + a.taskClaim,
-            guardDogDrop: acc.guardDogDrop + a.guardDogDrop,
-            gold: acc.gold + a.gold,
-            exp: acc.exp + a.exp,
-        }),
-        {
-            harvest: 0, steal: 0, fertilize: 0, plant: 0, sell: 0,
-            helpFarming: 0, taskClaim: 0, guardDogDrop: 0,
-            gold: 0, exp: 0,
-        },
-    );
+    // 汇总（用 SUMMARY_FIELDS 循环构建，避免漏字段）
+    const totals: any = {};
+    for (const f of SUMMARY_FIELDS) {
+        totals[f.key] = 0;
+    }
+    for (const a of accountReports) {
+        for (const f of SUMMARY_FIELDS) {
+            totals[f.key] += num((a as any)[f.key]);
+        }
+    }
 
     const activeAccounts = accountReports.filter(a => a.score > 0).length;
     const sortedByScore = [...accountReports].sort((a, b) => b.score - a.score);
@@ -402,10 +404,14 @@ function renderReportText(report: DailyReport): string {
     lines.push('');
     lines.push(`📊 汇总:`);
     lines.push(`  活跃账号: ${report.activeAccounts}/${report.totalAccounts}`);
-    lines.push(`  收菜: ${report.totals.harvest} 次`);
+    lines.push(`  收获: ${report.totals.harvest} 次`);
+    lines.push(`  一键务农: ${report.totals.farming} 次`);
     lines.push(`  偷菜: ${report.totals.steal} 次`);
-    lines.push(`  化肥: ${report.totals.fertilize} 次`);
+    lines.push(`  施肥: ${report.totals.fertilize} 次`);
     lines.push(`  种植: ${report.totals.plant} 次`);
+    lines.push(`  帮务农: ${report.totals.helpFarming} 次`);
+    lines.push(`  任务: ${report.totals.taskClaim} 次`);
+    lines.push(`  同气连枝礼包: ${report.totals.guardDogDrop} 个`);
     lines.push(`  出售: ${report.totals.sell} 次`);
     lines.push(`  金币: +${report.totals.gold}`);
     lines.push(`  经验: +${report.totals.exp}`);
