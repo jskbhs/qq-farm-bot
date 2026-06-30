@@ -11,20 +11,84 @@ const { getAccId, handleApiError, getAccountList } = require('./middleware');
 
 function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
     /**
-     * 跨账号排行榜
-     * GET /api/leaderboard?date=today|yesterday|<YYYY-MM-DD>
+     * 拉取所有运行中账号的最新统计到磁盘（不等 1s 防抖）
+     * 用于排行榜强制刷新时确保数据最新
      */
-    app.get('/api/leaderboard', (req: Request, res: Response) => {
+    async function flushAllStats(): Promise<{ flushed: number; errors: number }> {
+        if (!ctx.provider || typeof ctx.provider.getAccounts !== 'function') {
+            return { flushed: 0, errors: 0 };
+        }
+        const data = ctx.provider.getAccounts();
+        const list: any[] = Array.isArray(data?.accounts) ? data.accounts : [];
+        const running = list.filter((a: any) => a.running && a.id);
+        let flushed = 0;
+        let errors = 0;
+        await Promise.all(running.map(async (acc: any) => {
+            try {
+                if (ctx.provider && typeof (ctx.provider as any).callWorkerApi === 'function') {
+                    await (ctx.provider as any).callWorkerApi(String(acc.id), 'flushStats');
+                    flushed++;
+                }
+            } catch {
+                errors++;
+            }
+        }));
+        return { flushed, errors };
+    }
+
+    /**
+     * 构造 runningMap: accountId -> boolean
+     */
+    function buildRunningMap(): Record<string, boolean> {
+        const map: Record<string, boolean> = {};
+        if (ctx.provider && typeof ctx.provider.getAccounts === 'function') {
+            try {
+                const data = ctx.provider.getAccounts();
+                const list: any[] = Array.isArray(data?.accounts) ? data.accounts : [];
+                for (const a of list) {
+                    if (a && a.id) map[String(a.id)] = !!a.running;
+                }
+            } catch {
+                // ignore
+            }
+        }
+        return map;
+    }
+
+    /**
+     * 跨账号排行榜（始终实时重新生成，不读缓存）
+     * GET /api/leaderboard?date=today|yesterday|<YYYY-MM-DD>&refresh=1
+     *   - refresh=1: 先强制所有运行账号 flush 内存中的最新统计到磁盘
+     */
+    app.get('/api/leaderboard', async (req: Request, res: Response) => {
         try {
+            const wantRefresh = String(req.query.refresh || '') === '1';
+            if (wantRefresh) {
+                await flushAllStats();
+            }
             const dateParam = String(req.query.date || 'today');
             const dateKey = dateParam === 'yesterday'
                 ? gamif.getYesterdayKey()
                 : dateParam === 'today'
                     ? gamif.getDateKey()
                     : dateParam;
-            const data = gamif.loadLeaderboard(dateKey);
+            const runningMap = buildRunningMap();
+            const data = gamif.loadLeaderboard(dateKey, runningMap);
             if (!data) {
-                return res.json({ ok: true, data: { date: dateKey, accounts: [], byGold: [], bySteal: [], byHarvest: [] } });
+                return res.json({
+                    ok: true,
+                    data: {
+                        date: dateKey,
+                        generatedAt: Date.now(),
+                        accounts: [],
+                        byGold: [],
+                        bySteal: [],
+                        byHarvest: [],
+                        byHelpFarming: [],
+                        byGuardDogDrop: [],
+                        totals: { accounts: 0, activeAccounts: 0, harvest: 0, steal: 0, fertilize: 0, plant: 0, helpFarming: 0, guardDogDrop: 0, taskClaim: 0, sell: 0, gold: 0, exp: 0 },
+                    },
+                });
             }
             // 附上账号元信息
             const accList = getAccountList(ctx);
@@ -47,8 +111,24 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
                     byGold: enriched(data.byGold),
                     bySteal: enriched(data.bySteal),
                     byHarvest: enriched(data.byHarvest),
+                    byHelpFarming: enriched(data.byHelpFarming || []),
+                    byGuardDogDrop: enriched(data.byGuardDogDrop || []),
+                    totals: data.totals,
                 },
             });
+        } catch (e: any) {
+            handleApiError(res, e);
+        }
+    });
+
+    /**
+     * 手动强制刷新（语义等价于 refresh=1，便于前端按钮调用）
+     * POST /api/leaderboard/refresh
+     */
+    app.post('/api/leaderboard/refresh', async (req: Request, res: Response) => {
+        try {
+            const flushed = await flushAllStats();
+            res.json({ ok: true, data: { ...flushed, refreshedAt: Date.now() } });
         } catch (e: any) {
             handleApiError(res, e);
         }
@@ -58,19 +138,21 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
      * 每日日报(只读, 仅展示用)
      * GET /api/report/daily?date=today|yesterday|<YYYY-MM-DD>&refresh=1
      */
-    app.get('/api/report/daily', (req: Request, res: Response) => {
+    app.get('/api/report/daily', async (req: Request, res: Response) => {
         try {
+            const wantRefresh = String(req.query.refresh || '') === '1';
+            if (wantRefresh) {
+                await flushAllStats();
+            }
             const dateParam = String(req.query.date || 'yesterday');
             const dateKey = dateParam === 'yesterday'
                 ? gamif.getYesterdayKey()
                 : dateParam === 'today'
                     ? gamif.getDateKey()
                     : dateParam;
-            const wantRefresh = String(req.query.refresh || '') === '1';
-            let data = wantRefresh ? null : gamif.loadReport(dateKey);
-            if (!data) {
-                data = gamif.generateReport(dateKey);
-            }
+            // 日报总是重算（不读缓存，确保数据最新）
+            const runningMap = buildRunningMap();
+            const data = gamif.generateReport(dateKey, runningMap);
             if (!data) {
                 return res.json({ ok: true, data: null });
             }
@@ -105,15 +187,18 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
      * 手动重新生成日报(不推送, 仅落盘 + 返回)
      * POST /api/admin/report/regenerate
      */
-    app.post('/api/admin/report/regenerate', (req: Request, res: Response) => {
+    app.post('/api/admin/report/regenerate', async (req: Request, res: Response) => {
         try {
+            // 先 flush 所有 worker 内存中的最新统计
+            await flushAllStats();
             const dateParam = String(req.query.date || req.body?.date || 'yesterday');
             const dateKey = dateParam === 'yesterday'
                 ? gamif.getYesterdayKey()
                 : dateParam === 'today'
                     ? gamif.getDateKey()
                     : dateParam;
-            const data = gamif.generateReport(dateKey);
+            const runningMap = buildRunningMap();
+            const data = gamif.generateReport(dateKey, runningMap);
             res.json({ ok: true, data });
         } catch (e: any) {
             handleApiError(res, e);

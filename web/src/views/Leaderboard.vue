@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import api from '@/api'
 import { useAccountStore } from '@/stores/account'
 import { useToastStore } from '@/stores/toast'
@@ -10,37 +10,64 @@ const userStore = useUserStore()
 const toast = useToastStore()
 
 const loading = ref(false)
-const dateKey = ref<'today' | 'yesterday'>('yesterday')
-const activeTab = ref<'score' | 'gold' | 'steal' | 'harvest'>('score')
+const dateKey = ref<'today' | 'yesterday'>('today')
+const activeTab = ref<'score' | 'gold' | 'steal' | 'harvest' | 'helpFarming' | 'guardDogDrop'>('score')
 const data = ref<any>(null)
 const report = ref<any>(null)
+const lastRefreshedAt = ref<number>(0)
+const lastRefreshedText = ref<string>('—')
+const autoRefreshEnabled = ref(true)
+const autoRefreshSeconds = 30
+let autoRefreshTimer: ReturnType<typeof setInterval> | null = null
+let tickTimer: ReturnType<typeof setInterval> | null = null
 
-async function fetchLeaderboard() {
+async function fetchLeaderboard(silent = false) {
   loading.value = true
   try {
-    const res = await api.get('/api/leaderboard', { params: { date: dateKey.value } })
+    // 始终用 refresh=1, 保证拿到运行中账号的最新内存数据
+    const res = await api.get('/api/leaderboard', { params: { date: dateKey.value, refresh: 1 } })
     if (res.data.ok) {
       data.value = res.data.data
+      lastRefreshedAt.value = Date.now()
+      updateRefreshedText()
     }
     else {
-      toast.error(res.data.error || '加载失败')
+      if (!silent) toast.error(res.data.error || '加载失败')
     }
   } catch (e: any) {
-    toast.error(e.message || '加载失败')
+    if (!silent) toast.error(e.message || '加载失败')
   } finally {
     loading.value = false
   }
 }
 
-async function fetchReport() {
+async function fetchReport(silent = false) {
   try {
-    const res = await api.get('/api/report/daily', { params: { date: dateKey.value } })
+    const res = await api.get('/api/report/daily', { params: { date: dateKey.value, refresh: 1 } })
     if (res.data.ok) {
       report.value = res.data.data
     }
   } catch (e: any) {
-    // ignore
+    if (!silent) {
+      // ignore
+    }
   }
+}
+
+async function refreshAll(silent = false) {
+  await Promise.all([fetchLeaderboard(silent), fetchReport(silent)])
+}
+
+function updateRefreshedText() {
+  if (!lastRefreshedAt.value) {
+    lastRefreshedText.value = '—'
+    return
+  }
+  const sec = Math.floor((Date.now() - lastRefreshedAt.value) / 1000)
+  if (sec < 5) lastRefreshedText.value = '刚刚'
+  else if (sec < 60) lastRefreshedText.value = `${sec} 秒前`
+  else if (sec < 3600) lastRefreshedText.value = `${Math.floor(sec / 60)} 分钟前`
+  else lastRefreshedText.value = new Date(lastRefreshedAt.value).toLocaleTimeString('zh-CN')
 }
 
 const tabs = [
@@ -48,6 +75,8 @@ const tabs = [
   { key: 'gold', label: '金币', icon: '💰' },
   { key: 'steal', label: '偷菜', icon: '🥷' },
   { key: 'harvest', label: '收菜', icon: '🌾' },
+  { key: 'helpFarming', label: '帮忙', icon: '🤝' },
+  { key: 'guardDogDrop', label: '护主犬', icon: '🐶' },
 ] as const
 
 const currentList = computed(() => {
@@ -55,6 +84,8 @@ const currentList = computed(() => {
   if (activeTab.value === 'gold') return data.value.byGold || []
   if (activeTab.value === 'steal') return data.value.bySteal || []
   if (activeTab.value === 'harvest') return data.value.byHarvest || []
+  if (activeTab.value === 'helpFarming') return data.value.byHelpFarming || []
+  if (activeTab.value === 'guardDogDrop') return data.value.byGuardDogDrop || []
   return data.value.accounts || []
 })
 
@@ -64,6 +95,8 @@ const maxValue = computed(() => {
   if (activeTab.value === 'gold') return Math.max(...list.map((e: any) => e.gold || 0), 1)
   if (activeTab.value === 'steal') return Math.max(...list.map((e: any) => e.stealCount || 0), 1)
   if (activeTab.value === 'harvest') return Math.max(...list.map((e: any) => e.harvestCount || 0), 1)
+  if (activeTab.value === 'helpFarming') return Math.max(...list.map((e: any) => e.helpFarmingCount || 0), 1)
+  if (activeTab.value === 'guardDogDrop') return Math.max(...list.map((e: any) => e.guardDogDropCount || 0), 1)
   return Math.max(...list.map((e: any) => e.score || 0), 1)
 })
 
@@ -71,6 +104,8 @@ function valueOf(entry: any) {
   if (activeTab.value === 'gold') return entry.gold || 0
   if (activeTab.value === 'steal') return entry.stealCount || 0
   if (activeTab.value === 'harvest') return entry.harvestCount || 0
+  if (activeTab.value === 'helpFarming') return entry.helpFarmingCount || 0
+  if (activeTab.value === 'guardDogDrop') return entry.guardDogDropCount || 0
   return entry.score || 0
 }
 
@@ -96,7 +131,18 @@ function valueLabel() {
   if (activeTab.value === 'gold') return '金币'
   if (activeTab.value === 'steal') return '偷菜'
   if (activeTab.value === 'harvest') return '收菜'
+  if (activeTab.value === 'helpFarming') return '帮忙'
+  if (activeTab.value === 'guardDogDrop') return '护主犬'
   return '得分'
+}
+
+function tabAccentColor() {
+  if (activeTab.value === 'gold') return '#10b981'
+  if (activeTab.value === 'steal') return '#8b5cf6'
+  if (activeTab.value === 'harvest') return '#f59e0b'
+  if (activeTab.value === 'helpFarming') return '#06b6d4'
+  if (activeTab.value === 'guardDogDrop') return '#ef4444'
+  return 'var(--theme-primary)'
 }
 
 async function regenerateReport() {
@@ -119,10 +165,49 @@ async function regenerateReport() {
   }
 }
 
+function startAutoRefresh() {
+  stopAutoRefresh()
+  if (!autoRefreshEnabled.value) return
+  autoRefreshTimer = setInterval(() => {
+    if (autoRefreshEnabled.value) {
+      refreshAll(true)
+    }
+  }, autoRefreshSeconds * 1000)
+  // 每秒更新"X 秒前"文本
+  tickTimer = setInterval(updateRefreshedText, 1000)
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+  }
+  if (tickTimer) {
+    clearInterval(tickTimer)
+    tickTimer = null
+  }
+}
+
+function toggleAutoRefresh() {
+  autoRefreshEnabled.value = !autoRefreshEnabled.value
+  if (autoRefreshEnabled.value) {
+    startAutoRefresh()
+    refreshAll(true)
+    toast.success(`已开启自动刷新（每 ${autoRefreshSeconds} 秒）`)
+  } else {
+    stopAutoRefresh()
+    toast.info('已关闭自动刷新')
+  }
+}
+
 onMounted(() => {
   accountStore.fetchAccounts()
-  fetchLeaderboard()
-  fetchReport()
+  refreshAll()
+  startAutoRefresh()
+})
+
+onBeforeUnmount(() => {
+  stopAutoRefresh()
 })
 </script>
 
@@ -136,6 +221,10 @@ onMounted(() => {
             <h1 class="text-2xl font-black flex items-center gap-2">
               <span class="i-carbon-trophy text-3xl" style="color: var(--theme-primary)" />
               跨账号排行榜
+              <span class="ml-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold" style="background: rgba(16, 185, 129, 0.15); color: #10b981">
+                <span class="i-carbon-circle-filled animate-pulse" />
+                实时
+              </span>
             </h1>
             <p class="text-sm opacity-70 mt-1">多账号挂机,谁与争锋</p>
           </div>
@@ -145,7 +234,7 @@ onMounted(() => {
                 class="rounded-md px-3 py-1 text-xs font-bold transition-all"
                 :class="dateKey === 'yesterday' ? 'shadow' : 'opacity-60'"
                 :style="dateKey === 'yesterday' ? { backgroundColor: 'var(--theme-primary)', color: 'white' } : {}"
-                @click="dateKey = 'yesterday'; fetchLeaderboard(); fetchReport()"
+                @click="dateKey = 'yesterday'; refreshAll()"
               >
                 昨日
               </button>
@@ -153,12 +242,45 @@ onMounted(() => {
                 class="rounded-md px-3 py-1 text-xs font-bold transition-all"
                 :class="dateKey === 'today' ? 'shadow' : 'opacity-60'"
                 :style="dateKey === 'today' ? { backgroundColor: 'var(--theme-primary)', color: 'white' } : {}"
-                @click="dateKey = 'today'; fetchLeaderboard(); fetchReport()"
+                @click="dateKey = 'today'; refreshAll()"
               >
                 今日
               </button>
             </div>
             <span class="text-xs opacity-60">{{ data?.date || '加载中...' }}</span>
+          </div>
+        </div>
+
+        <!-- 实时状态 + 刷新按钮 -->
+        <div class="flex items-center justify-between gap-2 rounded-xl p-2" style="background: color-mix(in srgb, var(--theme-primary) 5%, transparent)">
+          <div class="flex items-center gap-2 text-xs opacity-80">
+            <span class="i-carbon-time" />
+            <span>数据更新: <span class="font-bold">{{ lastRefreshedText }}</span></span>
+            <span v-if="autoRefreshEnabled" class="text-xs" style="color: #10b981">· 每 {{ autoRefreshSeconds }}s 自动刷新</span>
+            <span v-else class="text-xs opacity-50">· 自动刷新已关闭</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button
+              class="rounded-lg px-2 py-1 text-xs font-bold transition-all hover:scale-105"
+              :style="autoRefreshEnabled ? { background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' } : { background: 'rgba(107, 114, 128, 0.15)', color: '#6b7280' }"
+              :title="autoRefreshEnabled ? '关闭自动刷新' : '开启自动刷新'"
+              @click="toggleAutoRefresh"
+            >
+              <span v-if="autoRefreshEnabled" class="i-carbon-pause-filled" />
+              <span v-else class="i-carbon-play-filled-alt" />
+              {{ autoRefreshEnabled ? '自动' : '手动' }}
+            </button>
+            <button
+              class="rounded-lg px-2 py-1 text-xs font-bold transition-all hover:scale-105"
+              style="background: var(--theme-gradient); color: white"
+              :class="loading ? 'animate-pulse' : ''"
+              :disabled="loading"
+              @click="refreshAll()"
+            >
+              <span v-if="loading" class="i-svg-spinners-90-ring-with-bg" />
+              <span v-else class="i-carbon-refresh" />
+              刷新
+            </button>
           </div>
         </div>
 
@@ -190,7 +312,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 三王 -->
+        <!-- 三王 + 护主犬王 -->
         <div v-if="report && (report.mvpAccount || report.harvestKingAccount || report.stealKingAccount)" class="grid grid-cols-3 gap-3 mt-3">
           <div v-if="report.mvpAccount" class="rounded-xl p-3 text-center" style="background: color-mix(in srgb, #fbbf24 15%, transparent); border: 1px solid #fbbf24 30%">
             <div class="text-2xl">🏆</div>
@@ -220,7 +342,7 @@ onMounted(() => {
           :key="tab.key"
           class="flex flex-shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all"
           :class="activeTab === tab.key ? 'shadow-md scale-105' : 'opacity-60 hover:opacity-100'"
-          :style="activeTab === tab.key ? { backgroundColor: 'var(--theme-primary)', color: 'white' } : { background: 'color-mix(in srgb, var(--theme-bg) 60%, transparent)' }"
+          :style="activeTab === tab.key ? { backgroundColor: tab.key === 'score' ? 'var(--theme-primary)' : tabAccentColor(), color: 'white' } : { background: 'color-mix(in srgb, var(--theme-bg) 60%, transparent)' }"
           @click="activeTab = tab.key"
         >
           <span>{{ tab.icon }}</span>
@@ -229,7 +351,7 @@ onMounted(() => {
       </div>
 
       <!-- 排行榜列表 -->
-      <div v-if="loading" class="farm-card-enhanced p-8 text-center opacity-60">
+      <div v-if="loading && !data" class="farm-card-enhanced p-8 text-center opacity-60">
         <div class="i-carbon-circle-dash animate-spin text-2xl mx-auto" />
         <p class="mt-2 text-sm">加载中...</p>
       </div>
@@ -237,6 +359,7 @@ onMounted(() => {
       <div v-else-if="!currentList.length" class="farm-card-enhanced p-8 text-center opacity-60">
         <div class="i-carbon-warning text-3xl mx-auto" />
         <p class="mt-2 text-sm">暂无数据,等待账号活动...</p>
+        <p class="text-xs opacity-50 mt-1">数据来自各账号 worker 落盘的 stats 文件</p>
       </div>
 
       <div v-else class="space-y-2">
@@ -268,24 +391,28 @@ onMounted(() => {
               <span>{{ entry.platform === 'wx' ? '微信' : 'QQ' }}</span>
               <span>·</span>
               <span>综合 {{ entry.score }} 分</span>
+              <span v-if="entry.lastSavedAt">·</span>
+              <span v-if="entry.lastSavedAt" class="opacity-50">存盘 {{ new Date(entry.lastSavedAt).toLocaleTimeString('zh-CN') }}</span>
             </div>
           </div>
 
           <!-- 数值 + 进度条 -->
           <div class="flex-shrink-0 text-right">
-            <div class="font-black text-lg" :style="{ color: 'var(--theme-primary)' }">
+            <div class="font-black text-lg" :style="{ color: tabAccentColor() }">
               {{ formatNumber(valueOf(entry)) }}
             </div>
-            <div class="text-xs opacity-60">{{ valueLabel() }}</div>
+            <div class="text-xs opacity-60">
+              {{ valueLabel() }}
+            </div>
           </div>
 
           <!-- 进度条背景 -->
-          <div class="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden rounded-b-2xl" style="background: color-mix(in srgb, var(--theme-primary) 8%, transparent)">
+          <div class="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden rounded-b-2xl" :style="{ background: `color-mix(in srgb, ${tabAccentColor()} 12%, transparent)` }">
             <div
               class="h-full transition-all"
               :style="{
                 width: ((valueOf(entry) / maxValue) * 100) + '%',
-                background: 'var(--theme-gradient)',
+                background: tabAccentColor(),
               }"
             />
           </div>
@@ -303,8 +430,15 @@ onMounted(() => {
           >
             📊 重新生成昨日日报
           </button>
+          <button
+            class="rounded-xl px-4 py-2 text-sm font-bold text-white transition-all hover:scale-105"
+            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)"
+            @click="refreshAll()"
+          >
+            🔄 立即刷新
+          </button>
         </div>
-        <p class="text-xs opacity-50 mt-2">* 重新生成会刷新 Dashboard 顶栏日报数据, 推送配置请到「设置」</p>
+        <p class="text-xs opacity-50 mt-2">* 数据始终从磁盘实时重算，每次刷新也会强制各 worker flush 最新内存统计</p>
       </div>
     </div>
   </div>

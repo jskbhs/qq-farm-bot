@@ -146,7 +146,20 @@ function scheduleSave(): void {
     saveTimer = setTimeout(() => {
         saveTimer = null;
         doSave();
-    }, 2000);
+    }, 1000);
+}
+
+/**
+ * 立即把当前统计数据刷到磁盘（不等防抖）
+ * 用于排行榜 / 日报需要「最新数据」时调用
+ */
+function flushSave(): void {
+    if (!currentAccountId) return;
+    if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+    doSave();
 }
 
 function doSave(): void {
@@ -312,6 +325,7 @@ module.exports = {
     resetSessionGains,
     getStats,
     saveStats,
+    flushSave,
     getTodayKey,
     loadPersistedStats,
     checkAndResetDailyStats,
