@@ -293,6 +293,34 @@ function handleNotify(msg: any): void {
                         } else if (delta !== 0) {
                             userState.goldBean = Math.max(0, Number(userState.goldBean || 0) + delta);
                         }
+                    } else if (id === 101351) {
+                        // 护主犬同气连枝礼包：帮忙护主犬好友时概率掉落
+                        if (delta > 0) {
+                            log('物品', `获得同气连枝礼包 +${delta}（当前累计 ${count > 0 ? count : '?'}）`, {
+                                module: 'item',
+                                event: '护主犬礼包掉落',
+                                result: 'ok',
+                                itemId: 101351,
+                                delta,
+                            });
+                            recordOperation('guardDogDrop', delta);
+                            // 同气连枝礼包自带"提醒主人"语义，再推一条好友模块日志
+                            log('好友', `帮忙护主犬触发同气连枝，掉落礼包 x${delta}`, {
+                                module: 'friend',
+                                event: '护主犬礼包',
+                                result: 'ok',
+                                itemId: 101351,
+                                delta,
+                            });
+                        } else if (delta < 0) {
+                            log('物品', `消耗同气连枝礼包 ${delta}`, {
+                                module: 'item',
+                                event: '护主犬礼包使用',
+                                result: 'ok',
+                                itemId: 101351,
+                                delta,
+                            });
+                        }
                     }
                 }
             } catch {}

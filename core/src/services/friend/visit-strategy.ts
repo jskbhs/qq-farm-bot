@@ -535,6 +535,10 @@ export async function doFriendOperation(friendGid: any, opType: string): Promise
         }
 
         if (opType === 'farming' || opType === 'water' || opType === 'weed' || opType === 'bug') {
+            // 护主犬过滤：开启后，仅对携带护主犬的好友执行帮忙类手动操作
+            if (isFriendLackingGuardDog(enterReply, `GID:${gid}`)) {
+                return { ok: true, opType, count: 0, message: '已开启只帮护主犬，该好友未携带护主犬，跳过' };
+            }
             const landIds: number[] = opType === 'farming'
                 ? [...new Set([...status.needWeed, ...status.needBug, ...status.needWater])]
                 : opType === 'water' ? status.needWater
@@ -611,6 +615,19 @@ function isFriendLackingGuardDog(enterReply: any, friendName: string): boolean {
     if (!isAutomationOn('friend_help_only_guard_dog')) return false;
     const brief: any = enterReply && enterReply.brief_dog_info;
     if (!brief) {
+        // 首次遇到无字段时，把 enterReply 的可序列化片段打出来，便于排查真实字段名
+        try {
+            const seenFlag = (globalThis as any).__guardDogInfoLogged;
+            if (!seenFlag) {
+                (globalThis as any).__guardDogInfoLogged = true;
+                const keys = enterReply ? Object.keys(enterReply) : [];
+                log('好友', `未在 enterReply 中找到 brief_dog_info；当前字段: ${keys.join(',') || '(空)'}`, {
+                    module: 'friend',
+                    event: '护主犬过滤',
+                    result: 'no_field_debug',
+                });
+            }
+        } catch { /* ignore */ }
         log('好友', `${friendName}: 服务端未返回护主犬信息，已跳过帮忙`, {
             module: 'friend',
             event: '护主犬过滤',

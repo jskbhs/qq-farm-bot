@@ -308,6 +308,7 @@ const OP_META: Record<string, { label: string, icon: string, color: string }> = 
   plant: { label: '种植', icon: '🌱', color: 'text-lime-500' },
   steal: { label: '偷菜', icon: '🏃', color: 'text-orange-500' },
   helpFarming: { label: '帮务农', icon: '🧑‍🌾', color: 'text-yellow-400' },
+  guardDogDrop: { label: '同气连枝礼包', icon: '🎁', color: 'text-amber-500' },
   taskClaim: { label: '任务', icon: '✅', color: 'text-indigo-500' },
   sell: { label: '出售', icon: '💰', color: 'text-pink-500' },
   gold: { label: '金币', icon: '🪙', color: 'text-amber-400' },
