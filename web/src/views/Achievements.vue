@@ -138,24 +138,54 @@ onMounted(() => {
           <div
             v-for="item in cat.items"
             :key="item.id"
-            class="relative rounded-xl p-3 transition-all"
-            :class="isUnlocked(item.id) ? '' : 'opacity-50'"
+            class="relative rounded-xl p-3 transition-all hover:scale-[1.02]"
+            :class="isUnlocked(item.id) ? '' : 'opacity-60'"
             :style="{
               background: isUnlocked(item.id)
                 ? `color-mix(in srgb, ${categoryMeta[cat.category]?.color} 12%, transparent)`
                 : 'color-mix(in srgb, var(--theme-text) 5%, transparent)',
               border: isUnlocked(item.id)
                 ? `1px solid color-mix(in srgb, ${categoryMeta[cat.category]?.color} 30%, transparent)`
-                : '1px solid transparent',
+                : '1px solid color-mix(in srgb, var(--theme-text) 8%, transparent)',
             }"
           >
-            <div class="flex items-center gap-2">
-              <span class="text-2xl" :class="isUnlocked(item.id) ? '' : 'grayscale'">{{ item.icon }}</span>
-              <div v-if="!isUnlocked(item.id)" class="i-carbon-locked text-base opacity-60" />
+            <!-- 头部:大图标 + 锁定状态 -->
+            <div class="flex items-start gap-2 mb-1.5">
+              <div
+                class="h-10 w-10 flex shrink-0 items-center justify-center rounded-lg text-2xl"
+                :style="{
+                  background: isUnlocked(item.id)
+                    ? `color-mix(in srgb, ${categoryMeta[cat.category]?.color} 20%, transparent)`
+                    : 'color-mix(in srgb, var(--theme-text) 8%, transparent)',
+                  filter: isUnlocked(item.id) ? 'none' : 'grayscale(1)',
+                }"
+              >
+                <span>{{ item.icon || '🏅' }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-bold text-sm truncate" :title="item.name">{{ item.name }}</div>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span
+                    class="rounded px-1 py-0 text-[9px] font-bold"
+                    :style="{
+                      background: isUnlocked(item.id)
+                        ? `color-mix(in srgb, ${categoryMeta[cat.category]?.color} 20%, transparent)`
+                        : 'color-mix(in srgb, var(--theme-text) 8%, transparent)',
+                      color: isUnlocked(item.id)
+                        ? categoryMeta[cat.category]?.color
+                        : 'color-mix(in srgb, var(--theme-text) 60%, transparent)',
+                    }"
+                  >
+                    {{ categoryMeta[cat.category]?.name || cat.category }}
+                  </span>
+                  <div v-if="!isUnlocked(item.id)" class="i-carbon-locked text-xs opacity-60" />
+                  <div v-else class="i-carbon-checkmark text-xs" :style="{ color: categoryMeta[cat.category]?.color }" />
+                </div>
+              </div>
             </div>
-            <div class="font-bold text-sm mt-1 truncate" :title="item.name">{{ item.name }}</div>
-            <div class="text-xs opacity-70 mt-0.5 line-clamp-2">{{ item.description }}</div>
-            <div v-if="isUnlocked(item.id)" class="text-xs mt-1 font-bold" :style="{ color: categoryMeta[cat.category]?.color }">
+
+            <div class="text-xs opacity-70 line-clamp-2 min-h-[2lh]">{{ item.description }}</div>
+            <div v-if="isUnlocked(item.id)" class="text-xs mt-1.5 font-bold" :style="{ color: categoryMeta[cat.category]?.color }">
               ✓ {{ formatDate(unlockedRecord(item.id)?.unlockedAt) }}
             </div>
             <div v-else-if="item.hidden" class="text-xs opacity-50 mt-1">???</div>
