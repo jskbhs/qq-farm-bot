@@ -182,13 +182,14 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
     }
 
     /**
-     * 游戏化定时任务: 每日 9 点推送日报 + 凌晨 rollup
+     * 游戏化定时任务: 每日凌晨 rollup 成就 + 每分钟生成日报
+     * (日报仅生成,不主动推送, 由前端 Dashboard 顶栏展示)
      * 简单的 setInterval 方案,避免引入额外依赖
      */
     function startGamificationScheduler(): void {
         const gamif = require('../services/gamification');
-        let lastPushedDate = '';
         let lastRollupDate = '';
+        let lastReportDate = '';
 
         async function tick() {
             try {
@@ -198,17 +199,13 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
                 const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                 const yesterdayKey = gamif.getYesterdayKey();
 
-                // 9:00 - 9:05 推送昨日日报(防重复: 一天只推一次)
-                if (hh === 9 && mm < 5 && lastPushedDate !== yesterdayKey) {
-                    const result = await gamif.pushDailyReport({
-                        sendPushooMessage,
-                        log,
-                    });
-                    if (result.ok && !result.skipped) {
-                        lastPushedDate = yesterdayKey;
-                        log('系统', `每日日报已推送 (${yesterdayKey})`, { module: 'gamification' });
-                    } else if (result.skipped) {
-                        lastPushedDate = yesterdayKey;
+                // 0:05 之后生成昨日日报(每天一次,仅落盘不推送)
+                if ((hh > 0 || mm >= 5) && lastReportDate !== yesterdayKey) {
+                    try {
+                        gamif.generateReport(yesterdayKey);
+                        lastReportDate = yesterdayKey;
+                    } catch (e: any) {
+                        log('错误', `生成昨日日报失败: ${e && e.message ? e.message : String(e)}`, { module: 'gamification' });
                     }
                 }
 

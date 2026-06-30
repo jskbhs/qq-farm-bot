@@ -86,7 +86,7 @@ onMounted(() => {
         <div class="flex items-center justify-between mb-3">
           <div>
             <h1 class="text-2xl font-black flex items-center gap-2">
-              <span class="i-carbon-medal text-3xl" style="color: var(--theme-primary)" />
+              <span class="i-carbon-star-filled text-3xl" style="color: var(--theme-primary)" />
               成就系统
             </h1>
             <p class="text-sm opacity-70 mt-1">解锁成就,赢取专属奖励</p>

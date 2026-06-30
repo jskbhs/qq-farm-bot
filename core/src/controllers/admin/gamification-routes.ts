@@ -8,7 +8,6 @@ export {};
 
 const gamif = require('../../services/gamification');
 const { getAccId, handleApiError, getAccountList } = require('./middleware');
-const { sendPushooMessage } = require('../../services/push');
 
 function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
     /**
@@ -57,7 +56,7 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
 
     /**
      * 每日日报
-     * GET /api/report/daily?date=today|yesterday|<YYYY-MM-DD>
+     * GET /api/report/daily?date=today|yesterday|<YYYY-MM-DD>&refresh=1
      */
     app.get('/api/report/daily', (req: Request, res: Response) => {
         try {
@@ -67,7 +66,11 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
                 : dateParam === 'today'
                     ? gamif.getDateKey()
                     : dateParam;
-            const data = gamif.loadReport(dateKey);
+            const wantRefresh = String(req.query.refresh || '') === '1';
+            let data = wantRefresh ? null : gamif.loadReport(dateKey);
+            if (!data) {
+                data = gamif.generateReport(dateKey);
+            }
             if (!data) {
                 return res.json({ ok: true, data: null });
             }
@@ -99,16 +102,19 @@ function mountGamificationRoutes(app: Application, ctx: AdminContext): void {
     });
 
     /**
-     * 手动触发日报推送
-     * POST /api/admin/report/push
+     * 手动重新生成日报(不推送, 仅落盘 + 返回)
+     * POST /api/admin/report/regenerate
      */
-    app.post('/api/admin/report/push', async (req: Request, res: Response) => {
+    app.post('/api/admin/report/regenerate', (req: Request, res: Response) => {
         try {
-            const result = await gamif.pushDailyReport({
-                force: true,
-                sendPushooMessage,
-            });
-            res.json({ ok: true, data: result });
+            const dateParam = String(req.query.date || req.body?.date || 'yesterday');
+            const dateKey = dateParam === 'yesterday'
+                ? gamif.getYesterdayKey()
+                : dateParam === 'today'
+                    ? gamif.getDateKey()
+                    : dateParam;
+            const data = gamif.generateReport(dateKey);
+            res.json({ ok: true, data });
         } catch (e: any) {
             handleApiError(res, e);
         }

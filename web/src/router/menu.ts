@@ -54,7 +54,7 @@ export const menuRoutes: MenuItem[] = [
     path: 'achievements',
     name: 'achievements',
     label: '成就',
-    icon: 'i-carbon-medal',
+    icon: 'i-carbon-star-filled',
     component: () => import('@/views/Achievements.vue'),
   },
   {

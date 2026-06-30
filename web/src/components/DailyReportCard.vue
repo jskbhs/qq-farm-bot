@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import api from '@/api'
-import { useToastStore } from '@/stores/toast'
-import { useUserStore } from '@/stores/user'
 
-const userStore = useUserStore()
-const toast = useToastStore()
 const loading = ref(false)
 const report = ref<any>(null)
 
@@ -20,19 +16,6 @@ async function fetch() {
     // ignore
   } finally {
     loading.value = false
-  }
-}
-
-async function pushNow() {
-  try {
-    const res = await api.post('/api/admin/report/push')
-    if (res.data.ok) {
-      toast.success('日报已推送')
-    } else {
-      toast.error(res.data.error || '推送失败')
-    }
-  } catch (e: any) {
-    toast.error(e.message || '推送失败')
   }
 }
 
@@ -56,16 +39,7 @@ onMounted(() => {
             <h3 class="font-black text-base">昨日农场日报</h3>
             <span class="text-xs opacity-60">{{ report.date }}</span>
           </div>
-          <p class="text-xs opacity-60 mt-0.5">早上 9 点自动推送到你的渠道</p>
         </div>
-        <button
-          v-if="userStore.isAdminPanelUser"
-          class="rounded-lg px-3 py-1.5 text-xs font-bold transition-all hover:scale-105"
-          style="background: var(--theme-gradient); color: white"
-          @click="pushNow()"
-        >
-          📤 立即推送
-        </button>
       </div>
 
       <div class="grid grid-cols-4 gap-2 mb-3">

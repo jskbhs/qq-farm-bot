@@ -99,17 +99,23 @@ function valueLabel() {
   return '得分'
 }
 
-async function pushReportNow() {
-  if (!confirm('确认要立刻向所有渠道推送昨日日报吗?')) return
+async function regenerateReport() {
+  if (!confirm('确认要重新生成昨日日报数据吗? (不会推送, 仅刷新 Dashboard 顶栏显示)')) return
   try {
-    const res = await api.post('/api/admin/report/push')
+    const dateKey = (() => {
+      const d = new Date()
+      d.setDate(d.getDate() - 1)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    })()
+    const res = await api.get('/api/report/daily', { params: { date: dateKey, refresh: 1 } })
     if (res.data.ok) {
-      toast.success('日报已推送')
+      toast.success('日报已重新生成')
+      fetchReport()
     } else {
-      toast.error(res.data.error || '推送失败')
+      toast.error(res.data.error || '生成失败')
     }
   } catch (e: any) {
-    toast.error(e.message || '推送失败')
+    toast.error(e.message || '生成失败')
   }
 }
 
@@ -307,9 +313,9 @@ onMounted(() => {
           <button
             class="rounded-xl px-4 py-2 text-sm font-bold text-white transition-all hover:scale-105"
             style="background: var(--theme-gradient)"
-            @click="pushReportNow()"
+            @click="regenerateReport()"
           >
-            📤 立即推送日报
+            📊 重新生成昨日日报
           </button>
           <button
             class="rounded-xl px-4 py-2 text-sm font-bold transition-all hover:scale-105"
@@ -319,7 +325,7 @@ onMounted(() => {
             🔄 Rollup 昨日
           </button>
         </div>
-        <p class="text-xs opacity-50 mt-2">* Rollup 会重新计算成就, 立即推送会通过 pushoo 发送</p>
+        <p class="text-xs opacity-50 mt-2">* Rollup 会重新计算成就, 重新生成会刷新 Dashboard 顶栏日报数据</p>
       </div>
     </div>
   </div>
