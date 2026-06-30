@@ -628,12 +628,6 @@ function isFriendLackingGuardDog(enterReply: any, friendName: string): boolean {
                 });
             }
         } catch { /* ignore */ }
-        log('好友', `${friendName}: 服务端未返回护主犬信息，已跳过帮忙`, {
-            module: 'friend',
-            event: '护主犬过滤',
-            result: 'no_dog_info',
-            friendName,
-        });
         return true;
     }
     // 服务端可能返回单个 dog_id，也可能是 dogs 列表；兼容两种结构
@@ -642,15 +636,7 @@ function isFriendLackingGuardDog(enterReply: any, friendName: string): boolean {
     if (Array.isArray(brief.dogs)) {
         for (const d of brief.dogs) if (d && Number.isFinite(Number(d.id))) dogIds.push(toNum(d.id));
     }
-    if (dogIds.length === 0) {
-        log('好友', `${friendName}: 护主犬信息无有效 ID，已跳过帮忙`, {
-            module: 'friend',
-            event: '护主犬过滤',
-            result: 'empty_dog_ids',
-            friendName,
-        });
-        return true;
-    }
+    if (dogIds.length === 0) return true;
     const hasGuardDog: boolean = dogIds.some((id) => GUARD_DOG_IDS.has(id));
     if (hasGuardDog) {
         log('好友', `${friendName}: 携带护主犬，执行帮忙`, {
@@ -662,13 +648,7 @@ function isFriendLackingGuardDog(enterReply: any, friendName: string): boolean {
         });
         return false;
     }
-    log('好友', `${friendName}: 未携带护主犬（ID: ${dogIds.join(',')}），跳过帮忙`, {
-        module: 'friend',
-        event: '护主犬过滤',
-        result: 'no_guard_dog',
-        friendName,
-        dogIds,
-    });
+    // 命中字段但不含护主犬 → 静默跳过，不打日志（避免噪音）
     return true;
 }
 

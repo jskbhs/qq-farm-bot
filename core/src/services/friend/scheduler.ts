@@ -295,13 +295,16 @@ export async function checkFriends(options: CheckFriendsOptions = {}): Promise<b
 
         // 第三阶段：批量帮助
         if (helpFriends.length > 0 && effectiveHelpEnabled) {
-            log('好友', `开始批量帮助，共 ${helpFriends.length} 个好友需要帮助`, {
+            log('好友', `开始批量帮助，扫描 ${helpFriends.length} 个好友`, {
                 module: 'friend', event: '开始批量帮助', count: helpFriends.length
             });
 
+            let helpedCount: number = 0;
+            let skippedCount: number = 0;
+            let failedCount: number = 0;
+
             for (let i: number = 0; i < helpFriends.length; i++) {
                 const friend: any = helpFriends[i];
-                log('好友', `批量帮助第 ${i + 1}/${helpFriends.length} 个好友: ${friend.name}`, { module: 'friend', event: '批量帮助开始', index: i + 1, total: helpFriends.length, friendName: friend.name });
 
                 // 检查是否还能获得帮助经验
                 // const stopWhenExpLimit = !!isAutomationOn('friend_help_exp_limit');
@@ -312,15 +315,22 @@ export async function checkFriends(options: CheckFriendsOptions = {}): Promise<b
                 }
 
                 try {
-                    // await visitFriendForHelp(friend, totalActions, state.gid, state.accountId);
+                    const beforeHelped: number = totalActions.farming;
                     await visitFriendForHelp(friend, totalActions, state.gid, state.accountId, ignoreExpLimit);
-                    log('好友', `批量帮助第 ${i + 1} 个好友完成: ${friend.name}`, { module: 'friend', event: '批量帮助完成', index: i + 1, friendName: friend.name });
+                    if (totalActions.farming > beforeHelped) {
+                        helpedCount++;
+                    } else {
+                        skippedCount++;
+                    }
                 } catch (e: any) {
-                    log('好友', `批量帮助第 ${i + 1} 个好友失败: ${friend.name}, 错误: ${e.message}`, { module: 'friend', event: '批量帮助失败', index: i + 1, friendName: friend.name, error: e.message });
+                    failedCount++;
+                    log('好友', `帮助 ${friend.name} 失败: ${e.message}`, { module: 'friend', event: '帮助好友失败', friendName: friend.name, error: e.message });
                 }
                 await randomDelay(500, 800);
             }
-            log('好友', '批量帮助循环结束', { module: 'friend', event: '批量帮助结束' });
+            log('好友', `批量帮助完成：实际帮助 ${helpedCount} 个，跳过 ${skippedCount} 个，失败 ${failedCount} 个`, {
+                module: 'friend', event: '批量帮助结束', helped: helpedCount, skipped: skippedCount, failed: failedCount
+            });
         }
 
         // 第四阶段：批量捣乱（放虫放草）

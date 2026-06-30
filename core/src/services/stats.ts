@@ -49,6 +49,7 @@ interface OperationsMap {
     plant: number;
     steal: number;
     helpFarming: number;
+    guardDogDrop: number;
     taskClaim: number;
     sell: number;
     upgrade: number;
@@ -64,6 +65,7 @@ const operations: OperationsMap = {
     plant: 0,
     steal: 0,
     helpFarming: 0,
+    guardDogDrop: 0,
     taskClaim: 0,
     sell: 0,
     upgrade: 0,
