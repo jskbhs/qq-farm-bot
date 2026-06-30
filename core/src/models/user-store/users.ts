@@ -415,7 +415,9 @@ function getAllUsers(): Array<Pick<User, 'username' | 'role' | 'card' | 'account
 }
 
 function getAllUsersInternal(): User[] {
-    loadUsers();
+    // 注意：不再调用 loadUsers()，避免在 registerUser 等操作中
+    // 因重新加载文件而覆盖刚刚 push 到内存数组中的新数据。
+    // 调用方应自行保证数据已加载。
     return users;
 }
 

@@ -3,11 +3,21 @@ const fs = require('node:fs');
 const { getDataFile, ensureDataDir } = require('../../config/runtime-paths');
 const { writeJsonFileAtomic } = require('../../services/json-db');
 
-const users = require('./users');
-
 const INVITE_CONFIG_FILE: string = getDataFile('invite-config.json');
 const INVITE_RECORDS_FILE: string = getDataFile('invite-records.json');
 const INVITE_REWARDS_FILE: string = getDataFile('invite-rewards.json');
+
+// 注意：users.ts 与 invite.ts 存在循环依赖（users.registerUser 会调用 invite.*），
+// 必须在函数内部延迟加载 users，否则 invite.ts 加载时 users 还未完成初始化，
+// 会导致 users 为空对象，进而出现 "users.loadUsers is not a function" 的 500 错误。
+let _users: any = null;
+function getUsers(): any {
+    if (!_users) {
+        _users = require('./users');
+    }
+    return _users;
+}
+const DEFAULT_ACCOUNT_LIMIT_FALLBACK = 2;
 
 interface InviteRewardRule {
     count: number;
@@ -147,7 +157,10 @@ function getOrCreateUserRewardState(username: string): UserRewardState {
 }
 
 function ensureUserInviteCode(username: string): string {
-    users.loadUsers();
+    const users = getUsers();
+    // 注意：不要在此调用 users.loadUsers()，
+    // 否则会从文件重新加载覆盖调用方刚刚在内存中修改的 users 数组，
+    // 导致 registerUser 中 push 的新用户丢失、saveUsers 写入残缺数据。
     const user = users.getAllUsersInternal().find((u: any) => u.username === username);
     if (!user) return '';
 
@@ -165,7 +178,7 @@ function ensureUserInviteCode(username: string): string {
 
 function findUserByInviteCode(code: string): any {
     if (!code) return null;
-    users.loadUsers();
+    const users = getUsers();
     return users.getAllUsersInternal().find((u: any) => u.inviteCode === code) || null;
 }
 
@@ -175,7 +188,7 @@ function recordInvite(inviterCode: string, inviteeUsername: string): { ok: boole
         return { ok: false, error: '邀请功能未开启' };
     }
 
-    users.loadUsers();
+    const users = getUsers();
     const inviter = findUserByInviteCode(inviterCode);
     if (!inviter) {
         return { ok: false, error: '邀请码不存在' };
@@ -211,6 +224,7 @@ function getInviteCount(username: string): number {
 }
 
 function getUserInviteInfo(username: string): { code: string; count: number; invitees: string[] } {
+    getUsers().loadUsers();
     const code = ensureUserInviteCode(username);
     const records = loadInviteRecords();
     const userRecords = records.filter(r => r.inviter === username);
@@ -244,6 +258,7 @@ function getRewardState(username: string): { count: number; claimed: number[]; t
 }
 
 function addDaysToUserCard(username: string, days: number): { ok: boolean; error?: string } {
+    const users = getUsers();
     users.loadUsers();
     const user = users.getAllUsersInternal().find((u: any) => u.username === username);
     if (!user) return { ok: false, error: '用户不存在' };
@@ -285,11 +300,13 @@ function addDaysToUserCard(username: string, days: number): { ok: boolean; error
 }
 
 function addAccountLimit(username: string, amount: number): { ok: boolean; error?: string } {
+    const users = getUsers();
     users.loadUsers();
     const user = users.getAllUsersInternal().find((u: any) => u.username === username);
     if (!user) return { ok: false, error: '用户不存在' };
 
-    user.accountLimit = (user.accountLimit || users.DEFAULT_ACCOUNT_LIMIT || 2) + amount;
+    const baseLimit = users.DEFAULT_ACCOUNT_LIMIT || DEFAULT_ACCOUNT_LIMIT_FALLBACK;
+    user.accountLimit = (user.accountLimit || baseLimit) + amount;
     users.saveUsers();
     return { ok: true };
 }
