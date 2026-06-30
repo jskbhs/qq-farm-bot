@@ -3,7 +3,9 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import AccountModal from '@/components/AccountModal.vue'
 import BottomNav from '@/components/BottomNav.vue'
+import HolidayBanner from '@/components/HolidayBanner.vue'
 import Sidebar from '@/components/Sidebar.vue'
+import SoundManager from '@/components/SoundManager.vue'
 import YybConfigModal from '@/components/YybConfigModal.vue'
 import YybLoginModal from '@/components/YybLoginModal.vue'
 import { getPlatformClass, getPlatformLabel, useAccountStore } from '@/stores/account'
@@ -314,6 +316,7 @@ onUnmounted(() => {
       <!-- Main Content Area -->
       <div class="flex flex-1 flex-col overflow-hidden">
         <div class="custom-scrollbar flex flex-1 flex-col overflow-y-auto p-2 pb-24 md:p-6 sm:p-4 lg:pb-6">
+          <HolidayBanner />
           <RouterView v-slot="{ Component, route }">
             <Transition name="slide-fade" mode="out-in">
               <component :is="Component" :key="route.path" />
@@ -351,6 +354,8 @@ onUnmounted(() => {
       @close="showYybLogin = false"
       @saved="handleAccountSaved"
     />
+
+    <SoundManager />
   </div>
 </template>
 

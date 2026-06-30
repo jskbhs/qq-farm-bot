@@ -181,6 +181,62 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
         }
     }
 
+    /**
+     * 游戏化定时任务: 每日 9 点推送日报 + 凌晨 rollup
+     * 简单的 setInterval 方案,避免引入额外依赖
+     */
+    function startGamificationScheduler(): void {
+        const gamif = require('../services/gamification');
+        let lastPushedDate = '';
+        let lastRollupDate = '';
+
+        async function tick() {
+            try {
+                const now = new Date();
+                const hh = now.getHours();
+                const mm = now.getMinutes();
+                const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const yesterdayKey = gamif.getYesterdayKey();
+
+                // 9:00 - 9:05 推送昨日日报(防重复: 一天只推一次)
+                if (hh === 9 && mm < 5 && lastPushedDate !== yesterdayKey) {
+                    const result = await gamif.pushDailyReport({
+                        sendPushooMessage,
+                        log,
+                    });
+                    if (result.ok && !result.skipped) {
+                        lastPushedDate = yesterdayKey;
+                        log('系统', `每日日报已推送 (${yesterdayKey})`, { module: 'gamification' });
+                    } else if (result.skipped) {
+                        lastPushedDate = yesterdayKey;
+                    }
+                }
+
+                // 0:00 - 0:05 rollup 昨日成就数据(防重复)
+                if (hh === 0 && mm < 5 && lastRollupDate !== yesterdayKey) {
+                    const accounts = (store.getAccounts().accounts || []);
+                    for (const acc of accounts) {
+                        if (acc && acc.id) {
+                            try {
+                                gamif.rollupDaily(String(acc.id), yesterdayKey);
+                            } catch (e: any) {
+                                log('错误', `账号 ${acc.id} 成就 rollup 失败: ${e && e.message ? e.message : String(e)}`, { module: 'gamification' });
+                            }
+                        }
+                    }
+                    lastRollupDate = yesterdayKey;
+                    log('系统', `每日成就 rollup 已完成 (${yesterdayKey})`, { module: 'gamification' });
+                }
+            } catch (e: any) {
+                log('错误', `游戏化定时任务异常: ${e && e.message ? e.message : String(e)}`, { module: 'gamification' });
+            }
+        }
+
+        // 启动时立即跑一次,然后每分钟检查
+        tick();
+        setInterval(tick, 60 * 1000);
+    }
+
     async function start(options: { startAdminServer?: boolean; autoStartAccounts?: boolean } = {}): Promise<void> {
         const shouldStartAdminServer = options.startAdminServer !== false;
         const shouldAutoStartAccounts = options.autoStartAccounts !== false;
@@ -202,6 +258,9 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
         if (yybReloginService) {
             yybReloginService.start();
         }
+
+        // 游戏化定时任务(日报推送 + 成就 rollup)
+        startGamificationScheduler();
     }
 
     function stopAllAccounts(): void {

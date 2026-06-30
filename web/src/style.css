@@ -886,3 +886,162 @@ body {
   --strategy-rose-to: #e11d48;
   --strategy-rose-text: #e11d48;
 }
+
+/* 节假日主题 - 春节 (红金) */
+[data-holiday-theme='spring-festival'] {
+  --theme-primary: #dc2626;
+  --theme-primary-rgb: 220, 38, 38;
+  --theme-secondary: #f59e0b;
+  --theme-accent: #fbbf24;
+  --theme-gradient: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+}
+[data-holiday-theme='spring-festival'] .farm-card-enhanced {
+  box-shadow: 0 4px 20px color-mix(in srgb, #dc2626 12%, transparent);
+}
+[data-holiday-theme='spring-festival'] .bg-decorations::after {
+  content: '🧧 🎆 🏮';
+  position: absolute;
+  inset: 0;
+  font-size: 28px;
+  opacity: 0.18;
+  letter-spacing: 28px;
+  pointer-events: none;
+  animation: float 8s ease-in-out infinite;
+}
+
+/* 节假日主题 - 中秋 (暖黄月圆) */
+[data-holiday-theme='mid-autumn'] {
+  --theme-primary: #d97706;
+  --theme-primary-rgb: 217, 119, 6;
+  --theme-secondary: #b45309;
+  --theme-accent: #fbbf24;
+  --theme-gradient: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);
+}
+[data-holiday-theme='mid-autumn'] .farm-card-enhanced {
+  box-shadow: 0 4px 20px color-mix(in srgb, #d97706 15%, transparent);
+}
+[data-holiday-theme='mid-autumn'] .bg-decorations::after {
+  content: '🌕 🥮 🌝';
+  position: absolute;
+  inset: 0;
+  font-size: 28px;
+  opacity: 0.18;
+  letter-spacing: 28px;
+  pointer-events: none;
+}
+
+/* 节假日主题 - 国庆 (中国红) */
+[data-holiday-theme='national-day'] {
+  --theme-primary: #ef4444;
+  --theme-primary-rgb: 239, 68, 68;
+  --theme-secondary: #fbbf24;
+  --theme-gradient: linear-gradient(135deg, #ef4444 0%, #fbbf24 100%);
+}
+
+/* 节假日主题 - 双 11 (橙色狂欢) */
+[data-holiday-theme='double-eleven'] {
+  --theme-primary: #f97316;
+  --theme-primary-rgb: 249, 115, 22;
+  --theme-secondary: #ef4444;
+  --theme-gradient: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+}
+[data-holiday-theme='double-eleven'] .farm-card-enhanced {
+  box-shadow: 0 4px 20px color-mix(in srgb, #f97316 15%, transparent);
+}
+[data-holiday-theme='double-eleven'] .bg-decorations::after {
+  content: '🛒 💰 🎁';
+  position: absolute;
+  inset: 0;
+  font-size: 28px;
+  opacity: 0.18;
+  letter-spacing: 28px;
+  pointer-events: none;
+}
+
+/* 节假日主题 - 双 12 (蓝紫) */
+[data-holiday-theme='double-twelve'] {
+  --theme-primary: #6366f1;
+  --theme-primary-rgb: 99, 102, 241;
+  --theme-secondary: #8b5cf6;
+  --theme-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+/* 节假日主题 - 圣诞 (红绿) */
+[data-holiday-theme='christmas'] {
+  --theme-primary: #16a34a;
+  --theme-primary-rgb: 22, 163, 74;
+  --theme-secondary: #dc2626;
+  --theme-gradient: linear-gradient(135deg, #16a34a 0%, #dc2626 100%);
+}
+[data-holiday-theme='christmas'] .bg-decorations::after {
+  content: '🎄 🎅 ⛄';
+  position: absolute;
+  inset: 0;
+  font-size: 28px;
+  opacity: 0.18;
+  letter-spacing: 28px;
+  pointer-events: none;
+}
+
+/* 节假日主题 - 冬季飘雪 */
+[data-holiday-theme='winter-snow'] {
+  --theme-primary: #0ea5e9;
+  --theme-primary-rgb: 14, 165, 233;
+  --theme-secondary: #38bdf8;
+  --theme-gradient: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+}
+[data-holiday-theme='winter-snow'] .bg-decorations::after {
+  content: '❄️ ☃️ ⛄';
+  position: absolute;
+  inset: 0;
+  font-size: 28px;
+  opacity: 0.18;
+  letter-spacing: 28px;
+  pointer-events: none;
+}
+
+/* 节假日主题 - 春樱 */
+[data-holiday-theme='spring-sakura'] {
+  --theme-primary: #ec4899;
+  --theme-primary-rgb: 236, 72, 153;
+  --theme-secondary: #f472b6;
+  --theme-gradient: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+}
+[data-holiday-theme='spring-sakura'] .bg-decorations::after {
+  content: '🌸 🌺 🌷';
+  position: absolute;
+  inset: 0;
+  font-size: 28px;
+  opacity: 0.18;
+  letter-spacing: 28px;
+  pointer-events: none;
+}
+
+/* 节假日主题 - 端午 */
+[data-holiday-theme='dragon-boat'] {
+  --theme-primary: #059669;
+  --theme-primary-rgb: 5, 150, 105;
+  --theme-secondary: #f59e0b;
+  --theme-gradient: linear-gradient(135deg, #059669 0%, #f59e0b 100%);
+}
+[data-holiday-theme='dragon-boat'] .bg-decorations::after {
+  content: '🐉 🚣 �粽子';
+  position: absolute;
+  inset: 0;
+  font-size: 24px;
+  opacity: 0.18;
+  letter-spacing: 28px;
+  pointer-events: none;
+}
+
+/* 节假日主题切换平滑过渡 */
+:root {
+  --theme-primary: #f59e0b;
+  --theme-primary-rgb: 245, 158, 11;
+  --theme-secondary: #10b981;
+  --theme-accent: #f59e0b;
+  --theme-gradient: linear-gradient(135deg, #f59e0b 0%, #10b981 100%);
+  transition:
+    --theme-primary 0.6s ease,
+    --theme-secondary 0.6s ease;
+}

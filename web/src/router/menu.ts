@@ -44,6 +44,20 @@ export const menuRoutes: MenuItem[] = [
     component: () => import('@/views/Invite.vue'),
   },
   {
+    path: 'leaderboard',
+    name: 'leaderboard',
+    label: '排行榜',
+    icon: 'i-carbon-trophy',
+    component: () => import('@/views/Leaderboard.vue'),
+  },
+  {
+    path: 'achievements',
+    name: 'achievements',
+    label: '成就',
+    icon: 'i-carbon-medal',
+    component: () => import('@/views/Achievements.vue'),
+  },
+  {
     path: 'analytics',
     name: 'analytics',
     label: '分析',

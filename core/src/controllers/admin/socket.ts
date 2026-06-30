@@ -175,6 +175,46 @@ function emitRealtimeAccountLog(ctx: AdminContext, entry: any): void {
 
     // 推送到特定账号房间（只有订阅了该账号的用户能收到）
     ctx.io.to(`account:${id}`).emit('account-log:new', payload);
+
+    // 根据日志事件触发音效
+    const eventName = String((payload.meta && payload.meta.event) || '');
+    if (eventName) {
+        emitSoundEvent(ctx, id, eventName, payload);
+    }
+}
+
+/**
+ * 推送音效事件
+ */
+function emitSoundEvent(ctx: AdminContext, accountId: string, event: string, payload: any): void {
+    if (!ctx.io) return;
+    const map: Record<string, string> = {
+        harvest_crop: 'harvest',
+        plant_seed: 'plant',
+        fertilize: 'fertilize',
+        fertilizer_buy: 'fertilize',
+        fertilizer_gift_open: 'fertilize',
+        sell_success: 'sell',
+        steal: 'steal',
+        task_claim: 'reward',
+        illustrated_rewards: 'reward',
+        email_rewards: 'reward',
+        vip_daily_gift: 'reward',
+        month_card_gift: 'reward',
+        daily_share: 'reward',
+        mall_free_gifts: 'reward',
+        upgrade_land: 'reward',
+        unlock_land: 'reward',
+    };
+    const sound = map[event];
+    if (!sound) return;
+    ctx.io.to(`account:${accountId}`).emit('sound:play', {
+        accountId,
+        event,
+        sound,
+        title: String((payload && payload.msg) || ''),
+        ts: Date.now(),
+    });
 }
 
 module.exports = {
@@ -182,4 +222,5 @@ module.exports = {
     emitRealtimeStatus,
     emitRealtimeLog,
     emitRealtimeAccountLog,
+    emitSoundEvent,
 };

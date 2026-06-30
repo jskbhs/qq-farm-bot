@@ -6,6 +6,7 @@ import api from '@/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import DailyReportCard from '@/components/DailyReportCard.vue'
 import { useAccountStore } from '@/stores/account'
 import { useBagStore } from '@/stores/bag'
 import { useStatusStore } from '@/stores/status'
@@ -479,6 +480,8 @@ useIntervalFn(updateCountdowns, 1000)
 
 <template>
   <div class="flex flex-col gap-6 pt-6">
+    <DailyReportCard />
+
     <!-- Status Cards -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:grid-cols-2">
       <!-- Account & Exp -->
