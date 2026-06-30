@@ -1,4 +1,4 @@
-import type { AccountConfig, Announcement, DailyReportPush, OfflineReminder, SystemConfig, UIConfig, YybConfig } from '../../types/config';
+import type { AccountConfig, Announcement, OfflineReminder, SystemConfig, UIConfig, YybConfig } from '../../types/config';
 export {};
 
 const fs = require('node:fs');
@@ -12,7 +12,6 @@ const {
     PUSHOO_CHANNELS,
     DEFAULT_OFFLINE_REMINDER,
     DEFAULT_YYB_CONFIG,
-    DEFAULT_DAILY_REPORT_PUSH,
     globalConfig,
     normalizeAccountConfig,
     normalizeYybConfig,
@@ -65,31 +64,6 @@ function normalizeOfflineReminder(input: unknown): OfflineReminder {
     };
 }
 
-function normalizeDailyReportPush(input: unknown): DailyReportPush {
-    const src: Record<string, any> = (input && typeof input === 'object') ? input as Record<string, any> : {};
-    const rawChannel = (src.channel !== undefined && src.channel !== null)
-        ? String(src.channel).trim().toLowerCase()
-        : '';
-    const endpoint = (src.endpoint !== undefined && src.endpoint !== null)
-        ? String(src.endpoint).trim()
-        : '';
-    const channel = PUSHOO_CHANNELS.has(rawChannel) ? rawChannel : 'webhook';
-    const token = (src.token !== undefined && src.token !== null)
-        ? String(src.token).trim()
-        : '';
-    const title = (src.title !== undefined && src.title !== null)
-        ? String(src.title).trim()
-        : DEFAULT_DAILY_REPORT_PUSH.title;
-    const enabled = src.enabled === true || src.enabled === 'true' || src.enabled === 1;
-    return {
-        enabled,
-        channel,
-        endpoint,
-        token,
-        title,
-    };
-}
-
 function sanitizeGlobalConfigBeforeSave(): void {
     sharedState.accountFallbackConfig = normalizeAccountConfig(globalConfig.defaultAccountConfig, DEFAULT_ACCOUNT_CONFIG);
     globalConfig.defaultAccountConfig = cloneAccountConfig(sharedState.accountFallbackConfig);
@@ -126,8 +100,6 @@ function sanitizeGlobalConfigBeforeSave(): void {
         nextYybConfigs[u] = normalizeYybConfig(cfg);
     }
     globalConfig.userYybConfigs = nextYybConfigs;
-
-    globalConfig.dailyReportPush = normalizeDailyReportPush(globalConfig.dailyReportPush || {});
 }
 
 function saveGlobalConfig(): void {
@@ -205,17 +177,6 @@ function deleteUserOfflineReminder(username: string): void {
         delete globalConfig.userOfflineReminders[username];
         saveGlobalConfig();
     }
-}
-
-function getDailyReportPush(): DailyReportPush {
-    return normalizeDailyReportPush(globalConfig.dailyReportPush);
-}
-
-function setDailyReportPush(cfg: Partial<DailyReportPush> | undefined): DailyReportPush {
-    const current = normalizeDailyReportPush(globalConfig.dailyReportPush);
-    globalConfig.dailyReportPush = normalizeDailyReportPush({ ...current, ...(cfg || {}) });
-    saveGlobalConfig();
-    return getDailyReportPush();
 }
 
 function getYybConfig(username?: string): YybConfig {
@@ -338,7 +299,6 @@ globalConfig.offlineReminder = normalizeOfflineReminder(globalConfig.offlineRemi
 for (const [username, cfg] of Object.entries(globalConfig.userOfflineReminders || {})) {
     globalConfig.userOfflineReminders[username] = normalizeOfflineReminder(cfg);
 }
-globalConfig.dailyReportPush = normalizeDailyReportPush(globalConfig.dailyReportPush);
 
 module.exports = {
     saveGlobalConfig,
@@ -349,8 +309,6 @@ module.exports = {
     getOfflineReminder,
     setOfflineReminder,
     deleteUserOfflineReminder,
-    getDailyReportPush,
-    setDailyReportPush,
     getYybConfig,
     setYybConfig,
     deleteUserYybConfig,

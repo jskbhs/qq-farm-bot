@@ -182,45 +182,27 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
     }
 
     /**
-     * 游戏化定时任务: 每日 9 点推送日报 + 每分钟生成日报
+     * 游戏化定时任务: 每天 0:05 后生成昨日日报(只落盘, 不推送)
      * 简单的 setInterval 方案,避免引入额外依赖
      */
     function startGamificationScheduler(): void {
         const gamif = require('../services/gamification');
-        let lastPushedDate = '';
         let lastReportDate = '';
 
-        async function tick() {
+        function tick() {
             try {
                 const now = new Date();
                 const hh = now.getHours();
                 const mm = now.getMinutes();
-                const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                 const yesterdayKey = gamif.getYesterdayKey();
 
-                // 0:05 之后生成昨日日报(每天一次, 落盘)
+                // 0:05 之后生成昨日日报(每天一次, 落盘供 Dashboard 顶栏展示)
                 if ((hh > 0 || mm >= 5) && lastReportDate !== yesterdayKey) {
                     try {
                         gamif.generateReport(yesterdayKey);
                         lastReportDate = yesterdayKey;
                     } catch (e: any) {
                         log('错误', `生成昨日日报失败: ${e && e.message ? e.message : String(e)}`, { module: 'gamification' });
-                    }
-                }
-
-                // 9:00 - 9:05 推送昨日日报(防重复: 一天只推一次)
-                if (hh === 9 && mm < 5 && lastPushedDate !== yesterdayKey) {
-                    const result = await gamif.pushDailyReport({
-                        sendPushooMessage,
-                        log,
-                    });
-                    if (result && result.ok && !result.skipped) {
-                        lastPushedDate = yesterdayKey;
-                        log('系统', `每日日报已推送 (${yesterdayKey})`, { module: 'gamification' });
-                    } else if (result && result.skipped) {
-                        lastPushedDate = yesterdayKey;
-                    } else if (result && result.error) {
-                        log('错误', `日报推送失败: ${result.error}`, { module: 'gamification' });
                     }
                 }
             } catch (e: any) {

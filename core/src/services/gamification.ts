@@ -356,95 +356,8 @@ function markNotified(key: string): void {
     saveNotifLog(log);
 }
 
-// ============== 每日推送 ==============
-
-/**
- * 解析推送渠道配置: 优先日报独立配置, 回退到全局下线提醒, 都没配返回 null
- */
-function resolveReportPushConfig(): { channel: string; endpoint: string; token: string; title: string } | null {
-    try {
-        // 1. 优先: 日报独立推送配置
-        const dailyCfg = store.getDailyReportPush ? store.getDailyReportPush() : null;
-        if (dailyCfg && dailyCfg.enabled && dailyCfg.channel && (dailyCfg.token || dailyCfg.channel === 'webhook')) {
-            return {
-                channel: String(dailyCfg.channel).trim().toLowerCase(),
-                endpoint: String(dailyCfg.endpoint || '').trim(),
-                token: String(dailyCfg.token || '').trim(),
-                title: String(dailyCfg.title || '🌾 农场日报').trim(),
-            };
-        }
-
-        // 2. 回退: 全局下线提醒配置(确保日报到得了)
-        const reminder = store.getOfflineReminder ? store.getOfflineReminder('') : null;
-        if (reminder && reminder.channel) {
-            return {
-                channel: String(reminder.channel).trim().toLowerCase(),
-                endpoint: String(reminder.endpoint || '').trim(),
-                token: String(reminder.token || '').trim(),
-                title: '🌾 农场日报',
-            };
-        }
-    } catch (e: any) {
-        // 解析配置失败, 当成未配置
-    }
-    return null;
-}
-
-async function pushDailyReport(opts: { force?: boolean; sendPushooMessage?: any; log?: (tag: string, msg: string, extra?: any) => void } = {}): Promise<{ ok: boolean; skipped?: boolean; error?: string; reason?: string }> {
-    const log = opts.log || (() => {});
-    const sendPush = opts.sendPushooMessage;
-
-    const dateKey = getYesterdayKey();
-    const notifKey = `daily-report:${dateKey}`;
-    if (!opts.force && hasNotified(notifKey)) {
-        return { ok: true, skipped: true, reason: '已推送过该日期的日报' };
-    }
-
-    try {
-        const report = generateReport(dateKey);
-        if (report.totalAccounts === 0) {
-            return { ok: true, skipped: true, reason: '账号为空, 无需推送' };
-        }
-
-        const cfg = resolveReportPushConfig();
-        if (!cfg) {
-            log('错误', '日报推送失败: 未配置推送渠道 (请在 设置 → 日报推送 中配置)', { module: 'gamification' });
-            return { ok: false, error: '未配置推送渠道, 请在 设置 → 日报推送 中配置 channel/endpoint/token' };
-        }
-
-        if (sendPush) {
-            try {
-                const result = await sendPush({
-                    channel: cfg.channel,
-                    endpoint: cfg.endpoint,
-                    token: cfg.token,
-                    title: cfg.title,
-                    content: renderReportText(report),
-                });
-                if (result && result.ok) {
-                    markNotified(notifKey);
-                    log('系统', `已推送日报 (${dateKey}) -> ${cfg.channel}`, { module: 'gamification' });
-                    return { ok: true };
-                }
-                const errMsg = (result && (result.msg || result.code)) || '推送失败';
-                log('错误', `日报推送失败: ${errMsg}`, { module: 'gamification', channel: cfg.channel });
-                return { ok: false, error: String(errMsg) };
-            } catch (pushErr: any) {
-                log('错误', `日报推送异常: ${pushErr && pushErr.message ? pushErr.message : String(pushErr)}`, { module: 'gamification' });
-                return { ok: false, error: pushErr && pushErr.message ? pushErr.message : String(pushErr) };
-            }
-        }
-
-        // 没有 sendPush 函数时, 仅记录
-        markNotified(notifKey);
-        log('系统', `日报已生成 (${dateKey}),未配置推送渠道`, { module: 'gamification' });
-        return { ok: true };
-    } catch (e: any) {
-        const msg = e && e.message ? e.message : String(e);
-        log('错误', `日报推送异常: ${msg}`, { module: 'gamification' });
-        return { ok: false, error: msg };
-    }
-}
+// ============== 每日推送 (已移除) ==============
+// 日报推送功能已移除, 仅在 Dashboard 顶栏展示, 不再自动/手动推送到外部渠道
 
 // ============== 导出 ==============
 
@@ -454,11 +367,10 @@ module.exports = {
     loadLeaderboard,
     summarizeAccount,
 
-    // 日报
+    // 日报(只生成, 不推送)
     generateReport,
     loadReport,
     renderReportText,
-    pushDailyReport,
 
     // 工具
     getDateKey,
