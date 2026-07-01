@@ -464,7 +464,7 @@ const scanProgressText = computed(() => {
 async function handleScanGuardDogFriends() {
   if (!currentAccountId.value || scanningGuardDog.value)
     return
-  if (runningAccounts.value[currentAccountId.value] !== 'running') {
+  if (!currentAccount.value?.running || !status.value?.connection?.connected) {
     toast.error('账号未运行，无法扫描')
     return
   }
