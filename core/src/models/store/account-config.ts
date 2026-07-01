@@ -76,6 +76,7 @@ function getConfigSnapshot(accountId?: unknown): AccountConfig & { ui: typeof gl
         knownFriendGidSyncCooldownSec: cfg.knownFriendGidSyncCooldownSec,
         friendsListCacheTtlSec: cfg.friendsListCacheTtlSec,
         friendBlacklist: [...(cfg.friendBlacklist || [])],
+        friendGuardDogGids: [...(cfg.friendGuardDogGids || [])],
         plantBlacklist: [...(cfg.plantBlacklist || [])],
         stealDelaySeconds: Math.max(0, Math.min(300, Number(cfg.stealDelaySeconds) || 0)),
         plantOrderRandom: !!cfg.plantOrderRandom,
@@ -149,6 +150,10 @@ function applyConfigSnapshot(snapshot: Record<string, any> | undefined, options:
 
     if (Array.isArray(cfg.friendBlacklist)) {
         next.friendBlacklist = cfg.friendBlacklist.map(Number).filter((n: number) => Number.isFinite(n) && n > 0);
+    }
+
+    if (Array.isArray(cfg.friendGuardDogGids)) {
+        next.friendGuardDogGids = cfg.friendGuardDogGids.map(Number).filter((n: number) => Number.isFinite(n) && n > 0);
     }
 
     if (cfg.knownFriendGids !== undefined) {

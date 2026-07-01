@@ -331,6 +331,10 @@ function normalizeAccountConfig(input: unknown, fallback: AccountConfig = accoun
         cfg.friendBlacklist = src.friendBlacklist.map(Number).filter((n: number) => Number.isFinite(n) && n > 0);
     }
 
+    if (Array.isArray(src.friendGuardDogGids)) {
+        cfg.friendGuardDogGids = src.friendGuardDogGids.map(Number).filter((n: number) => Number.isFinite(n) && n > 0);
+    }
+
     if (src.knownFriendGids !== undefined) {
         cfg.knownFriendGids = normalizeKnownFriendGids(src.knownFriendGids, cfg.knownFriendGids);
     }

@@ -78,6 +78,7 @@ function createRuntimeState(options: RuntimeStateOptions) {
             intervals: store.getIntervals(accountId),
             friendQuietHours: store.getFriendQuietHours(accountId),
             friendBlacklist: store.getFriendBlacklist(accountId),
+            friendGuardDogGids: store.getFriendGuardDogGids ? store.getFriendGuardDogGids(accountId) : [],
             plantBlacklist: store.getPlantBlacklist(accountId),
             knownFriendGids: store.getKnownFriendGids(accountId),
             knownFriendGidSyncCooldownSec: store.getKnownFriendGidSyncCooldownSec(accountId),
