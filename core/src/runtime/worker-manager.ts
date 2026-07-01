@@ -364,9 +364,15 @@ function createWorkerManager(options: WorkerManagerOptions) {
 
         return new Promise((resolve, reject) => {
             const id = worker.reqId++;
+            const timeoutMs = (() => {
+                if (args.length > 0 && args[args.length - 1] && typeof args[args.length - 1] === 'object' && args[args.length - 1].__apiTimeoutMs) {
+                    return Math.max(1000, Number(args[args.length - 1].__apiTimeoutMs) || 10000);
+                }
+                return 10000;
+            })();
             worker.requests.set(id, { resolve, reject });
 
-            managerScheduler.setTimeoutTask(`api_timeout_${accountId}_${id}`, 10000, () => {
+            managerScheduler.setTimeoutTask(`api_timeout_${accountId}_${id}`, timeoutMs, () => {
                 if (worker.requests.has(id)) {
                     worker.requests.delete(id);
                     reject(new Error('API Timeout'));

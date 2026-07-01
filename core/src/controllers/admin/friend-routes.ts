@@ -438,6 +438,40 @@ function mountFriendRoutes(app: Application, ctx: AdminContext): void {
         res.json({ ok: true, removed, data: list });
     });
 
+    app.post('/api/friend-guard-dog-gids/scan', async (req: Request, res: Response) => {
+        const id = getAccId(ctx, req);
+        if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });
+        if (!checkAccountAccess(ctx, req as any, id)) {
+            return res.status(403).json({ ok: false, error: '无权访问此账号' });
+        }
+        if (!ctx.provider || typeof ctx.provider.scanGuardDogFriends !== 'function') {
+            return res.status(503).json({ ok: false, error: '扫描功能不可用' });
+        }
+        const opts = (req.body && typeof req.body === 'object') ? req.body : {};
+        try {
+            // 给扫描留足时间（默认 10s API 超时不够，调用方应使用更长的前端超时）
+            const scanResult: any = await Promise.race([
+                ctx.provider.scanGuardDogFriends(id, opts),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('扫描超时（前端可重试）')), Math.max(30000, Number(opts.timeoutMs) || 120000))),
+            ]);
+            // worker 内部已写入 worker 自己的 globalConfig；主进程需要把新发现的 gid 同步到自己的 store
+            const newGids: number[] = Array.isArray(scanResult && scanResult.newGids) ? scanResult.newGids : [];
+            if (newGids.length > 0 && store.addFriendGuardDogGid) {
+                for (const g of newGids) {
+                    try { store.addFriendGuardDogGid(id, Number(g) || 0); } catch { /* ignore */ }
+                }
+                if (typeof ctx.provider.broadcastConfig === 'function') {
+                    ctx.provider.broadcastConfig(id);
+                }
+            }
+            const gids = store.getFriendGuardDogGids ? store.getFriendGuardDogGids(id) : [];
+            const list = await buildGuardDogListWithInfo(id, gids);
+            res.json({ ok: true, scan: scanResult, data: list });
+        } catch (e: any) {
+            res.status(500).json({ ok: false, error: e && e.message ? e.message : String(e) });
+        }
+    });
+
     app.post('/api/friend-guard-dog-gids/clear', async (req: Request, res: Response) => {
         const id = getAccId(ctx, req);
         if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });

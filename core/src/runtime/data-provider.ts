@@ -119,6 +119,10 @@ function createDataProvider(options: DataProviderOptions) {
         getFriendApplications: (accountRef: string) => callWorkerApi(resolveAccountRefId(accountRef), 'getFriendApplications'),
         acceptFriendApplications: (accountRef: string, gids: number[]) => callWorkerApi(resolveAccountRefId(accountRef), 'acceptFriendApplications', gids),
         rejectFriendApplications: (accountRef: string, gids: number[]) => callWorkerApi(resolveAccountRefId(accountRef), 'rejectFriendApplications', gids),
+        scanGuardDogFriends: (accountRef: string, options?: any) => {
+            const opts = (options && typeof options === 'object') ? options : {};
+            return callWorkerApi(resolveAccountRefId(accountRef), 'scanGuardDogFriends', resolveAccountRefId(accountRef), { ...opts, __apiTimeoutMs: 120000 });
+        },
         getBag: (accountRef: string) => callWorkerApi(resolveAccountRefId(accountRef), 'getBag'),
         getBagSeeds: (accountRef: string) => callWorkerApi(resolveAccountRefId(accountRef), 'getBagSeeds'),
         useItem: (accountRef: string, itemId: number, count: number) => callWorkerApi(resolveAccountRefId(accountRef), 'useItem', itemId, count),

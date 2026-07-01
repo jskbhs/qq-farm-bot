@@ -11,6 +11,7 @@ const {
     getPlantBlacklist,
     getFriendsListCacheTtlSec,
     addFriendGuardDogGid,
+    getFriendGuardDogGids,
 } = require('../../models/store');
 const { getUserState } = require('../../utils/network');
 const { toNum, toLong, toTimeSec, getServerTimeSec, log, logWarn, sleep, randomDelay } = require('../../utils/utils');
@@ -660,6 +661,169 @@ function isFriendLackingGuardDog(enterReply: any, friendName: string, gid?: any,
     }
     // 命中字段但不含护主犬 → 静默跳过，不打日志（避免噪音）
     return true;
+}
+
+/**
+ * 从 enterReply 提取出护主犬 ID 集合（仅做"是否携带"判定，不写登记）
+ */
+function extractGuardDogIds(enterReply: any): number[] {
+    const brief: any = enterReply && enterReply.brief_dog_info;
+    if (!brief) return [];
+    const dogIds: number[] = [];
+    if (Number.isFinite(Number(brief.dog_id))) dogIds.push(toNum(brief.dog_id));
+    if (Array.isArray(brief.dogs)) {
+        for (const d of brief.dogs) if (d && Number.isFinite(Number(d.id))) dogIds.push(toNum(d.id));
+    }
+    return dogIds;
+}
+
+/**
+ * 单个好友是否携带护主犬（无状态，只读 enterReply）
+ */
+function friendHasGuardDog(enterReply: any): boolean {
+    const ids = extractGuardDogIds(enterReply);
+    if (ids.length === 0) return false;
+    return ids.some((id) => GUARD_DOG_IDS.has(id));
+}
+
+export interface GuardDogScanOptions {
+    /** 好友间最小间隔 ms，默认 200 */
+    minIntervalMs?: number;
+    /** 好友间最大间隔 ms，默认 600 */
+    maxIntervalMs?: number;
+    /** 单个好友入农超时 ms，默认 4000 */
+    enterTimeoutMs?: number;
+    /** 进度回调（可选） */
+    onProgress?: (info: { index: number; total: number; gid: number; name: string; status: 'scanned' | 'guard_dog' | 'error' | 'skipped'; message?: string }) => void;
+    /** 是否中断扫描（可选，每扫一个会检查） */
+    shouldAbort?: () => boolean;
+}
+
+export interface GuardDogScanResult {
+    scanned: number;
+    guardDogCount: number;
+    newGids: number[];
+    errorCount: number;
+    skippedCount: number;
+    durationMs: number;
+}
+
+/**
+ * 扫描当前账号的全部好友，识别携带护主犬的好友并写入"护主犬好友"清单。
+ * 与 isFriendLackingGuardDog 行为一致（GUARD_DOG_IDS 白名单），只是全量走一遍。
+ * 返回结果不依赖主进程合并，调用方需要将 newGids 合并到主进程 store。
+ */
+export async function scanAllFriendsForGuardDog(
+    accountId: string,
+    options: GuardDogScanOptions = {},
+): Promise<GuardDogScanResult> {
+    const minIntervalMs = Math.max(0, options.minIntervalMs ?? 200);
+    const maxIntervalMs = Math.max(minIntervalMs, options.maxIntervalMs ?? 600);
+    const enterTimeoutMs = Math.max(500, options.enterTimeoutMs ?? 4000);
+    const onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+    const shouldAbort = typeof options.shouldAbort === 'function' ? options.shouldAbort : null;
+
+    const startedAt = Date.now();
+    let scanned = 0;
+    let guardDogCount = 0;
+    let errorCount = 0;
+    let skippedCount = 0;
+    const newGids: number[] = [];
+
+    let reply: any;
+    try {
+        reply = await getAllFriends(false);
+    } catch (e: any) {
+        throw new Error(`获取好友列表失败: ${e && e.message ? e.message : String(e)}`);
+    }
+
+    const friends: any[] = (reply && (reply.game_friends || reply.gameFriends)) || [];
+    if (!Array.isArray(friends) || friends.length === 0) {
+        return { scanned: 0, guardDogCount: 0, newGids, errorCount: 0, skippedCount: 0, durationMs: Date.now() - startedAt };
+    }
+
+    // 已有清单，用于去重
+    const existing: number[] = (() => {
+        try {
+            const cur = (getFriendGuardDogGids && getFriendGuardDogGids(accountId)) || [];
+            return cur.map((n: any) => toNum(n)).filter((n: number) => n > 0);
+        } catch { return []; }
+    })();
+    const existingSet = new Set<number>(existing);
+
+    for (let i = 0; i < friends.length; i++) {
+        if (shouldAbort && shouldAbort()) {
+            skippedCount = friends.length - i;
+            break;
+        }
+        const f: any = friends[i] || {};
+        const gidNum: number = toNum(f.gid ?? f.guild_id ?? f.game_friend_gid);
+        const name: string = String(f.name || f.nick || `GID:${gidNum}`);
+        scanned++;
+
+        if (!Number.isFinite(gidNum) || gidNum <= 0) {
+            errorCount++;
+            onProgress && onProgress({ index: i, total: friends.length, gid: 0, name, status: 'error', message: '无效 gid' });
+            continue;
+        }
+
+        let enterReply: any;
+        try {
+            enterReply = await Promise.race([
+                enterFriendFarm(gidNum),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('enter timeout')), enterTimeoutMs)),
+            ]);
+        } catch (e: any) {
+            errorCount++;
+            onProgress && onProgress({ index: i, total: friends.length, gid: gidNum, name, status: 'error', message: e && e.message ? e.message : String(e) });
+            await sleep(minIntervalMs + Math.floor(Math.random() * (maxIntervalMs - minIntervalMs)));
+            continue;
+        }
+
+        try {
+            await leaveFriendFarm(gidNum);
+        } catch { /* ignore */ }
+
+        if (friendHasGuardDog(enterReply)) {
+            guardDogCount++;
+            if (!existingSet.has(gidNum)) {
+                try {
+                    if (addFriendGuardDogGid(accountId, gidNum)) {
+                        newGids.push(gidNum);
+                        existingSet.add(gidNum);
+                    }
+                } catch { /* ignore */ }
+            }
+            onProgress && onProgress({ index: i, total: friends.length, gid: gidNum, name, status: 'guard_dog' });
+        } else {
+            onProgress && onProgress({ index: i, total: friends.length, gid: gidNum, name, status: 'scanned' });
+        }
+
+        if (i < friends.length - 1) {
+            const wait = minIntervalMs + Math.floor(Math.random() * (maxIntervalMs - minIntervalMs));
+            await sleep(wait);
+        }
+    }
+
+    log('好友', `护主犬扫描完成: 共 ${scanned} 人，命中 ${guardDogCount} 人，新增 ${newGids.length} 人`, {
+        module: 'friend',
+        event: '护主犬扫描',
+        result: newGids.length > 0 ? 'new_found' : 'no_new',
+        scanned,
+        guardDogCount,
+        newGids,
+        errorCount,
+        durationMs: Date.now() - startedAt,
+    });
+
+    return {
+        scanned,
+        guardDogCount,
+        newGids,
+        errorCount,
+        skippedCount,
+        durationMs: Date.now() - startedAt,
+    };
 }
 
 // ============ 拜访好友 ============

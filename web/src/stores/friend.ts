@@ -244,6 +244,24 @@ export const useFriendStore = defineStore('friend', () => {
     }
   }
 
+  async function scanGuardDogFriends(accountId: string, options: Record<string, any> = {}) {
+    if (!accountId)
+      return { ok: false, error: '未选择账号' }
+    try {
+      const res = await api.post('/api/friend-guard-dog-gids/scan', options, {
+        headers: { 'x-account-id': accountId },
+        timeout: 150000,
+      })
+      if (res.data.ok) {
+        guardDogFriends.value = res.data.data || []
+      }
+      return { ok: res.data.ok, scan: res.data.scan, data: res.data.data }
+    }
+    catch (e: any) {
+      return { ok: false, error: e?.response?.data?.error || e?.message || '扫描失败' }
+    }
+  }
+
   async function fetchFriendLands(accountId: string, friendId: string) {
     if (!accountId || !friendId)
       return
@@ -495,6 +513,7 @@ export const useFriendStore = defineStore('friend', () => {
     addGuardDogFriend,
     removeGuardDogFriend,
     clearGuardDogFriends,
+    scanGuardDogFriends,
     fetchInteractRecords,
     fetchFriendLands,
     operate,

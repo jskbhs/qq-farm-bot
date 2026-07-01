@@ -441,6 +441,65 @@ async function handleClearGuardDogFriends() {
   })
 }
 
+const scanningGuardDog = ref(false)
+const scanGuardDogResult = ref<null | {
+  scanned: number
+  guardDogCount: number
+  newGids: number[]
+  errorCount: number
+  durationMs: number
+}>(null)
+const scanProgressIndex = ref(0)
+const scanProgressTotal = ref(0)
+const scanProgressText = computed(() => {
+  if (!scanningGuardDog.value)
+    return ''
+  const cur = scanProgressIndex.value
+  const total = scanProgressTotal.value
+  if (total <= 0)
+    return '...'
+  return `${cur}/${total}`
+})
+
+async function handleScanGuardDogFriends() {
+  if (!currentAccountId.value || scanningGuardDog.value)
+    return
+  if (runningAccounts.value[currentAccountId.value] !== 'running') {
+    toast.error('账号未运行，无法扫描')
+    return
+  }
+  scanningGuardDog.value = true
+  scanGuardDogResult.value = null
+  scanProgressIndex.value = 0
+  scanProgressTotal.value = 0
+  try {
+    const res: any = await friendStore.scanGuardDogFriends(currentAccountId.value, {
+      onProgress: (info: any) => {
+        scanProgressIndex.value = info.index + 1
+        scanProgressTotal.value = info.total
+      },
+    } as any)
+    if (res && res.ok) {
+      scanGuardDogResult.value = res.scan || null
+      if (res.scan && res.scan.newGids && res.scan.newGids.length > 0) {
+        toast.success(`扫描完成，新增 ${res.scan.newGids.length} 位护主犬好友`)
+      }
+      else if (res.scan) {
+        toast.info(`扫描完成，共扫 ${res.scan.scanned} 人，未发现新护主犬好友`)
+      }
+    }
+    else {
+      toast.error((res && res.error) || '扫描失败')
+    }
+  }
+  catch (e: any) {
+    toast.error(e?.message || '扫描失败')
+  }
+  finally {
+    scanningGuardDog.value = false
+  }
+}
+
 async function refreshInteractRecords() {
   if (!currentAccountId.value)
     return
@@ -1324,7 +1383,15 @@ async function handleRejectAllApplications() {
                 开启「只帮护主犬好友」后，系统会自动把检测到护主犬的好友加入此清单。后续可在此手动增删。
               </p>
             </div>
-            <div class="flex shrink-0 gap-2">
+            <div class="flex shrink-0 flex-wrap gap-2">
+              <button
+                class="cartoon-btn rounded-xl bg-amber-100 px-3 py-1.5 text-sm text-amber-700 transition dark:bg-amber-900/30 hover:bg-amber-200 dark:text-amber-400 dark:hover:bg-amber-900/50 disabled:opacity-50"
+                :disabled="loading || scanningGuardDog"
+                @click="handleScanGuardDogFriends"
+              >
+                <span v-if="scanningGuardDog">⏳ 扫描中 {{ scanProgressText }}</span>
+                <span v-else>🔍 扫描全部好友</span>
+              </button>
               <button
                 class="cartoon-btn rounded-xl bg-gray-100 px-3 py-1.5 text-sm text-gray-600 transition dark:bg-gray-700 hover:bg-gray-200 dark:text-gray-300 disabled:opacity-50 dark:hover:bg-gray-600"
                 :disabled="loading"
@@ -1340,6 +1407,12 @@ async function handleRejectAllApplications() {
                 🗑️ 清空
               </button>
             </div>
+          </div>
+          <div v-if="scanGuardDogResult" class="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300">
+            扫描完成：共扫 {{ scanGuardDogResult.scanned }} 人，命中 {{ scanGuardDogResult.guardDogCount }} 人，新增 {{ scanGuardDogResult.newGids.length }} 人，失败 {{ scanGuardDogResult.errorCount }} 人，耗时 {{ Math.round(scanGuardDogResult.durationMs / 1000) }}s
+            <span v-if="scanGuardDogResult.newGids.length > 0" class="ml-2 text-amber-600 dark:text-amber-400">
+              新增：{{ scanGuardDogResult.newGids.join(', ') }}
+            </span>
           </div>
         </div>
         <div v-if="guardDogFriends.length === 0" class="farm-card-enhanced animate-stagger-4 animate-fade-in-up p-8 text-center text-gray-500">

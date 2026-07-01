@@ -27,4 +27,5 @@ export {
     getFriendLandsDetail,
     getFriendsList,
     rejectFriendApplications,
+    scanAllFriendsForGuardDog,
 } from './visit-strategy';

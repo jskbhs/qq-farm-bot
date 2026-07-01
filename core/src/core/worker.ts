@@ -670,6 +670,15 @@ async function handleApiCall(msg: any): Promise<void> {
             case 'rejectFriendApplications':
                 result = await rejectFriendApplications(args[0]);
                 break;
+            case 'scanGuardDogFriends': {
+                const { scanAllFriendsForGuardDog: _scan } = require('../services/friend');
+                const accountId = process.env.FARM_ACCOUNT_ID || String(args[0] || '');
+                const optsRaw = (args[1] && typeof args[1] === 'object') ? args[1] : {};
+                const opts = { ...optsRaw };
+                delete opts.__apiTimeoutMs;
+                result = await _scan(accountId, opts);
+                break;
+            }
             case 'getSeeds':
                 result = await getAvailableSeeds();
                 break;
