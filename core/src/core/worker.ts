@@ -676,7 +676,33 @@ async function handleApiCall(msg: any): Promise<void> {
                 const optsRaw = (args[1] && typeof args[1] === 'object') ? args[1] : {};
                 const opts = { ...optsRaw };
                 delete opts.__apiTimeoutMs;
-                result = await _scan(accountId, opts);
+                // 主动 push 进度到 master，供前端轮询（与组件生命周期解耦）
+                const onProgress = (info: any) => {
+                    try {
+                        sendToMaster({
+                            type: 'guard_dog_scan_progress',
+                            accountId,
+                            status: 'running',
+                            index: info && Number.isFinite(info.index) ? info.index : 0,
+                            total: info && Number.isFinite(info.total) ? info.total : 0,
+                            friendGid: info && Number.isFinite(info.gid) ? info.gid : 0,
+                            friendName: info && info.name ? info.name : '',
+                            scanStatus: info && info.status ? info.status : '',
+                            message: info && info.message ? info.message : '',
+                        });
+                    } catch { /* ignore */ }
+                };
+                opts.onProgress = onProgress;
+                const scanRes: any = await _scan(accountId, opts);
+                try {
+                    sendToMaster({
+                        type: 'guard_dog_scan_progress',
+                        accountId,
+                        status: 'done',
+                        result: scanRes,
+                    });
+                } catch { /* ignore */ }
+                result = scanRes;
                 break;
             }
             case 'getSeeds':

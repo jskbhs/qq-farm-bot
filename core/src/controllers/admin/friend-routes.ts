@@ -472,6 +472,18 @@ function mountFriendRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
+    app.get('/api/friend-guard-dog-gids/scan-status', (req: Request, res: Response) => {
+        const id = getAccId(ctx, req);
+        if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });
+        if (!checkAccountAccess(ctx, req as any, id)) {
+            return res.status(403).json({ ok: false, error: '无权访问此账号' });
+        }
+        const status = (ctx.provider && typeof ctx.provider.getScanGuardDogStatus === 'function')
+            ? ctx.provider.getScanGuardDogStatus(id)
+            : null;
+        res.json({ ok: true, data: status });
+    });
+
     app.post('/api/friend-guard-dog-gids/clear', async (req: Request, res: Response) => {
         const id = getAccId(ctx, req);
         if (!id) return res.status(400).json({ ok: false, error: 'Missing x-account-id' });

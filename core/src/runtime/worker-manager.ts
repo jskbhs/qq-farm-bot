@@ -1,5 +1,6 @@
 export {};
 const { createScheduler } = require('../services/scheduler');
+const { setScanStatus, clearScanStatus } = require('./scan-status');
 
 interface WorkerManagerOptions {
     fork: any;
@@ -354,6 +355,26 @@ function createWorkerManager(options: WorkerManagerOptions) {
                 if (worker_process && worker_process.process) {
                     worker_process.process.send({ type: 'config_sync', config: buildConfigSnapshotForAccount(accountId) });
                 }
+            }
+        } else if (msg.type === 'guard_dog_scan_progress') {
+            const payload: any = {
+                status: msg.status || 'running',
+                index: Number(msg.index) || 0,
+                total: Number(msg.total) || 0,
+                friendName: msg.friendName || '',
+                friendGid: Number(msg.friendGid) || 0,
+                scanStatus: msg.scanStatus || '',
+                message: msg.message || '',
+            };
+            if (msg.result && typeof msg.result === 'object') {
+                payload.result = msg.result;
+            }
+            setScanStatus(accountId, payload);
+            if (msg.status === 'done' || msg.status === 'error') {
+                // 结果保留 5 分钟供前端轮询；之后允许被下一次扫描覆盖
+                setTimeout(() => {
+                    clearScanStatus(accountId);
+                }, 300000);
             }
         }
     }

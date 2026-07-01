@@ -244,9 +244,102 @@ export const useFriendStore = defineStore('friend', () => {
     }
   }
 
+  // ============ 护主犬扫描全局状态（脱离组件生命周期）============
+  const scanningGuardDogAccountId = ref<string | null>(null)
+  const scanGuardDogResult = ref<null | {
+    accountId: string
+    scanned: number
+    guardDogCount: number
+    newGids: number[]
+    errorCount: number
+    durationMs: number
+    finishedAt: number
+  }>(null)
+  const scanGuardDogProgress = ref<null | {
+    accountId: string
+    status: 'running' | 'done' | 'error' | string
+    index: number
+    total: number
+    friendName: string
+    friendGid: number
+    scanStatus: string
+    message: string
+    updatedAt: number
+  }>(null)
+  const scanGuardDogPollHandle = ref<number | null>(null)
+  const scanGuardDogLastFetchAt = ref(0)
+
+  function startScanStatusPoll(accountId: string) {
+    stopScanStatusPoll()
+    if (!accountId)
+      return
+    // 立即拉一次，再每 1s 拉一次
+    void fetchScanStatus(accountId)
+    scanGuardDogPollHandle.value = window.setInterval(() => {
+      void fetchScanStatus(accountId)
+    }, 1000)
+  }
+
+  function stopScanStatusPoll() {
+    if (scanGuardDogPollHandle.value) {
+      window.clearInterval(scanGuardDogPollHandle.value)
+      scanGuardDogPollHandle.value = null
+    }
+  }
+
+  async function fetchScanStatus(accountId: string) {
+    if (!accountId)
+      return null
+    try {
+      const res = await api.get('/api/friend-guard-dog-gids/scan-status', {
+        headers: { 'x-account-id': accountId },
+      })
+      scanGuardDogLastFetchAt.value = Date.now()
+      if (res.data && res.data.ok) {
+        const status = res.data.data
+        if (status) {
+          // 只显示当前账号的进度
+          scanGuardDogProgress.value = { accountId, ...status }
+          if (status.status === 'done' || status.status === 'error') {
+            if (status.result) {
+              scanGuardDogResult.value = { accountId, ...status.result, finishedAt: Date.now() }
+            }
+            // 扫描已完成，停止轮询
+            stopScanStatusPoll()
+            scanningGuardDogAccountId.value = null
+          }
+        }
+        else {
+          // 后端没有进度记录 → 扫描不在进行中
+          if (scanningGuardDogAccountId.value === accountId) {
+            scanningGuardDogAccountId.value = null
+          }
+          stopScanStatusPoll()
+        }
+      }
+      return res.data
+    }
+    catch { /* ignore */ }
+    return null
+  }
+
+  async function clearScanResult() {
+    scanningGuardDogAccountId.value = null
+    scanGuardDogResult.value = null
+    scanGuardDogProgress.value = null
+    stopScanStatusPoll()
+  }
+
   async function scanGuardDogFriends(accountId: string, options: Record<string, any> = {}) {
     if (!accountId)
       return { ok: false, error: '未选择账号' }
+    // 取消之前的轮询（如果存在）
+    stopScanStatusPoll()
+    scanningGuardDogAccountId.value = accountId
+    scanGuardDogResult.value = null
+    scanGuardDogProgress.value = { accountId, status: 'running', index: 0, total: 0, friendName: '', friendGid: 0, scanStatus: '', message: '', updatedAt: Date.now() }
+    // 启动轮询（与本次 await 无关，能跨组件生命周期继续）
+    startScanStatusPoll(accountId)
     try {
       const res = await api.post('/api/friend-guard-dog-gids/scan', options, {
         headers: { 'x-account-id': accountId },
@@ -254,11 +347,27 @@ export const useFriendStore = defineStore('friend', () => {
       })
       if (res.data.ok) {
         guardDogFriends.value = res.data.data || []
+        scanGuardDogResult.value = {
+          accountId,
+          ...(res.data.scan || { scanned: 0, guardDogCount: 0, newGids: [], errorCount: 0, durationMs: 0 }),
+          finishedAt: Date.now(),
+        }
+        scanGuardDogProgress.value = { accountId, status: 'done', index: scanGuardDogProgress.value?.total || 0, total: scanGuardDogProgress.value?.total || 0, friendName: '', friendGid: 0, scanStatus: '', message: '', updatedAt: Date.now() }
       }
       return { ok: res.data.ok, scan: res.data.scan, data: res.data.data }
     }
     catch (e: any) {
       return { ok: false, error: e?.response?.data?.error || e?.message || '扫描失败' }
+    }
+    finally {
+      // 终态：清理轮询（如果还活着）；scanningGuardDogAccountId 由 fetchScanStatus 在看到 done/error 时清掉，
+      // 这里兜底如果整段 await 提前结束则也清掉
+      setTimeout(() => {
+        if (scanningGuardDogAccountId.value === accountId) {
+          scanningGuardDogAccountId.value = null
+        }
+        stopScanStatusPoll()
+      }, 500)
     }
   }
 
@@ -514,6 +623,10 @@ export const useFriendStore = defineStore('friend', () => {
     removeGuardDogFriend,
     clearGuardDogFriends,
     scanGuardDogFriends,
+    fetchScanStatus,
+    startScanStatusPoll,
+    stopScanStatusPoll,
+    clearScanResult,
     fetchInteractRecords,
     fetchFriendLands,
     operate,

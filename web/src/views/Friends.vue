@@ -284,6 +284,13 @@ watch(currentAccountId, () => {
   loadData()
 })
 
+// 切到护主犬 Tab 时拉一次进度（用于页面刷新后恢复轮询 / 跨账号切回继续显示）
+watch(activeTab, (newTab) => {
+  if (newTab === 'guardDog') {
+    void ensureScanStatusPolling()
+  }
+})
+
 async function handleRefreshFriends() {
   if (!currentAccountId.value)
     return
@@ -441,51 +448,64 @@ async function handleClearGuardDogFriends() {
   })
 }
 
-const scanningGuardDog = ref(false)
-const scanGuardDogResult = ref<null | {
-  scanned: number
-  guardDogCount: number
-  newGids: number[]
-  errorCount: number
-  durationMs: number
-}>(null)
-const scanProgressIndex = ref(0)
-const scanProgressTotal = ref(0)
+// ============ 护主犬扫描状态（全局 store，与组件生命周期解耦）============
+const scanningGuardDog = computed(() =>
+  !!currentAccountId.value
+  && friendStore.scanningGuardDogAccountId === currentAccountId.value,
+)
+const scanGuardDogResult = computed(() => {
+  const r = friendStore.scanGuardDogResult
+  if (!r) return null
+  if (r.accountId !== currentAccountId.value) return null
+  return r
+})
+const scanProgressIndex = computed(() => {
+  const p = friendStore.scanGuardDogProgress
+  if (!p || p.accountId !== currentAccountId.value) return 0
+  return Number(p.index) || 0
+})
+const scanProgressTotal = computed(() => {
+  const p = friendStore.scanGuardDogProgress
+  if (!p || p.accountId !== currentAccountId.value) return 0
+  return Number(p.total) || 0
+})
 const scanProgressText = computed(() => {
-  if (!scanningGuardDog.value)
-    return ''
+  if (!scanningGuardDog.value) return ''
   const cur = scanProgressIndex.value
   const total = scanProgressTotal.value
-  if (total <= 0)
-    return '...'
+  if (total <= 0) return '...'
   return `${cur}/${total}`
 })
 
+// 进入护主犬 Tab 时拉一次进度（用于页面刷新后恢复轮询）
+async function ensureScanStatusPolling() {
+  if (!currentAccountId.value) return
+  await friendStore.fetchScanStatus(currentAccountId.value)
+  // 如果扫描实际还在进行（progress.status === 'running'）但 scanningGuardDogAccountId 因刷新丢了，续上
+  const p = friendStore.scanGuardDogProgress
+  if (p && p.accountId === currentAccountId.value && (p.status === 'running' || !p.status)) {
+    if (friendStore.scanningGuardDogAccountId !== currentAccountId.value) {
+      ;(friendStore as any).scanningGuardDogAccountId = currentAccountId.value
+    }
+    friendStore.startScanStatusPoll(currentAccountId.value)
+  }
+}
+
 async function handleScanGuardDogFriends() {
-  if (!currentAccountId.value || scanningGuardDog.value)
-    return
+  if (!currentAccountId.value || scanningGuardDog.value) return
   if (!currentAccount.value?.running || !status.value?.connection?.connected) {
     toast.error('账号未运行，无法扫描')
     return
   }
-  scanningGuardDog.value = true
-  scanGuardDogResult.value = null
-  scanProgressIndex.value = 0
-  scanProgressTotal.value = 0
   try {
-    const res: any = await friendStore.scanGuardDogFriends(currentAccountId.value, {
-      onProgress: (info: any) => {
-        scanProgressIndex.value = info.index + 1
-        scanProgressTotal.value = info.total
-      },
-    } as any)
+    const res: any = await friendStore.scanGuardDogFriends(currentAccountId.value)
     if (res && res.ok) {
-      scanGuardDogResult.value = res.scan || null
-      if (res.scan && res.scan.newGids && res.scan.newGids.length > 0) {
-        toast.success(`扫描完成，新增 ${res.scan.newGids.length} 位护主犬好友`)
+      const s = res.scan
+      if (s && s.newGids && s.newGids.length > 0) {
+        toast.success(`扫描完成，新增 ${s.newGids.length} 位护主犬好友`)
       }
-      else if (res.scan) {
-        toast.info(`扫描完成，共扫 ${res.scan.scanned} 人，未发现新护主犬好友`)
+      else if (s) {
+        toast.info(`扫描完成，共扫 ${s.scanned} 人，未发现新护主犬好友`)
       }
     }
     else {
@@ -494,9 +514,6 @@ async function handleScanGuardDogFriends() {
   }
   catch (e: any) {
     toast.error(e?.message || '扫描失败')
-  }
-  finally {
-    scanningGuardDog.value = false
   }
 }
 
