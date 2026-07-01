@@ -46,7 +46,8 @@ if (isWorkerProcess) {
 
     runtimeEngine.start({
         startAdminServer: true,
-        autoStartAccounts: false,
+        // 容器启动时只恢复后台手动"启动"过的账号(autoStart=true)
+        autoStartAccounts: true,
     }).catch((err: any) => {
         mainLogger.error('runtime bootstrap failed', { error: err && err.message ? err.message : String(err) });
     });

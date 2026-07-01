@@ -202,6 +202,27 @@ function mountAccountRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
+    // 切换账号的"自动启动"标记
+    // 用户在后台可以显式控制"这个账号是否在容器/服务重启时自动启动"
+    // - true:  下次容器启动时会被自动拉起
+    // - false: 容器启动时不会自动启动（需要手动点）
+    // 用户在管理后台点"启动/停止"按钮时也会自动同步这个标记
+    app.post('/api/accounts/:id/auto-start', (req: Request, res: Response) => {
+        try {
+            const resolvedId = resolveAccId(ctx, req.params.id) || String(req.params.id || '');
+            if (!checkAccountAccess(ctx, req as any, resolvedId)) {
+                return res.status(403).json({ ok: false, error: '无权访问此账号' });
+            }
+            const body = (req.body && typeof req.body === 'object') ? req.body : {};
+            const enabled = !!body.enabled;
+            const data = store.setAccountAutoStart(resolvedId, enabled);
+            audit('account_auto_start_toggled', req, { accountId: resolvedId, enabled });
+            res.json({ ok: true, data });
+        } catch (e: any) {
+            res.status(500).json({ ok: false, error: e.message });
+        }
+    });
+
     // API: 账号日志
     app.get('/api/account-logs', (req: Request, res: Response) => {
         try {

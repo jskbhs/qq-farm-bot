@@ -29,10 +29,39 @@ function normalizeAccountsData(raw: unknown): AccountsData {
     for (const a of accounts) {
         const id = Number.parseInt(a && a.id, 10);
         if (Number.isFinite(id) && id > 0) usedIds.add(id);
+        // 旧 accounts.json 没有 autoStart 字段时显式归一为 undefined（让 addOrUpdateAccount 默认行为决定）
+        if (typeof (a as any).autoStart !== 'boolean') {
+            (a as any).autoStart = undefined;
+        }
     }
     let nextId = 1;
     while (usedIds.has(nextId)) nextId++;
     return { accounts, nextId };
+}
+
+/**
+ * 仅更新指定账号的 autoStart 字段（不改动其他字段）
+ * 容器启动时通过这个函数恢复持久化的"用户希望自动启动"标记
+ */
+function setAccountAutoStart(accountId: string, enabled: boolean): AccountsData {
+    const data = normalizeAccountsData(loadAccounts());
+    const target = data.accounts.find(a => String(a.id) === String(accountId));
+    if (!target) return data;
+    target.autoStart = !!enabled;
+    target.updatedAt = Date.now();
+    saveAccounts(data);
+    return data;
+}
+
+/**
+ * 获取所有标记了 autoStart=true 的账号（容器启动时调）
+ * 注：调用方要再过滤一次"账号仍存在 / 没被删除"
+ */
+function getAutoStartAccountIds(): string[] {
+    const data = normalizeAccountsData(loadAccounts());
+    return (data.accounts || [])
+        .filter(a => (a as any).autoStart === true)
+        .map(a => String(a.id));
 }
 
 function addOrUpdateAccount(acc: Partial<Account> & { avatarUrl?: string }): AccountsData {
@@ -125,4 +154,6 @@ module.exports = {
     getAccountsByUser,
     deleteAccountsByUser,
     deleteUserConfig,
+    setAccountAutoStart,
+    getAutoStartAccountIds,
 };

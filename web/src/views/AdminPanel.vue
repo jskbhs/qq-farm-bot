@@ -825,6 +825,8 @@ interface AdminAccount {
   running: boolean
   createdAt: number
   updatedAt: number
+  // true = 容器/服务重启时自动拉起，false = 重启后保持停止
+  autoStart?: boolean
 }
 
 const adminAccounts = ref<AdminAccount[]>([])
@@ -852,6 +854,7 @@ async function startAdminAccount(acc: AdminAccount) {
   try {
     await api.post(`/api/admin/accounts/${acc.id}/start`)
     toast.success('启动指令已发送')
+    // 后端会自动把 autoStart 设为 true，刷新列表拿到最新值
     await fetchAdminAccounts()
   }
   catch (e: any) {
@@ -863,10 +866,28 @@ async function stopAdminAccount(acc: AdminAccount) {
   try {
     await api.post(`/api/admin/accounts/${acc.id}/stop`)
     toast.success('停止指令已发送')
+    // 后端会自动把 autoStart 设为 false
     await fetchAdminAccounts()
   }
   catch (e: any) {
     toast.error(e?.response?.data?.error || '停止失败')
+  }
+}
+
+async function toggleAccountAutoStart(acc: AdminAccount, enabled: boolean | undefined) {
+  if (enabled === undefined)
+    return
+  const previous = acc.autoStart
+  // 乐观更新 UI，避免接口延迟带来的卡顿
+  acc.autoStart = enabled
+  try {
+    await api.post(`/api/admin/accounts/${acc.id}/auto-start`, { enabled })
+    toast.success(enabled ? '已加入自动启动' : '已退出自动启动')
+  }
+  catch (e: any) {
+    // 失败回滚
+    acc.autoStart = previous
+    toast.error(e?.response?.data?.error || '操作失败')
   }
 }
 
@@ -2710,6 +2731,18 @@ watch(activeTab, (tab) => {
             </BaseButton>
           </div>
 
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 text-xs leading-relaxed dark:border-emerald-800/40 dark:bg-emerald-900/10" style="color: color-mix(in srgb, var(--theme-text) 70%, transparent)">
+            <div class="mb-1 font-semibold" style="color: var(--theme-text)">
+              自动启动说明
+            </div>
+            <ul class="ml-4 list-disc space-y-0.5">
+              <li>勾选"自动启动"后，容器或服务重启时会自动拉起该账号；不勾则保持停止状态</li>
+              <li>手动点"启动"时也会自动开启自动启动（用户的意图是"我常要它跑"）</li>
+              <li>手动点"停止"时也会自动关闭自动启动（避免重启后又自动跑起来）</li>
+              <li>新增账号默认不自动启动，需要显式勾选</li>
+            </ul>
+          </div>
+
           <div v-if="adminAccountsLoading" class="py-8 text-center text-gray-500">
             <div i-svg-spinners-90-ring-with-bg class="mb-2 inline-block text-2xl" />
             <div>加载中...</div>
@@ -2731,6 +2764,9 @@ watch(activeTab, (tab) => {
                     </th>
                     <th class="px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
                       状态
+                    </th>
+                    <th class="px-3 py-2 text-center text-xs text-gray-500 font-medium uppercase dark:text-gray-300" title="勾选后容器/服务重启时会自动拉起该账号">
+                      自动启动
                     </th>
                     <th class="px-3 py-2 text-right text-xs text-gray-500 font-medium uppercase dark:text-gray-300">
                       操作
@@ -2760,6 +2796,18 @@ watch(activeTab, (tab) => {
                         {{ acc.running ? '运行中' : '已停止' }}
                       </span>
                     </td>
+                    <td class="whitespace-nowrap px-3 py-2 text-center">
+                      <div class="inline-flex items-center gap-2">
+                        <BaseSwitch
+                          :model-value="!!acc.autoStart"
+                          :disabled="!userStore.hasPermission('account:control')"
+                          @update:model-value="v => toggleAccountAutoStart(acc, v)"
+                        />
+                        <span class="text-xs" :class="acc.autoStart ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'">
+                          {{ acc.autoStart ? '已开启' : '已关闭' }}
+                        </span>
+                      </div>
+                    </td>
                     <td class="whitespace-nowrap px-3 py-2 text-right text-sm font-medium">
                       <button
                         v-if="userStore.hasPermission('account:control') && !acc.running"
@@ -2785,7 +2833,7 @@ watch(activeTab, (tab) => {
                     </td>
                   </tr>
                   <tr v-if="adminAccounts.length === 0">
-                    <td colspan="5" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
+                    <td colspan="6" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
                       暂无账号
                     </td>
                   </tr>

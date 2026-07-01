@@ -362,6 +362,22 @@ function mountAdminRoutes(app: Application, ctx: AdminContext): void {
         }
     });
 
+    // 切换账号的"自动启动"标记（容器/服务重启时是否自动拉起）
+    // 用户在后台手动点"启动/停止"时，data-provider 已经自动同步了这个标记
+    // 这个接口是让用户显式控制：勾上 = 下次启动自动跑，不勾 = 重启后保持停止
+    app.post('/api/admin/accounts/:id/auto-start', authRequired, requirePermission('account:control'), (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            const body = (req.body && typeof req.body === 'object') ? req.body : {};
+            const enabled = !!body.enabled;
+            const data = store.setAccountAutoStart(id, enabled);
+            audit('account_auto_start_toggled', req, { accountId: id, enabled });
+            res.json({ ok: true, data });
+        } catch (e: any) {
+            res.status(500).json({ ok: false, error: e.message });
+        }
+    });
+
     // 删除指定账号
     app.delete('/api/admin/accounts/:id', authRequired, requirePermission('account:control'), (req: Request, res: Response) => {
         try {

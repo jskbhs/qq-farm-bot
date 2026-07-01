@@ -172,13 +172,25 @@ function createRuntimeEngine(options: RuntimeEngineOptions = {}) {
     }
 
     function startAllAccounts(): void {
-        const accounts = (store.getAccounts().accounts || []);
-        if (accounts.length > 0) {
-            log('系统', `发现 ${accounts.length} 个账号，正在启动...`);
-            accounts.forEach((acc: any) => startWorker(acc));
-        } else {
+        // 只启动 autoStart===true 的账号（用户在后台点过"启动"的）
+        // 容器启动时被调用，避免每个账号都自动启动（包括"加了但不想跑"的）
+        const all = (store.getAccounts().accounts || []);
+        if (all.length === 0) {
             log('系统', '未发现账号，请访问管理面板添加账号');
+            return;
         }
+        const autoStartIds = new Set(
+            (typeof store.getAutoStartAccountIds === 'function'
+                ? store.getAutoStartAccountIds()
+                : []).map((x: any) => String(x)),
+        );
+        const targets = all.filter((acc: any) => autoStartIds.has(String(acc.id)));
+        if (targets.length === 0) {
+            log('系统', `共 ${all.length} 个账号，无自动启动标记（用户在后台手动点过"启动"才会被自动恢复）`);
+            return;
+        }
+        log('系统', `正在自动启动 ${targets.length}/${all.length} 个已标记自动启动的账号...`);
+        targets.forEach((acc: any) => startWorker(acc));
     }
 
     /**

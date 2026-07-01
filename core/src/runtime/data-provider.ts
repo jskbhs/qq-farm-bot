@@ -253,6 +253,14 @@ function createDataProvider(options: DataProviderOptions) {
             const accountId = resolveAccountRefId(accountRef);
             const acc = findAccountByAnyRef(accountId || accountRef);
             if (!acc) return false;
+            // 标记 autoStart=true：用户主动启动 → 下次容器启动时也要拉起
+            try {
+                if (store && typeof store.setAccountAutoStart === 'function') {
+                    store.setAccountAutoStart(String(acc.id), true);
+                }
+            } catch (e: any) {
+                // 标记失败不阻塞启动（极端情况：磁盘满 / store.json 写失败）
+            }
             startWorker(acc);
             return true;
         },
@@ -261,6 +269,14 @@ function createDataProvider(options: DataProviderOptions) {
             const accountId = resolveAccountRefId(accountRef);
             const acc = findAccountByAnyRef(accountId || accountRef);
             if (!acc) return false;
+            // 标记 autoStart=false：用户主动停止 → 下次容器启动时不再拉起
+            try {
+                if (store && typeof store.setAccountAutoStart === 'function') {
+                    store.setAccountAutoStart(String(acc.id), false);
+                }
+            } catch (e: any) {
+                // 标记失败不阻塞停止
+            }
             if (accountId) stopWorker(accountId);
             return true;
         },

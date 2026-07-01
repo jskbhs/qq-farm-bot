@@ -63,6 +63,8 @@ module.exports = {
     getAccountsByUser: accounts.getAccountsByUser,
     deleteAccountsByUser: accounts.deleteAccountsByUser,
     deleteUserConfig: accounts.deleteUserConfig,
+    setAccountAutoStart: accounts.setAccountAutoStart,
+    getAutoStartAccountIds: accounts.getAutoStartAccountIds,
 
     // Announcements
     getAnnouncement: globalConfig.getAnnouncement,
