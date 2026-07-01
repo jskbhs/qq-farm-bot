@@ -772,10 +772,10 @@ body {
     0 2px 8px color-mix(in srgb, var(--theme-primary) 22%, transparent);
 }
 
-/* 顶部横线 — 镜像侧栏的左竖线，宽度 24px、高度 3px，圆角胶囊 */
+/* 底部横线 — 镜像侧栏的左竖线，宽度 22px、高度 3px，圆角胶囊 */
 .bottom-nav-indicator {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 22px;
