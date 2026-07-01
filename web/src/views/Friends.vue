@@ -277,6 +277,11 @@ useIntervalFn(() => {
 
 onMounted(() => {
   loadData()
+  // 页面刷新时如果 worker 仍在扫描中（master 端保留状态 5min），
+  // 这里拉一次续上轮询，避免 store 重置后丢失进度显示
+  if (activeTab.value === 'guardDog') {
+    void ensureScanStatusPolling()
+  }
 })
 
 watch(currentAccountId, () => {

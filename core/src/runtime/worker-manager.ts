@@ -356,6 +356,16 @@ function createWorkerManager(options: WorkerManagerOptions) {
                     worker_process.process.send({ type: 'config_sync', config: buildConfigSnapshotForAccount(accountId) });
                 }
             }
+        } else if (msg.type === 'friend_guard_dog_add') {
+            // 扫描过程中实时同步：worker 扫到一个护主犬就立即送过来，
+            // 主进程 store 同步写入，避免 scan 末尾 api_response 丢失时主进程漏登。
+            const gid = Number(msg.gid) || 0;
+            if (gid > 0) {
+                try {
+                    const { addFriendGuardDogGid: addGd } = require('../models/store');
+                    addGd(accountId, gid);
+                } catch { /* ignore */ }
+            }
         } else if (msg.type === 'guard_dog_scan_progress') {
             const payload: any = {
                 status: msg.status || 'running',

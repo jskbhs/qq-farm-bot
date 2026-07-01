@@ -690,6 +690,15 @@ async function handleApiCall(msg: any): Promise<void> {
                             scanStatus: info && info.status ? info.status : '',
                             message: info && info.message ? info.message : '',
                         });
+                        // 命中护主犬 → 立即同步一份到主进程 store（防止 api_response 丢失）
+                        if (info && info.status === 'guard_dog' && Number.isFinite(info.gid) && info.gid > 0) {
+                            sendToMaster({
+                                type: 'friend_guard_dog_add',
+                                accountId,
+                                gid: info.gid,
+                                friendName: info.name || '',
+                            });
+                        }
                     } catch { /* ignore */ }
                 };
                 opts.onProgress = onProgress;
