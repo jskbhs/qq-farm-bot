@@ -752,10 +752,14 @@ body {
   position: relative;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--theme-primary) 15%, transparent) 0%,
-    color-mix(in srgb, var(--theme-primary) 8%, transparent) 100%
+    color-mix(in srgb, var(--theme-primary) 18%, transparent) 0%,
+    color-mix(in srgb, var(--theme-primary) 6%, transparent) 100%
   );
   border-radius: 16px;
+  animation: nav-item-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
+    0 2px 8px color-mix(in srgb, var(--theme-primary) 18%, transparent);
 }
 
 .bottom-nav-item-active::before {
@@ -771,19 +775,106 @@ body {
   box-shadow: 0 0 6px var(--theme-primary);
 }
 
+/* 激活态的图标 — Q 弹多段弹跳（缩放 + 轻微旋转 + 弹起） */
 .bottom-nav-icon-bounce {
-  animation: nav-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: nav-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  display: inline-block;
+  transform-origin: center bottom;
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--theme-primary) 40%, transparent));
 }
 
-@keyframes nav-bounce {
+/* 激活态指示点 — 顶部小圆点，带光晕脉冲 */
+.bottom-nav-indicator {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--theme-primary);
+  box-shadow: 0 0 6px var(--theme-primary);
+  animation:
+    nav-indicator-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    nav-indicator-pulse 2s ease-out 0.4s infinite;
+}
+
+.bottom-nav-icon {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============ keyframes ============ */
+
+/* 整体项进入：轻微缩放 + 弹性 */
+@keyframes nav-item-pop-in {
   0% {
-    transform: scale(1);
+    transform: scale(0.85);
+    opacity: 0.7;
   }
-  50% {
-    transform: scale(1.3) translateY(-4px);
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
   }
   100% {
     transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 图标 Q 弹：先向上跳一下，再左右轻摆，然后落定 */
+@keyframes nav-bounce {
+  0% {
+    transform: scale(0.7) translateY(0) rotate(0);
+    opacity: 0.4;
+  }
+  25% {
+    transform: scale(1.35) translateY(-6px) rotate(-8deg);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(0.92) translateY(2px) rotate(4deg);
+  }
+  65% {
+    transform: scale(1.08) translateY(-2px) rotate(-2deg);
+  }
+  82% {
+    transform: scale(0.98) translateY(1px) rotate(1deg);
+  }
+  100% {
+    transform: scale(1.1) translateY(-1px) rotate(0);
+  }
+}
+
+/* 指示点进入：横向拉伸 + 弹性 */
+@keyframes nav-indicator-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scaleX(0) scaleY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1.6) scaleY(1.2);
+  }
+  75% {
+    transform: translateX(-50%) scaleX(0.9) scaleY(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1) scaleY(1);
+  }
+}
+
+/* 指示点光晕脉冲：呼吸效果 */
+@keyframes nav-indicator-pulse {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--theme-primary) 60%, transparent),
+      0 0 6px var(--theme-primary);
+  }
+  100% {
+    box-shadow:
+      0 0 0 8px color-mix(in srgb, var(--theme-primary) 0%, transparent),
+      0 0 6px var(--theme-primary);
   }
 }
 

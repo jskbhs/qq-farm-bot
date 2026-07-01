@@ -42,11 +42,14 @@ function isActive(path: string) {
         class="relative flex flex-col items-center justify-center rounded-xl px-2 py-1 text-gray-600 transition-all duration-200 hover:text-[color:var(--theme-primary)] dark:text-gray-300"
         :class="isActive(item.path) ? 'text-[color:var(--theme-primary)] bottom-nav-item-active' : ''"
       >
-        <div :class="[item.icon, 'mb-1 text-2xl leading-none bottom-nav-icon', isActive(item.path) ? 'bottom-nav-icon-active' : '']" />
+        <div
+          :key="`${item.path}-${isActive(item.path) ? 'a' : 'i'}`"
+          :class="[item.icon, 'mb-1 text-2xl leading-none bottom-nav-icon', isActive(item.path) ? 'bottom-nav-icon-bounce' : '']"
+        />
         <span class="text-xs font-medium">{{ item.label }}</span>
         <div
           v-if="isActive(item.path)"
-          class="absolute -top-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[color:var(--theme-primary)] shadow-[0_0_8px_var(--theme-primary)]"
+          class="bottom-nav-indicator"
         />
       </RouterLink>
     </div>
